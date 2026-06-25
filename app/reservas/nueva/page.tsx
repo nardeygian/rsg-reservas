@@ -5,7 +5,9 @@ import {
   toDateParam,
   toDatetimeLocalBogota,
 } from "@/lib/datetime";
+import { getBogotaWeekday } from "@/lib/recurrence";
 import { createBookingAction } from "./actions";
+import { RecurrenceFields } from "./_components/RecurrenceFields";
 import { addMonths } from "date-fns";
 
 const USE_TYPE_OPTIONS = [
@@ -158,36 +160,10 @@ export default async function NewBookingPage({
           />
         </div>
 
-        <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              name="recurring"
-              value="on"
-              className="h-4 w-4"
-            />
-            <span>Repetir cada semana</span>
-          </label>
-          <div>
-            <label
-              htmlFor="recurrence_until"
-              className="block text-xs text-gray-500 mb-1"
-            >
-              Hasta
-            </label>
-            <input
-              id="recurrence_until"
-              name="recurrence_until"
-              type="date"
-              defaultValue={recurrenceUntilDefault}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Solo aplica si marcaste &ldquo;Repetir cada semana&rdquo;. Las
-              semanas que choquen con otra reserva se saltan automáticamente.
-            </p>
-          </div>
-        </fieldset>
+        <RecurrenceFields
+          defaultUntil={recurrenceUntilDefault}
+          defaultByday={getBogotaWeekday(startDefault)}
+        />
 
         {error && (
           <p className="text-sm text-red-600" role="alert">

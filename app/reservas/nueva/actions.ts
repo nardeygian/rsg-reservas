@@ -6,13 +6,19 @@ import { createClient } from "@/lib/supabase/server";
 import { parseBogotaDatetimeLocal, toDateParam } from "@/lib/datetime";
 import { notifyBookingEvent } from "@/lib/notifications";
 import { sendChannelMessage } from "@/lib/slack";
-import { weeklyOccurrences, weeklyRrule } from "@/lib/recurrence";
+import {
+  generateOccurrences,
+  getBogotaWeekday,
+  recurrenceRrule,
+  RECURRENCE_LABELS,
+  type RecurrencePattern,
+} from "@/lib/recurrence";
 import { fromZonedTime } from "date-fns-tz";
 import { formatDateLong } from "@/lib/datetime";
 
 const TZ_BOGOTA = "America/Bogota";
 
-const MAX_OCCURRENCES = 52; // 1 año semanal
+const MAX_OCCURRENCES = 365; // cubre daily a 1 año
 
 const VALID_USE_TYPES = [
   "reunion_departamento",
@@ -67,16 +73,48 @@ export async function createBookingAction(formData: FormData) {
   }
 
   const isRecurring = recurringRaw === "on" || recurringRaw === "true";
+  const freqRaw = String(formData.get("recurrence_freq") ?? "weekly").trim();
+  const bydayRaw = formData
+    .getAll("recurrence_byday")
+    .map((v) => Number(String(v)))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+
   let untilUtc: Date | null = null;
+  let pattern: RecurrencePattern | null = null;
   if (isRecurring) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(recurrenceUntilRaw)) {
       backWithError("Marcaste recurrente pero falta la fecha hasta.");
     }
-    // El "hasta" se interpreta inclusivo. Para no truncar el día, lo
-    // expandimos hasta el final del día en Bogotá (23:59:59).
     untilUtc = fromZonedTime(`${recurrenceUntilRaw}T23:59:59`, TZ_BOGOTA);
     if (untilUtc <= startsAt) {
       backWithError("La fecha 'hasta' debe ser posterior al inicio.");
+    }
+
+    switch (freqRaw) {
+      case "daily":
+        pattern = { kind: "daily" };
+        break;
+      case "weekly":
+        pattern = { kind: "weekly" };
+        break;
+      case "monthly":
+        pattern = { kind: "monthly" };
+        break;
+      case "custom": {
+        if (bydayRaw.length === 0) {
+          backWithError("En 'personalizado' debes elegir al menos un día.");
+        }
+        const startDow = getBogotaWeekday(startsAt);
+        if (!bydayRaw.includes(startDow)) {
+          backWithError(
+            "El día de inicio no está en los días marcados. Cambia la fecha de inicio o marca ese día."
+          );
+        }
+        pattern = { kind: "custom", byday: bydayRaw };
+        break;
+      }
+      default:
+        backWithError("Frecuencia de recurrencia inválida.");
     }
   }
 
@@ -141,12 +179,20 @@ export async function createBookingAction(formData: FormData) {
     redirect(`/calendario?view=dia&date=${toDateParam(startsAt)}`);
   }
 
-  // ─── Caso 2: serie semanal ────────────────────────────────────────────
-  if (!untilUtc) backWithError("Falta fecha hasta.");
+  // ─── Caso 2: serie recurrente ─────────────────────────────────────────
+  if (!untilUtc || !pattern) backWithError("Falta info de recurrencia.");
 
-  const occurrences = weeklyOccurrences(startsAt, endsAt, untilUtc, MAX_OCCURRENCES);
+  const occurrences = generateOccurrences(
+    startsAt,
+    endsAt,
+    untilUtc,
+    pattern,
+    MAX_OCCURRENCES
+  );
   if (occurrences.length === 0) {
-    backWithError("La fecha 'hasta' no cubre ninguna semana.");
+    backWithError(
+      "La fecha 'hasta' no cubre ninguna ocurrencia con el patrón elegido."
+    );
   }
 
   // 1. Insert template (no entra a la exclusion constraint).
@@ -163,7 +209,7 @@ export async function createBookingAction(formData: FormData) {
     status,
     expected_attendance: expectedAttendance,
     is_recurrence_template: true,
-    recurrence_rule: weeklyRrule(untilUtc),
+    recurrence_rule: recurrenceRrule(pattern, untilUtc),
   });
   if (templateError) {
     backWithError(`No se pudo crear la serie: ${templateError.message}`);
@@ -208,10 +254,10 @@ export async function createBookingAction(formData: FormData) {
   // 4. Notificación resumen a Slack (una sola, no N).
   const conflictNote =
     conflicts.length > 0
-      ? ` ${conflicts.length} ${conflicts.length === 1 ? "semana" : "semanas"} con choque saltada${conflicts.length === 1 ? "" : "s"}.`
+      ? ` ${conflicts.length} con choque saltada${conflicts.length === 1 ? "" : "s"}.`
       : "";
   await sendChannelMessage(
-    `🔁 *Serie semanal creada*\n` +
+    `🔁 *Serie ${RECURRENCE_LABELS[pattern.kind]} creada*\n` +
       `${created} ${created === 1 ? "reserva" : "reservas"} en *${(await spaceName(supabase, space.id)) ?? "espacio"}*, ` +
       `desde el ${formatDateLong(startsAt)}.${conflictNote}`
   );
