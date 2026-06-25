@@ -1,10 +1,12 @@
-// Datos de pago de RSG. Placeholders por ahora; sustitúyelos con los reales
-// cuando los tengas. También puedes externalizarlos a env vars si prefieres.
+// Datos de pago de RSG. `*Display` es lo que se muestra al usuario; `*Copy`
+// es lo que se pone en el clipboard al copiar (números planos para que el
+// destino lo acepte sin reformatear).
 
 export const PAYMENT_INFO = {
   bancolombiaAccountType: "Ahorros",
-  bancolombiaAccountNumber: "000-000-00000",
-  bancolombiaAccountHolder: "RSG (placeholder)",
-  bancolombiaKey: "+57 300 000 0000",
-  qrImageUrl: null as string | null, // pon una URL pública (Storage o /public) cuando tengas el QR
+  bancolombiaAccountNumberDisplay: "487-000060-27",
+  bancolombiaAccountNumberCopy: "48700006027",
+  bancolombiaAccountHolder: "PRO RSG",
+  bancolombiaKey: "0055822415",
+  qrImageUrl: "/qr-pago.jpg",
 };

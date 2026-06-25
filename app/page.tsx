@@ -93,7 +93,7 @@ export default async function HomePage() {
         {isStaff && (
           <a
             href="/aprobaciones"
-            className="card card-hover flex items-center justify-between"
+            className="card card-hover flex items-center justify-between text-left"
             style={{
               borderColor: "var(--color-line-strong)",
             }}
@@ -112,19 +112,19 @@ export default async function HomePage() {
         )}
 
         {isStaff && (
-          <a
-            href="/admin"
-            className="card card-hover block text-sm text-center"
-          >
-            Administración
-            <span className="text-fg3 block text-xs mt-0.5">
+          <a href="/admin" className="card card-hover block text-left">
+            <span className="font-medium block">Administración</span>
+            <span className="text-fg3 text-xs block mt-0.5">
               Catálogo y tarifas
             </span>
           </a>
         )}
 
-        <a href="/perfil" className="card card-hover block text-sm text-center">
-          Mi perfil y suscripción al calendario
+        <a href="/perfil" className="card card-hover block text-left">
+          <span className="font-medium block">Mi perfil</span>
+          <span className="text-fg3 text-xs block mt-0.5">
+            Suscripción al calendario y Slack
+          </span>
         </a>
       </nav>
     </main>

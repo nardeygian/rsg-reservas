@@ -322,23 +322,23 @@ export function RentalForm({
 
           {/* Cuenta */}
           <div className="border-t border-line pt-3 space-y-1">
-            <p className="text-xs text-gray-500">Cuenta Bancolombia</p>
+            <p className="text-xs text-fg2">Cuenta Bancolombia</p>
             <p className="text-sm">
-              <span className="text-gray-500">Tipo:</span>{" "}
+              <span className="text-fg2">Tipo:</span>{" "}
               <strong>{PAYMENT_INFO.bancolombiaAccountType}</strong>
             </p>
             <p className="text-sm">
-              <span className="text-gray-500">Titular:</span>{" "}
+              <span className="text-fg2">Titular:</span>{" "}
               {PAYMENT_INFO.bancolombiaAccountHolder}
             </p>
             <div className="flex items-center gap-2">
               <code className="flex-1 font-mono text-sm bg-bg-muted rounded px-2 py-1.5">
-                {PAYMENT_INFO.bancolombiaAccountNumber}
+                {PAYMENT_INFO.bancolombiaAccountNumberDisplay}
               </code>
               <button
                 type="button"
                 onClick={() =>
-                  copy(PAYMENT_INFO.bancolombiaAccountNumber, "cuenta")
+                  copy(PAYMENT_INFO.bancolombiaAccountNumberCopy, "cuenta")
                 }
                 className="text-xs rounded-full border border-line px-3 py-1.5 hover:bg-bg-muted transition"
               >
