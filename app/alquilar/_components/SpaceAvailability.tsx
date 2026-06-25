@@ -68,16 +68,14 @@ export function SpaceAvailability({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <details className="rounded-md border border-gray-200 dark:border-gray-800">
+    <details className="rounded-[14px] border border-line bg-bg-elev">
       <summary className="cursor-pointer px-3 py-2 text-sm font-medium select-none">
         Ver disponibilidad próximos {DAYS_AHEAD} días
         {loading && (
-          <span className="ml-2 text-xs text-gray-500 font-normal">
-            cargando…
-          </span>
+          <span className="ml-2 text-xs text-fg3 font-normal">cargando…</span>
         )}
       </summary>
-      <div className="border-t border-gray-200 dark:border-gray-800 p-3 space-y-2">
+      <div className="border-t border-line p-3 space-y-2">
         {days.map((d) => {
           const k = dayKey(d);
           const items = byDay.get(k) ?? [];
@@ -85,17 +83,17 @@ export function SpaceAvailability({ spaceId }: { spaceId: string }) {
           return (
             <div key={k} className="text-sm">
               <p
-                className={`text-xs uppercase tracking-wide ${
-                  today
-                    ? "text-blue-700 dark:text-blue-300"
-                    : "text-gray-500"
-                }`}
+                className="eyebrow"
+                style={today ? { color: "var(--color-forest-500)" } : undefined}
               >
                 {formatDateShort(d)}
                 {today && <span className="ml-1">· hoy</span>}
               </p>
               {items.length === 0 ? (
-                <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+                <p
+                  className="text-xs mt-0.5"
+                  style={{ color: "var(--color-positive)" }}
+                >
                   ● Libre todo el día
                 </p>
               ) : (
@@ -103,7 +101,11 @@ export function SpaceAvailability({ spaceId }: { spaceId: string }) {
                   {items.map((s) => (
                     <li
                       key={s.id}
-                      className="text-xs tabular-nums rounded bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300 px-2 py-0.5"
+                      className="text-xs tabular-nums rounded px-2 py-0.5"
+                      style={{
+                        background: "#f2e3dd",
+                        color: "var(--color-critical)",
+                      }}
                     >
                       {formatTime(s.starts_at)} – {formatTime(s.ends_at)}
                     </li>

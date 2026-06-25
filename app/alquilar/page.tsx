@@ -57,8 +57,11 @@ export default async function AlquilarPage({
   return (
     <main className="min-h-dvh px-4 py-6 max-w-md mx-auto space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">Alquilar un espacio</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        <p className="eyebrow">Iglesia RSG</p>
+        <h1 className="font-serif text-3xl mt-1 tracking-[-0.02em]">
+          Alquilar un espacio
+        </h1>
+        <p className="text-sm text-fg2 mt-2 leading-relaxed">
           Reserva espacios de RSG para tu evento. Tu reserva quedará aprobada
           una vez confirmemos el pago.
         </p>
@@ -67,14 +70,18 @@ export default async function AlquilarPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-md border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3"
+          style={{
+            background: "#f2e3dd",
+            color: "var(--color-critical)",
+          }}
         >
           {error}
         </p>
       )}
 
       {spaces.length === 0 ? (
-        <p className="text-sm rounded-md border border-gray-200 dark:border-gray-800 px-3 py-3">
+        <p className="text-sm rounded-[14px] border border-line px-4 py-3 bg-bg-elev">
           Por ahora no hay espacios disponibles para alquilar. Vuelve más tarde.
         </p>
       ) : (

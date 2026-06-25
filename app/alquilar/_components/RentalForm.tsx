@@ -129,7 +129,7 @@ export function RentalForm({
             required
             value={spaceId}
             onChange={(e) => setSpaceId(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           >
             {spaces.map((s) => (
               <option key={s.id} value={s.id}>
@@ -153,7 +153,7 @@ export function RentalForm({
             required
             value={startsAt}
             onChange={(e) => setStartsAt(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           />
         </div>
         <div>
@@ -167,7 +167,7 @@ export function RentalForm({
             required
             value={endsAt}
             onChange={(e) => setEndsAt(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           />
         </div>
       </div>
@@ -182,16 +182,16 @@ export function RentalForm({
           type="text"
           maxLength={120}
           placeholder="Ej. Cumpleaños de María"
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+          className="input"
         />
       </div>
 
       {items.length > 0 && (
-        <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
-          <legend className="text-sm font-medium">
+        <fieldset className="border-t border-line pt-4 space-y-2">
+          <legend className="eyebrow">
             Complementos disponibles{" "}
             {availLoading && (
-              <span className="text-xs text-gray-500 font-normal">
+              <span className="text-xs text-fg3 font-normal normal-case tracking-normal">
                 · calculando…
               </span>
             )}
@@ -211,10 +211,10 @@ export function RentalForm({
                 >
                   <div className="flex-1">
                     <p className="text-sm font-medium">{it.name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-fg2">
                       {formatCents(it.unit_price_cents)} c/u ·{" "}
                       {sold ? (
-                        <span className="text-red-600 dark:text-red-400">
+                        <span style={{ color: "var(--color-critical)" }}>
                           Sin disponibilidad en esa franja
                         </span>
                       ) : (
@@ -238,7 +238,7 @@ export function RentalForm({
                       }))
                     }
                     disabled={sold}
-                    className="w-20 rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-2 py-1 text-sm text-right tabular-nums disabled:opacity-50"
+                    className="w-20 rounded-[10px] border border-line bg-bg-elev px-2 py-1 text-sm text-right tabular-nums disabled:opacity-50"
                     aria-label={`Cantidad de ${it.name}`}
                   />
                 </li>
@@ -248,29 +248,40 @@ export function RentalForm({
         </fieldset>
       )}
 
-      <section className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 px-4 py-3 space-y-1">
-        <p className="text-xs uppercase tracking-wide text-blue-900 dark:text-blue-200">
+      <section
+        className="rounded-[22px] px-5 py-4 space-y-1"
+        style={{
+          background: "var(--color-bg-invert)",
+          color: "var(--color-fg-invert)",
+        }}
+      >
+        <p className="eyebrow" style={{ color: "var(--color-fg-invert-2)" }}>
           Total a pagar
         </p>
-        <p className="text-2xl font-semibold">{formatCents(totalCents)}</p>
-        <p className="text-xs text-gray-600 dark:text-gray-400">
+        <p className="font-serif text-4xl tracking-[-0.02em]">
+          {formatCents(totalCents)}
+        </p>
+        <p
+          className="text-xs"
+          style={{ color: "var(--color-fg-invert-2)" }}
+        >
           {space?.name ?? "—"} · {hours.toFixed(1)} hora
           {hours === 1 ? "" : "s"} · {formatCents(spaceCostCents)} espacio +{" "}
           {formatCents(itemsCostCents)} complementos
         </p>
       </section>
 
-      <section className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">
-        <h2 className="text-sm font-medium">¿Cómo pagar?</h2>
+      <section className="border-t border-line pt-4 space-y-3">
+        <h2 className="eyebrow">¿Cómo pagar?</h2>
         <p className="text-xs text-gray-500">
           Realiza la transferencia por el total exacto antes de enviar la
           solicitud, y adjunta el comprobante más abajo.
         </p>
 
-        <div className="rounded-md border border-gray-200 dark:border-gray-800 p-3 space-y-3">
+        <div className="card !p-4 space-y-3">
           {/* QR */}
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-24 h-24 rounded-md border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-xs text-gray-500 bg-gray-50 dark:bg-gray-900">
+            <div className="flex-shrink-0 w-24 h-24 rounded-[14px] border border-dashed border-line flex items-center justify-center text-xs text-fg3 bg-bg-muted">
               {PAYMENT_INFO.qrImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -291,10 +302,10 @@ export function RentalForm({
           </div>
 
           {/* Llave */}
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-3">
+          <div className="border-t border-line pt-3">
             <p className="text-xs text-gray-500 mb-1">Llave Bancolombia</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 font-mono text-sm bg-gray-50 dark:bg-gray-900 rounded px-2 py-1.5">
+              <code className="flex-1 font-mono text-sm bg-bg-muted rounded px-2 py-1.5">
                 {PAYMENT_INFO.bancolombiaKey}
               </code>
               <button
@@ -302,7 +313,7 @@ export function RentalForm({
                 onClick={() =>
                   copy(PAYMENT_INFO.bancolombiaKey, "llave")
                 }
-                className="text-xs rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5"
+                className="text-xs rounded-full border border-line px-3 py-1.5 hover:bg-bg-muted transition"
               >
                 {copied === "llave" ? "Copiado ✓" : "Copiar"}
               </button>
@@ -310,7 +321,7 @@ export function RentalForm({
           </div>
 
           {/* Cuenta */}
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-3 space-y-1">
+          <div className="border-t border-line pt-3 space-y-1">
             <p className="text-xs text-gray-500">Cuenta Bancolombia</p>
             <p className="text-sm">
               <span className="text-gray-500">Tipo:</span>{" "}
@@ -321,7 +332,7 @@ export function RentalForm({
               {PAYMENT_INFO.bancolombiaAccountHolder}
             </p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 font-mono text-sm bg-gray-50 dark:bg-gray-900 rounded px-2 py-1.5">
+              <code className="flex-1 font-mono text-sm bg-bg-muted rounded px-2 py-1.5">
                 {PAYMENT_INFO.bancolombiaAccountNumber}
               </code>
               <button
@@ -329,7 +340,7 @@ export function RentalForm({
                 onClick={() =>
                   copy(PAYMENT_INFO.bancolombiaAccountNumber, "cuenta")
                 }
-                className="text-xs rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5"
+                className="text-xs rounded-full border border-line px-3 py-1.5 hover:bg-bg-muted transition"
               >
                 {copied === "cuenta" ? "Copiado ✓" : "Copiar"}
               </button>
@@ -338,8 +349,8 @@ export function RentalForm({
         </div>
       </section>
 
-      <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">
-        <legend className="text-sm font-medium">Datos de contacto</legend>
+      <fieldset className="border-t border-line pt-4 space-y-3">
+        <legend className="eyebrow">Datos de contacto</legend>
         <div>
           <label htmlFor="client_name" className="block text-xs text-gray-500 mb-1">
             Nombre completo
@@ -349,7 +360,7 @@ export function RentalForm({
             name="client_name"
             type="text"
             required
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -365,7 +376,7 @@ export function RentalForm({
               name="client_email"
               type="email"
               required
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             />
           </div>
           <div>
@@ -379,14 +390,14 @@ export function RentalForm({
               id="client_phone"
               name="client_phone"
               type="tel"
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             />
           </div>
         </div>
       </fieldset>
 
-      <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
-        <legend className="text-sm font-medium">Comprobante de pago</legend>
+      <fieldset className="border-t border-line pt-4 space-y-2">
+        <legend className="eyebrow">Comprobante de pago</legend>
         <p className="text-xs text-gray-500">
           Realiza la transferencia por el total y adjunta el comprobante. Tu
           reserva quedará aprobada una vez confirmemos el pago.
@@ -394,10 +405,10 @@ export function RentalForm({
 
         <label
           htmlFor="receipt-input"
-          className={`mt-2 flex flex-col items-center justify-center gap-1 cursor-pointer rounded-md border-2 border-dashed px-4 py-6 text-center transition ${
+          className={`mt-2 flex flex-col items-center justify-center gap-1 cursor-pointer rounded-[14px] border-2 border-dashed px-4 py-6 text-center transition ${
             receiptFile
-              ? "border-green-400 bg-green-50 dark:border-green-700 dark:bg-green-950/30"
-              : "border-gray-300 dark:border-gray-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
+              ? "border-[color:var(--color-positive)] bg-sage-100"
+              : "border-line hover:border-line-strong hover:bg-bg-muted"
           }`}
         >
           <input
@@ -411,19 +422,13 @@ export function RentalForm({
           />
           {receiptFile ? (
             <>
-              <p className="text-base font-medium">
-                ✓ {receiptFile.name}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Toca para cambiar de archivo
-              </p>
+              <p className="text-base font-medium">✓ {receiptFile.name}</p>
+              <p className="text-xs text-fg2">Toca para cambiar de archivo</p>
             </>
           ) : (
             <>
-              <p className="text-base font-medium">
-                📎 Adjuntar comprobante
-              </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-base font-medium">📎 Adjuntar comprobante</p>
+              <p className="text-xs text-fg3">
                 PDF, PNG o JPG · Máximo 5 MB
               </p>
             </>
@@ -431,10 +436,7 @@ export function RentalForm({
         </label>
       </fieldset>
 
-      <button
-        type="submit"
-        className="w-full rounded-md bg-black text-white py-3 font-medium dark:bg-white dark:text-black"
-      >
+      <button type="submit" className="btn-primary w-full">
         Enviar solicitud · {formatCents(totalCents)}
       </button>
     </form>
