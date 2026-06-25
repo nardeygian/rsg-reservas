@@ -67,8 +67,13 @@ type StaffBooking = {
   payment_receipt_url: string | null;
   internal_notes: string | null;
   requirements: Record<string, unknown> | null;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
+  is_external: boolean;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  total_cents: number | null;
   spaces: { name: string } | null;
   organizations: { name: string } | null;
   creator: { full_name: string; requested_role: string | null } | null;
@@ -124,6 +129,7 @@ export default async function BookingDetailPage({
          expected_attendance, shared_occupancy_allowed, montaje_lock,
          payment_status, payment_receipt_url, internal_notes, requirements,
          created_by, created_at,
+         is_external, client_name, client_email, client_phone, total_cents,
          spaces:space_id(name),
          organizations:owner_org_id(name),
          creator:created_by(full_name, requested_role),
@@ -266,23 +272,69 @@ export default async function BookingDetailPage({
       {isStaff && detail && (
         <section className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 p-4">
           <h2 className="text-xs uppercase tracking-wide text-blue-900 dark:text-blue-200 mb-2">
-            Detalle interno (staff)
+            {detail.is_external
+              ? "Detalle del cliente externo"
+              : "Detalle interno (staff)"}
           </h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
-            <dt className="text-gray-500">Solicita</dt>
-            <dd>{detail.creator?.full_name ?? "—"}</dd>
-
-            <dt className="text-gray-500">Organización</dt>
-            <dd>{detail.organizations?.name ?? "—"}</dd>
-
-            {detail.ministry && (
+            {detail.is_external ? (
               <>
-                <dt className="text-gray-500">
-                  {detail.ministry.type === "departamento"
-                    ? "Departamento"
-                    : "Ministerio"}
-                </dt>
-                <dd>{detail.ministry.name}</dd>
+                <dt className="text-gray-500">Cliente</dt>
+                <dd className="font-medium">{detail.client_name ?? "—"}</dd>
+
+                {detail.client_email && (
+                  <>
+                    <dt className="text-gray-500">Email</dt>
+                    <dd>
+                      <a
+                        href={`mailto:${detail.client_email}`}
+                        className="underline"
+                      >
+                        {detail.client_email}
+                      </a>
+                    </dd>
+                  </>
+                )}
+
+                {detail.client_phone && (
+                  <>
+                    <dt className="text-gray-500">Teléfono</dt>
+                    <dd>
+                      <a
+                        href={`tel:${detail.client_phone}`}
+                        className="underline"
+                      >
+                        {detail.client_phone}
+                      </a>
+                    </dd>
+                  </>
+                )}
+
+                <dt className="text-gray-500">Total cobrado</dt>
+                <dd className="font-semibold">
+                  {detail.total_cents != null
+                    ? `$ ${(detail.total_cents / 100).toLocaleString("es-CO")}`
+                    : "—"}
+                </dd>
+              </>
+            ) : (
+              <>
+                <dt className="text-gray-500">Solicita</dt>
+                <dd>{detail.creator?.full_name ?? "—"}</dd>
+
+                <dt className="text-gray-500">Organización</dt>
+                <dd>{detail.organizations?.name ?? "—"}</dd>
+
+                {detail.ministry && (
+                  <>
+                    <dt className="text-gray-500">
+                      {detail.ministry.type === "departamento"
+                        ? "Departamento"
+                        : "Ministerio"}
+                    </dt>
+                    <dd>{detail.ministry.name}</dd>
+                  </>
+                )}
               </>
             )}
 

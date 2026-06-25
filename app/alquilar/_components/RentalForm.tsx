@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { submitExternalBookingAction } from "../actions";
 import { formatCents } from "@/lib/money";
+import { PAYMENT_INFO } from "@/lib/payment-info";
 
 type Space = {
   id: string;
@@ -34,6 +35,14 @@ export function RentalForm({
   const [endsAt, setEndsAt] = useState(defaultEnd);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function copy(value: string, label: string) {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(label);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
 
   const space = spaces.find((s) => s.id === spaceId);
 
@@ -177,6 +186,84 @@ export function RentalForm({
           {hours === 1 ? "" : "s"} · {formatCents(spaceCostCents)} espacio +{" "}
           {formatCents(itemsCostCents)} complementos
         </p>
+      </section>
+
+      <section className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">
+        <h2 className="text-sm font-medium">¿Cómo pagar?</h2>
+        <p className="text-xs text-gray-500">
+          Realiza la transferencia por el total exacto antes de enviar la
+          solicitud, y adjunta el comprobante más abajo.
+        </p>
+
+        <div className="rounded-md border border-gray-200 dark:border-gray-800 p-3 space-y-3">
+          {/* QR */}
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-24 h-24 rounded-md border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-xs text-gray-500 bg-gray-50 dark:bg-gray-900">
+              {PAYMENT_INFO.qrImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={PAYMENT_INFO.qrImageUrl}
+                  alt="QR para pago"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span className="text-center px-2">QR (próximamente)</span>
+              )}
+            </div>
+            <div className="flex-1 text-sm">
+              <p className="font-medium">Escanea el QR</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Abre tu app de Bancolombia y escanea para pagar.
+              </p>
+            </div>
+          </div>
+
+          {/* Llave */}
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-3">
+            <p className="text-xs text-gray-500 mb-1">Llave Bancolombia</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 font-mono text-sm bg-gray-50 dark:bg-gray-900 rounded px-2 py-1.5">
+                {PAYMENT_INFO.bancolombiaKey}
+              </code>
+              <button
+                type="button"
+                onClick={() =>
+                  copy(PAYMENT_INFO.bancolombiaKey, "llave")
+                }
+                className="text-xs rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5"
+              >
+                {copied === "llave" ? "Copiado ✓" : "Copiar"}
+              </button>
+            </div>
+          </div>
+
+          {/* Cuenta */}
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-3 space-y-1">
+            <p className="text-xs text-gray-500">Cuenta Bancolombia</p>
+            <p className="text-sm">
+              <span className="text-gray-500">Tipo:</span>{" "}
+              <strong>{PAYMENT_INFO.bancolombiaAccountType}</strong>
+            </p>
+            <p className="text-sm">
+              <span className="text-gray-500">Titular:</span>{" "}
+              {PAYMENT_INFO.bancolombiaAccountHolder}
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 font-mono text-sm bg-gray-50 dark:bg-gray-900 rounded px-2 py-1.5">
+                {PAYMENT_INFO.bancolombiaAccountNumber}
+              </code>
+              <button
+                type="button"
+                onClick={() =>
+                  copy(PAYMENT_INFO.bancolombiaAccountNumber, "cuenta")
+                }
+                className="text-xs rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1.5"
+              >
+                {copied === "cuenta" ? "Copiado ✓" : "Copiar"}
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">

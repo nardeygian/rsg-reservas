@@ -6,6 +6,7 @@ import {
   formatTime,
   toDateParam,
 } from "@/lib/datetime";
+import { formatCents } from "@/lib/money";
 import {
   approveBookingAction,
   rejectBookingAction,
@@ -38,6 +39,13 @@ type PendingBooking = {
   title: string | null;
   expected_attendance: number | null;
   created_at: string;
+  is_external: boolean;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  total_cents: number | null;
+  payment_receipt_url: string | null;
+  payment_status: string | null;
   spaces: { name: string } | null;
   creator: {
     full_name: string;
@@ -73,6 +81,8 @@ export default async function ApprovalsPage({
     .from("bookings_staff")
     .select(
       `id, starts_at, ends_at, use_type, title, expected_attendance, created_at,
+       is_external, client_name, client_email, client_phone, total_cents,
+       payment_receipt_url, payment_status,
        spaces:space_id(name),
        creator:created_by(full_name, requested_role),
        ministry:ministry_id(name)`
@@ -80,6 +90,18 @@ export default async function ApprovalsPage({
     .eq("status", "requested")
     .order("starts_at", { ascending: true })
     .returns<PendingBooking[]>();
+
+  // Genera signed URLs para los comprobantes de reservas externas con pago
+  // pendiente, para que el staff pueda revisar antes de aprobar.
+  const receiptUrls = new Map<string, string>();
+  for (const b of pending ?? []) {
+    if (b.is_external && b.payment_receipt_url) {
+      const { data: signed } = await supabase.storage
+        .from("payment-receipts")
+        .createSignedUrl(b.payment_receipt_url, 60 * 60);
+      if (signed?.signedUrl) receiptUrls.set(b.id, signed.signedUrl);
+    }
+  }
 
   return (
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
@@ -123,47 +145,95 @@ export default async function ApprovalsPage({
           {(pending ?? []).map((b) => (
             <li
               key={b.id}
-              className="rounded-md border border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20 p-4 space-y-3"
+              className={`rounded-md border p-4 space-y-3 ${
+                b.is_external
+                  ? "border-blue-200 bg-blue-50/40 dark:border-blue-900 dark:bg-blue-950/20"
+                  : "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20"
+              }`}
             >
-              <div className="space-y-1">
+              <div className="flex items-baseline justify-between gap-2">
                 <p className="font-semibold capitalize">
                   {formatDateLong(b.starts_at)}
                 </p>
-                <p className="text-sm tabular-nums">
-                  {formatTime(b.starts_at)} – {formatTime(b.ends_at)}
-                  <span className="text-gray-500"> · </span>
-                  <span className="font-medium">{b.spaces?.name ?? "—"}</span>
-                </p>
+                {b.is_external && (
+                  <span className="text-[10px] uppercase tracking-wide rounded-full bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-200 px-2 py-0.5">
+                    Alquiler externo
+                  </span>
+                )}
               </div>
 
-              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                <dt className="text-gray-500">Solicita</dt>
-                <dd>
-                  {b.creator?.full_name ?? "—"}
-                  {b.creator?.requested_role && (
-                    <span className="text-gray-500">
-                      {" "}
-                      ·{" "}
-                      {REQUESTED_ROLE_LABELS[b.creator.requested_role] ??
-                        b.creator.requested_role}
-                    </span>
-                  )}
-                </dd>
+              <p className="text-sm tabular-nums">
+                {formatTime(b.starts_at)} – {formatTime(b.ends_at)}
+                <span className="text-gray-500"> · </span>
+                <span className="font-medium">{b.spaces?.name ?? "—"}</span>
+              </p>
 
-                <dt className="text-gray-500">Tipo</dt>
-                <dd>
-                  {USE_TYPE_LABELS[b.use_type] ?? b.use_type}
-                  {b.ministry && (
-                    <span className="text-gray-500">
-                      {" "}
-                      · {b.ministry.name}
-                    </span>
-                  )}
-                </dd>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                {b.is_external ? (
+                  <>
+                    <dt className="text-gray-500">Cliente</dt>
+                    <dd>
+                      {b.client_name ?? "—"}
+                      {b.client_email && (
+                        <span className="text-gray-500"> · {b.client_email}</span>
+                      )}
+                    </dd>
+                    {b.client_phone && (
+                      <>
+                        <dt className="text-gray-500">Teléfono</dt>
+                        <dd>{b.client_phone}</dd>
+                      </>
+                    )}
+                    <dt className="text-gray-500">Total</dt>
+                    <dd className="font-semibold">
+                      {formatCents(b.total_cents ?? 0)}
+                    </dd>
+                    <dt className="text-gray-500">Pago</dt>
+                    <dd>
+                      {receiptUrls.has(b.id) ? (
+                        <a
+                          href={receiptUrls.get(b.id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          Ver comprobante
+                        </a>
+                      ) : (
+                        <span className="text-gray-500">Sin comprobante</span>
+                      )}
+                    </dd>
+                  </>
+                ) : (
+                  <>
+                    <dt className="text-gray-500">Solicita</dt>
+                    <dd>
+                      {b.creator?.full_name ?? "—"}
+                      {b.creator?.requested_role && (
+                        <span className="text-gray-500">
+                          {" "}·{" "}
+                          {REQUESTED_ROLE_LABELS[b.creator.requested_role] ??
+                            b.creator.requested_role}
+                        </span>
+                      )}
+                    </dd>
+                    <dt className="text-gray-500">Tipo</dt>
+                    <dd>
+                      {USE_TYPE_LABELS[b.use_type] ?? b.use_type}
+                      {b.ministry && (
+                        <span className="text-gray-500">
+                          {" "}· {b.ministry.name}
+                        </span>
+                      )}
+                    </dd>
+                  </>
+                )}
 
                 {b.title && (
                   <>
-                    <dt className="text-gray-500">Título</dt>
+                    <dt className="text-gray-500">
+                      {b.is_external ? "Evento" : "Título"}
+                    </dt>
                     <dd>{b.title}</dd>
                   </>
                 )}
@@ -196,12 +266,10 @@ export default async function ApprovalsPage({
                   </button>
                 </form>
                 <Link
-                  href={`/calendario?view=dia&date=${toDateParam(
-                    new Date(b.starts_at)
-                  )}`}
+                  href={`/reservas/${b.id}`}
                   className="ml-auto text-xs underline text-gray-600 dark:text-gray-400"
                 >
-                  Ver en calendario
+                  Detalle
                 </Link>
               </div>
             </li>
