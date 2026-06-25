@@ -108,12 +108,17 @@ export type Database = {
       }
       bookings: {
         Row: {
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_token: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           ends_at: string
           expected_attendance: number | null
           id: string
           internal_notes: string | null
+          is_external: boolean
           is_recurrence_template: boolean
           ministry_id: string | null
           montaje_lock: boolean
@@ -130,17 +135,23 @@ export type Database = {
           status: string
           time_range: unknown
           title: string | null
+          total_cents: number | null
           updated_at: string
           use_type: string
           visibility: string
         }
         Insert: {
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_token?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           ends_at: string
           expected_attendance?: number | null
           id?: string
           internal_notes?: string | null
+          is_external?: boolean
           is_recurrence_template?: boolean
           ministry_id?: string | null
           montaje_lock?: boolean
@@ -157,17 +168,23 @@ export type Database = {
           status?: string
           time_range?: unknown
           title?: string | null
+          total_cents?: number | null
           updated_at?: string
           use_type: string
           visibility?: string
         }
         Update: {
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_token?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           ends_at?: string
           expected_attendance?: number | null
           id?: string
           internal_notes?: string | null
+          is_external?: boolean
           is_recurrence_template?: boolean
           ministry_id?: string | null
           montaje_lock?: boolean
@@ -184,6 +201,7 @@ export type Database = {
           status?: string
           time_range?: unknown
           title?: string | null
+          total_cents?: number | null
           updated_at?: string
           use_type?: string
           visibility?: string
@@ -432,6 +450,23 @@ export type Database = {
       }
     }
     Views: {
+      busy_slots: {
+        Row: {
+          ends_at: string | null
+          id: string | null
+          space_id: string | null
+          starts_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings_calendar: {
         Row: {
           created_by: string | null
