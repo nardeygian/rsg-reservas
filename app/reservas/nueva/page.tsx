@@ -183,8 +183,8 @@ export default async function NewBookingPage({
               className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Solo aplica si marcaste "Repetir cada semana". Las semanas que
-              choquen con otra reserva se saltan automáticamente.
+              Solo aplica si marcaste &ldquo;Repetir cada semana&rdquo;. Las
+              semanas que choquen con otra reserva se saltan automáticamente.
             </p>
           </div>
         </fieldset>
