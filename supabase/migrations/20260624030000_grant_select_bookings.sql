@@ -1,0 +1,21 @@
+-- =====================================================================
+-- RSG Reservas — devolver SELECT sobre bookings a authenticated
+-- =====================================================================
+-- El diseño original (docs/03) revocaba SELECT directo sobre `bookings`
+-- para forzar el acceso vía vistas. En la práctica eso rompe UPDATE
+-- (Postgres exige SELECT sobre las columnas del WHERE, ver
+-- https://www.postgresql.org/docs/current/sql-update.html), así que el
+-- staff no podía aprobar ni rechazar reservas.
+--
+-- La protección real sigue siendo RLS:
+--   * Leaders: la policy SELECT solo deja pasar a staff, así que
+--     `select from bookings` devuelve 0 filas. No hay columnas que
+--     ocultar porque no hay filas.
+--   * Staff: ven todas las filas; en su rol corresponde ver todo.
+--   * studio_admin: solo ve filas de Estudio (policy lo restringe).
+--
+-- Las vistas siguen siendo el camino preferido para clientes (mejor
+-- enmascarado en bookings_calendar, alias semántico en bookings_staff),
+-- pero ya no son una barrera de permisos.
+
+grant select on bookings to authenticated;

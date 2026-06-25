@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Next.js
+.next/
+out/
+
+# TypeScript
+tsconfig.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
