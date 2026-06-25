@@ -6,6 +6,7 @@ import { formatCents } from "@/lib/money";
 import { PAYMENT_INFO } from "@/lib/payment-info";
 import { createClient } from "@/lib/supabase/client";
 import { parseBogotaDatetimeLocal } from "@/lib/datetime";
+import { SpaceAvailability } from "./SpaceAvailability";
 
 type Space = {
   id: string;
@@ -117,24 +118,27 @@ export function RentalForm({
       encType="multipart/form-data"
       className="space-y-4"
     >
-      <div>
-        <label htmlFor="space_id" className="block text-sm mb-1">
-          Espacio
-        </label>
-        <select
-          id="space_id"
-          name="space_id"
-          required
-          value={spaceId}
-          onChange={(e) => setSpaceId(e.target.value)}
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
-        >
-          {spaces.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name} — {formatCents(s.hourly_rate_cents)}/hora
-            </option>
-          ))}
-        </select>
+      <div className="space-y-2">
+        <div>
+          <label htmlFor="space_id" className="block text-sm mb-1">
+            Espacio
+          </label>
+          <select
+            id="space_id"
+            name="space_id"
+            required
+            value={spaceId}
+            onChange={(e) => setSpaceId(e.target.value)}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+          >
+            {spaces.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} — {formatCents(s.hourly_rate_cents)}/hora
+              </option>
+            ))}
+          </select>
+        </div>
+        {spaceId && <SpaceAvailability spaceId={spaceId} />}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

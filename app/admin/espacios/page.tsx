@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { updateSpaceRateAction } from "./actions";
+import {
+  toggleSpaceStatusAction,
+  updateSpaceRateAction,
+} from "./actions";
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
 
@@ -75,10 +78,15 @@ export default async function SpacesAdminPage({
       <ul className="space-y-3">
         {(spaces ?? []).map((s) => {
           const isExternal = s.status === "external";
+          const isDisabled = s.status === "disabled";
           return (
             <li
               key={s.id}
-              className="rounded-md border border-gray-200 dark:border-gray-800 p-3"
+              className={`rounded-md border p-3 ${
+                isDisabled
+                  ? "border-gray-200 dark:border-gray-800 opacity-60"
+                  : "border-gray-200 dark:border-gray-800"
+              }`}
             >
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-medium">{s.name}</p>
@@ -93,39 +101,60 @@ export default async function SpacesAdminPage({
                   plataforma.
                 </p>
               ) : (
-                <form
-                  action={updateSpaceRateAction}
-                  className="mt-2 flex items-end gap-2"
-                >
-                  <input type="hidden" name="id" value={s.id} />
-                  <div className="flex-1">
-                    <label
-                      htmlFor={`rate-${s.id}`}
-                      className="block text-xs text-gray-500 mb-1"
-                    >
-                      Tarifa por hora (COP)
-                    </label>
-                    <input
-                      id={`rate-${s.id}`}
-                      name="hourly_rate"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Vacío = no rentable"
-                      defaultValue={
-                        s.hourly_rate_cents != null
-                          ? String(s.hourly_rate_cents / 100)
-                          : ""
-                      }
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="rounded-md bg-black text-white px-3 py-2 text-sm dark:bg-white dark:text-black"
+                <>
+                  <form
+                    action={updateSpaceRateAction}
+                    className="mt-2 flex items-end gap-2"
                   >
-                    Guardar
-                  </button>
-                </form>
+                    <input type="hidden" name="id" value={s.id} />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={`rate-${s.id}`}
+                        className="block text-xs text-gray-500 mb-1"
+                      >
+                        Tarifa por hora (COP)
+                      </label>
+                      <input
+                        id={`rate-${s.id}`}
+                        name="hourly_rate"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Vacío = no rentable"
+                        defaultValue={
+                          s.hourly_rate_cents != null
+                            ? String(s.hourly_rate_cents / 100)
+                            : ""
+                        }
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="rounded-md bg-black text-white px-3 py-2 text-sm dark:bg-white dark:text-black"
+                    >
+                      Guardar
+                    </button>
+                  </form>
+                  <form
+                    action={toggleSpaceStatusAction}
+                    className="mt-2 inline-block"
+                  >
+                    <input type="hidden" name="id" value={s.id} />
+                    <input
+                      type="hidden"
+                      name="next_status"
+                      value={isDisabled ? "active" : "disabled"}
+                    />
+                    <button
+                      type="submit"
+                      className="text-xs underline text-gray-600 dark:text-gray-400"
+                    >
+                      {isDisabled
+                        ? "Reactivar espacio"
+                        : "Pausar espacio (no aparecerá en reservas)"}
+                    </button>
+                  </form>
+                </>
               )}
             </li>
           );
