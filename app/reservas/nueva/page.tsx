@@ -42,6 +42,14 @@ export default async function NewBookingPage({
 
   const startDefault = nextHourBogota();
   const endDefault = new Date(startDefault.getTime() + 60 * 60 * 1000);
+
+  // Disponibilidad de items para la franja default. Si el usuario cambia la
+  // hora y sometea, la action vuelve a validar contra la nueva franja —
+  // este número es solo una orientación visual al cargar el form.
+  const { data: itemsAvail } = await supabase.rpc("items_available", {
+    _starts: startDefault.toISOString(),
+    _ends: endDefault.toISOString(),
+  });
   // Default "hasta" tres meses después del inicio, suficiente para cubrir un
   // semestre ministerial sin abrumar la cantidad de instancias.
   const recurrenceUntilDefault = toDateParam(addMonths(startDefault, 3));
@@ -159,6 +167,46 @@ export default async function NewBookingPage({
             className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
           />
         </div>
+
+        {(itemsAvail ?? []).length > 0 && (
+          <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
+            <legend className="text-sm font-medium">
+              ¿Necesitas algo más?
+            </legend>
+            <p className="text-xs text-gray-500">
+              Para reservas internas no hay costo. Solo es para que el equipo
+              sepa qué montar. El número entre paréntesis es la disponibilidad
+              para la franja default; si cambias hora, se revalida al guardar.
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              Las series recurrentes ignoran items en esta versión.
+            </p>
+            <ul className="space-y-2">
+              {(itemsAvail ?? []).map((it) => (
+                <li
+                  key={it.item_id}
+                  className="flex items-center gap-3 rounded-md border border-gray-200 dark:border-gray-800 px-3 py-2"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{it.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {it.available} disponibles
+                    </p>
+                  </div>
+                  <input
+                    type="number"
+                    name={`item_qty_${it.item_id}`}
+                    min={0}
+                    max={it.available}
+                    defaultValue={0}
+                    className="w-20 rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-2 py-1 text-sm text-right tabular-nums"
+                    aria-label={`Cantidad de ${it.name}`}
+                  />
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+        )}
 
         <RecurrenceFields
           defaultUntil={recurrenceUntilDefault}

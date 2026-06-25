@@ -70,6 +70,42 @@ export type Database = {
           },
         ]
       }
+      booking_items: {
+        Row: {
+          booking_id: string
+          item_id: string
+          quantity: number
+          unit_price_cents_snapshot: number
+        }
+        Insert: {
+          booking_id: string
+          item_id: string
+          quantity: number
+          unit_price_cents_snapshot: number
+        }
+        Update: {
+          booking_id?: string
+          item_id?: string
+          quantity?: number
+          unit_price_cents_snapshot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rentable_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           created_at: string
@@ -572,6 +608,14 @@ export type Database = {
     }
     Functions: {
       current_role_is: { Args: { roles: string[] }; Returns: boolean }
+      items_available: {
+        Args: { _ends: string; _exclude_booking?: string; _starts: string }
+        Returns: {
+          available: number
+          item_id: string
+          name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

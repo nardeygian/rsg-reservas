@@ -152,6 +152,13 @@ export default async function BookingDetailPage({
   const isPartOfSeries = !!base.parent_booking_id;
   const canCancelSeries = isPartOfSeries && (isStaff || isCreator);
 
+  // Items pedidos. RLS deja leer a staff o al creador.
+  const { data: bookedItems } = await supabase
+    .from("booking_items")
+    .select("quantity, item:rentable_items(name)")
+    .eq("booking_id", id)
+    .returns<{ quantity: number; item: { name: string } | null }[]>();
+
   const requirementsList =
     detail?.requirements && typeof detail.requirements === "object"
       ? Object.entries(detail.requirements).filter(([, v]) => v != null && v !== "")
@@ -236,6 +243,21 @@ export default async function BookingDetailPage({
             <>
               <dt className="text-gray-500">Montaje</dt>
               <dd>🔒 Bloqueado</dd>
+            </>
+          )}
+
+          {(bookedItems ?? []).length > 0 && (
+            <>
+              <dt className="text-gray-500">Items</dt>
+              <dd>
+                <ul className="list-disc pl-4">
+                  {(bookedItems ?? []).map((bi, idx) => (
+                    <li key={idx}>
+                      {bi.quantity} × {bi.item?.name ?? "—"}
+                    </li>
+                  ))}
+                </ul>
+              </dd>
             </>
           )}
         </dl>

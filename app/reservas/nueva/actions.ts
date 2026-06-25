@@ -150,8 +150,47 @@ export async function createBookingAction(formData: FormData) {
   const status =
     space.booking_policy === "self_serve" ? "approved" : "requested";
 
+  // ─── Items pedidos (solo aplican a reservas únicas internas) ─────────
+  // Las series recurrentes ignoran items en esta versión. El form lo dice.
+  type RequestedItem = { itemId: string; quantity: number };
+  const requestedItems: RequestedItem[] = [];
+  for (const [key, value] of formData.entries()) {
+    const match = /^item_qty_([0-9a-f-]{36})$/i.exec(key);
+    if (!match) continue;
+    const qty = Number(String(value));
+    if (!Number.isInteger(qty) || qty <= 0) continue;
+    requestedItems.push({ itemId: match[1], quantity: qty });
+  }
+
   // ─── Caso 1: reserva única ────────────────────────────────────────────
   if (!isRecurring) {
+    // Validar disponibilidad ANTES de insertar la reserva. Race condition
+    // posible pero aceptable en bajo tráfico (futuro: trigger SQL).
+    if (requestedItems.length > 0) {
+      const { data: avail, error: availErr } = await supabase.rpc(
+        "items_available",
+        {
+          _starts: startsAt.toISOString(),
+          _ends: endsAt.toISOString(),
+        }
+      );
+      if (availErr) {
+        backWithError(`No se pudo verificar inventario: ${availErr.message}`);
+      }
+      const byItem = new Map((avail ?? []).map((a) => [a.item_id, a]));
+      for (const req of requestedItems) {
+        const a = byItem.get(req.itemId);
+        if (!a) {
+          backWithError("Algún item ya no existe; recarga la página.");
+        }
+        if (req.quantity > a.available) {
+          backWithError(
+            `No alcanzan los ${a.name}: pediste ${req.quantity}, hay ${a.available} disponibles en esa franja.`
+          );
+        }
+      }
+    }
+
     const newId = randomUUID();
     const { error: insertError } = await supabase.from("bookings").insert({
       id: newId,
@@ -173,6 +212,38 @@ export async function createBookingAction(formData: FormData) {
         );
       }
       backWithError(`No se pudo crear la reserva: ${insertError.message}`);
+    }
+
+    // Insertar booking_items con snapshot del precio actual (no se cobra a
+    // líderes; el snapshot sirve para reportes futuros).
+    if (requestedItems.length > 0) {
+      const { data: catalog, error: catErr } = await supabase
+        .from("rentable_items")
+        .select("id, unit_price_cents")
+        .in(
+          "id",
+          requestedItems.map((r) => r.itemId)
+        );
+      if (catErr) {
+        backWithError(`No se pudo leer catálogo: ${catErr.message}`);
+      }
+      const priceById = new Map(
+        (catalog ?? []).map((c) => [c.id, c.unit_price_cents])
+      );
+      const rows = requestedItems.map((r) => ({
+        booking_id: newId,
+        item_id: r.itemId,
+        quantity: r.quantity,
+        unit_price_cents_snapshot: priceById.get(r.itemId) ?? 0,
+      }));
+      const { error: bItemsErr } = await supabase
+        .from("booking_items")
+        .insert(rows);
+      if (bItemsErr) {
+        // Rollback: borrar la reserva para no quedar inconsistentes.
+        await supabase.from("bookings").delete().eq("id", newId);
+        backWithError(`No se pudo registrar items: ${bItemsErr.message}`);
+      }
     }
 
     await notifyBookingEvent(newId, "created", user.id);
