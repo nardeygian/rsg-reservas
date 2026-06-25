@@ -85,15 +85,23 @@ export default async function HomePage() {
       </a>
 
       {isStaff && (
-        <a
-          href="/aprobaciones"
-          className="mt-3 flex items-center justify-between w-full rounded-md border border-amber-300 dark:border-amber-800 px-4 py-3 text-amber-900 dark:text-amber-200"
-        >
-          <span className="font-medium">Aprobaciones pendientes</span>
-          <span className="rounded-full bg-amber-200 dark:bg-amber-900 text-xs font-semibold px-2 py-0.5">
-            {pendingCount ?? 0}
-          </span>
-        </a>
+        <>
+          <a
+            href="/aprobaciones"
+            className="mt-3 flex items-center justify-between w-full rounded-md border border-amber-300 dark:border-amber-800 px-4 py-3 text-amber-900 dark:text-amber-200"
+          >
+            <span className="font-medium">Aprobaciones pendientes</span>
+            <span className="rounded-full bg-amber-200 dark:bg-amber-900 text-xs font-semibold px-2 py-0.5">
+              {pendingCount ?? 0}
+            </span>
+          </a>
+          <a
+            href="/admin"
+            className="mt-3 block w-full rounded-md border border-gray-300 dark:border-gray-700 px-4 py-3 text-sm text-center"
+          >
+            Administración (catálogo y tarifas)
+          </a>
+        </>
       )}
 
       <a

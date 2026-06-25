@@ -305,12 +305,46 @@ export type Database = {
           },
         ]
       }
+      rentable_items: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          total_quantity: number
+          unit_price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          total_quantity: number
+          unit_price_cents: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          total_quantity?: number
+          unit_price_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       spaces: {
         Row: {
           allows_shared_occupancy: boolean
           booking_policy: string
           capacity: number | null
           created_at: string
+          hourly_rate_cents: number | null
           id: string
           managed_by_org_id: string | null
           name: string
@@ -325,6 +359,7 @@ export type Database = {
           booking_policy?: string
           capacity?: number | null
           created_at?: string
+          hourly_rate_cents?: number | null
           id?: string
           managed_by_org_id?: string | null
           name: string
@@ -339,6 +374,7 @@ export type Database = {
           booking_policy?: string
           capacity?: number | null
           created_at?: string
+          hourly_rate_cents?: number | null
           id?: string
           managed_by_org_id?: string | null
           name?: string
