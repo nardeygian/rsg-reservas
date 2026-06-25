@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { submitExternalBookingAction } from "../actions";
 import { formatCents } from "@/lib/money";
 import { PAYMENT_INFO } from "@/lib/payment-info";
+import { createClient } from "@/lib/supabase/client";
+import { parseBogotaDatetimeLocal } from "@/lib/datetime";
 
 type Space = {
   id: string;
@@ -22,11 +24,13 @@ type Item = {
 export function RentalForm({
   spaces,
   items,
+  initialAvailability,
   defaultStart,
   defaultEnd,
 }: {
   spaces: Space[];
   items: Item[];
+  initialAvailability: Record<string, number>;
   defaultStart: string;
   defaultEnd: string;
 }) {
@@ -36,6 +40,10 @@ export function RentalForm({
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<Record<string, number>>(
+    initialAvailability
+  );
+  const [availLoading, setAvailLoading] = useState(false);
 
   function copy(value: string, label: string) {
     navigator.clipboard.writeText(value).then(() => {
@@ -43,6 +51,43 @@ export function RentalForm({
       setTimeout(() => setCopied(null), 1500);
     });
   }
+
+  // Refetch de disponibilidad cuando cambia la franja. Debounce 300ms para no
+  // disparar RPCs en cada keystroke del datetime-local.
+  useEffect(() => {
+    const startUtc = parseBogotaDatetimeLocal(startsAt);
+    const endUtc = parseBogotaDatetimeLocal(endsAt);
+    if (!startUtc || !endUtc || endUtc <= startUtc) return;
+
+    setAvailLoading(true);
+    const handle = setTimeout(async () => {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("items_available", {
+        _starts: startUtc.toISOString(),
+        _ends: endUtc.toISOString(),
+      });
+      if (data) {
+        const next: Record<string, number> = {};
+        for (const a of data) next[a.item_id] = a.available;
+        setAvailability(next);
+        // Si alguna cantidad pedida supera el nuevo máximo, la recortamos.
+        setQuantities((q) => {
+          const adj: Record<string, number> = { ...q };
+          for (const [itemId, qty] of Object.entries(q)) {
+            const maxAvail = next[itemId] ?? 0;
+            if (qty > maxAvail) adj[itemId] = maxAvail;
+          }
+          return adj;
+        });
+      }
+      setAvailLoading(false);
+    }, 300);
+
+    return () => {
+      clearTimeout(handle);
+      setAvailLoading(false);
+    };
+  }, [startsAt, endsAt]);
 
   const space = spaces.find((s) => s.id === spaceId);
 
@@ -140,38 +185,61 @@ export function RentalForm({
       {items.length > 0 && (
         <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
           <legend className="text-sm font-medium">
-            Complementos disponibles
+            Complementos disponibles{" "}
+            {availLoading && (
+              <span className="text-xs text-gray-500 font-normal">
+                · calculando…
+              </span>
+            )}
           </legend>
           <ul className="space-y-2">
-            {items.map((it) => (
-              <li
-                key={it.id}
-                className="flex items-center gap-3 rounded-md border border-gray-200 dark:border-gray-800 px-3 py-2"
-              >
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{it.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {formatCents(it.unit_price_cents)} c/u · {it.total_quantity}{" "}
-                    disponibles
-                  </p>
-                </div>
-                <input
-                  type="number"
-                  name={`item_qty_${it.id}`}
-                  min={0}
-                  max={it.total_quantity}
-                  value={quantities[it.id] ?? 0}
-                  onChange={(e) =>
-                    setQuantities((q) => ({
-                      ...q,
-                      [it.id]: Math.max(0, Number(e.target.value) || 0),
-                    }))
-                  }
-                  className="w-20 rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-2 py-1 text-sm text-right tabular-nums"
-                  aria-label={`Cantidad de ${it.name}`}
-                />
-              </li>
-            ))}
+            {items.map((it) => {
+              const avail = availability[it.id] ?? it.total_quantity;
+              const sold = avail === 0;
+              return (
+                <li
+                  key={it.id}
+                  className={`flex items-center gap-3 rounded-md border px-3 py-2 ${
+                    sold
+                      ? "border-gray-200 dark:border-gray-800 opacity-60"
+                      : "border-gray-200 dark:border-gray-800"
+                  }`}
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{it.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {formatCents(it.unit_price_cents)} c/u ·{" "}
+                      {sold ? (
+                        <span className="text-red-600 dark:text-red-400">
+                          Sin disponibilidad en esa franja
+                        </span>
+                      ) : (
+                        <>{avail} disponibles</>
+                      )}
+                    </p>
+                  </div>
+                  <input
+                    type="number"
+                    name={`item_qty_${it.id}`}
+                    min={0}
+                    max={avail}
+                    value={quantities[it.id] ?? 0}
+                    onChange={(e) =>
+                      setQuantities((q) => ({
+                        ...q,
+                        [it.id]: Math.min(
+                          avail,
+                          Math.max(0, Number(e.target.value) || 0)
+                        ),
+                      }))
+                    }
+                    disabled={sold}
+                    className="w-20 rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-2 py-1 text-sm text-right tabular-nums disabled:opacity-50"
+                    aria-label={`Cantidad de ${it.name}`}
+                  />
+                </li>
+              );
+            })}
           </ul>
         </fieldset>
       )}

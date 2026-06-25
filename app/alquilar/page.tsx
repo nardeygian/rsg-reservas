@@ -5,6 +5,8 @@ import {
 } from "@/lib/datetime";
 import { RentalForm } from "./_components/RentalForm";
 
+type AvailRow = { item_id: string; name: string; available: number };
+
 export const dynamic = "force-dynamic";
 
 export default async function AlquilarPage({
@@ -42,6 +44,16 @@ export default async function AlquilarPage({
   const startDefault = nextHourBogota();
   const endDefault = new Date(startDefault.getTime() + 2 * 60 * 60 * 1000);
 
+  // Disponibilidad inicial para la franja default. El form la refresca en
+  // cliente al cambiar el horario.
+  const { data: initialAvail } = await admin.rpc("items_available", {
+    _starts: startDefault.toISOString(),
+    _ends: endDefault.toISOString(),
+  });
+  const initialAvailability: Record<string, number> = Object.fromEntries(
+    ((initialAvail ?? []) as AvailRow[]).map((a) => [a.item_id, a.available])
+  );
+
   return (
     <main className="min-h-dvh px-4 py-6 max-w-md mx-auto space-y-6">
       <header>
@@ -69,6 +81,7 @@ export default async function AlquilarPage({
         <RentalForm
           spaces={spaces}
           items={items ?? []}
+          initialAvailability={initialAvailability}
           defaultStart={toDatetimeLocalBogota(startDefault)}
           defaultEnd={toDatetimeLocalBogota(endDefault)}
         />
