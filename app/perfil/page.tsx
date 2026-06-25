@@ -49,26 +49,28 @@ export default async function ProfilePage({
   return (
     <main className="min-h-dvh px-4 py-4 max-w-md mx-auto space-y-6">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold">Mi perfil</h1>
-        <Link
-          href="/"
-          className="text-sm underline text-gray-600 dark:text-gray-400"
-        >
+        <div>
+          <p className="eyebrow">Cuenta</p>
+          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+            Mi perfil
+          </h1>
+        </div>
+        <Link href="/" className="text-sm underline text-fg2">
           Inicio
         </Link>
       </header>
 
-      <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-1">
-        <p className="text-sm text-gray-500">Sesión</p>
-        <p className="font-medium">{profile.full_name}</p>
-        <p className="text-sm">
-          Rol: <strong>{ROLE_LABELS[profile.role] ?? profile.role}</strong>
+      <section className="card space-y-1">
+        <p className="eyebrow">Sesión</p>
+        <p className="font-serif text-2xl mt-1">{profile.full_name}</p>
+        <p className="text-sm text-fg2">
+          {ROLE_LABELS[profile.role] ?? profile.role}
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-base font-semibold">Suscripción al calendario</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <h2 className="eyebrow">Suscripción al calendario</h2>
+        <p className="text-sm text-fg2">
           Suscribe tu calendario (Apple, Google, Outlook) con el enlace de
           abajo. Las reservas se mantienen al día solas.
         </p>
@@ -76,7 +78,7 @@ export default async function ProfilePage({
         {ok && (
           <p
             role="status"
-            className="text-sm rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-3 py-2"
+            className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
           >
             {ok}
           </p>
@@ -84,7 +86,8 @@ export default async function ProfilePage({
         {error && (
           <p
             role="alert"
-            className="text-sm rounded-md border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2"
+            className="text-sm rounded-[14px] px-4 py-3"
+            style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
           >
             {error}
           </p>
@@ -93,7 +96,7 @@ export default async function ProfilePage({
         <div>
           <label
             htmlFor="feed-url"
-            className="block text-xs text-gray-500 mb-1"
+            className="block text-xs text-fg2 mb-1"
           >
             Enlace (webcal://)
           </label>
@@ -101,19 +104,22 @@ export default async function ProfilePage({
             id="feed-url"
             readOnly
             value={feedWebcalUrl}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-xs font-mono"
+            className="input !text-xs font-mono"
           />
         </div>
 
         <a
           href={feedWebcalUrl}
-          className="inline-block rounded-md bg-black text-white px-4 py-2 text-sm dark:bg-white dark:text-black"
+          className="btn-primary"
         >
           Suscribirme
         </a>
 
         {isLocalhost && (
-          <p className="text-xs rounded-md border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 px-3 py-2 text-amber-900 dark:text-amber-200">
+          <p
+            className="text-xs rounded-[14px] px-4 py-3"
+            style={{ background: "#f3ecdc", color: "var(--color-notice)" }}
+          >
             En desarrollo (localhost), Apple/Google Calendar bloquean
             suscripciones por seguridad. Prueba con un túnel
             (<code className="font-mono">cloudflared tunnel --url http://localhost:3010</code>)
@@ -121,7 +127,7 @@ export default async function ProfilePage({
           </p>
         )}
 
-        <details className="text-xs text-gray-600 dark:text-gray-400">
+        <details className="text-xs text-fg2">
           <summary className="cursor-pointer">
             Si tu calendario no acepta webcal, usa el enlace https
           </summary>
@@ -131,7 +137,8 @@ export default async function ProfilePage({
         <form action={regenerateFeedTokenAction} className="pt-2">
           <button
             type="submit"
-            className="text-sm underline text-red-700 dark:text-red-300"
+            className="text-sm underline"
+            style={{ color: "var(--color-critical)" }}
           >
             Regenerar enlace (revoca el anterior)
           </button>
@@ -139,19 +146,19 @@ export default async function ProfilePage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-base font-semibold">Notificaciones por Slack</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <h2 className="eyebrow">Notificaciones por Slack</h2>
+        <p className="text-sm text-fg2">
           Vincula tu Slack para recibir un DM cuando aprueben o rechacen tus
           reservas. Sin esto, los mensajes solo van al canal del staff.
         </p>
 
         {profile.slack_user_id ? (
-          <p className="text-sm rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30 px-3 py-2">
+          <p className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100">
             Vinculado a{" "}
             <span className="font-mono">{profile.slack_user_id}</span>.
           </p>
         ) : (
-          <p className="text-sm rounded-md border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/40 px-3 py-2">
+          <p className="text-sm rounded-[14px] px-4 py-3 border border-line bg-bg-muted">
             Sin vincular.
           </p>
         )}
@@ -159,14 +166,14 @@ export default async function ProfilePage({
         <form action={autoLinkSlackByEmailAction}>
           <button
             type="submit"
-            className="rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm"
+            className="btn-secondary !h-11"
           >
             Vincular automáticamente (por mi email)
           </button>
         </form>
 
         <form action={updateSlackUserIdAction} className="space-y-2">
-          <label htmlFor="slack_user_id" className="block text-xs text-gray-500">
+          <label htmlFor="slack_user_id" className="block text-xs text-fg2">
             O pega tu Slack ID manual
           </label>
           <input
@@ -176,22 +183,22 @@ export default async function ProfilePage({
             defaultValue={profile.slack_user_id ?? ""}
             placeholder="U0123ABC..."
             pattern="[UWuw][A-Za-z0-9]{6,20}"
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm font-mono"
+            className="input !h-11 font-mono text-sm"
           />
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-md bg-black text-white px-3 py-2 text-sm dark:bg-white dark:text-black"
+              className="btn-primary !h-11 !px-5 !text-sm"
             >
               Guardar
             </button>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-fg3">
               Dejarlo vacío y guardar desvincula.
             </span>
           </div>
         </form>
 
-        <details className="text-xs text-gray-600 dark:text-gray-400">
+        <details className="text-xs text-fg2">
           <summary className="cursor-pointer">
             ¿Cómo encuentro mi Slack ID?
           </summary>

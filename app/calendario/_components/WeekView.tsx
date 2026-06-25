@@ -25,19 +25,26 @@ export function WeekView({
         return (
           <li key={key}>
             <h2
-              className={`text-sm font-semibold mb-2 capitalize ${
-                today ? "text-blue-700 dark:text-blue-300" : ""
+              className={`eyebrow mb-2 ${
+                today ? "" : ""
               }`}
+              style={today ? { color: "var(--color-forest-500)" } : undefined}
             >
               {formatDateShort(day)}
               {today && (
-                <span className="ml-2 text-[10px] uppercase tracking-wide bg-blue-600 text-white rounded px-1 py-0.5">
+                <span
+                  className="ml-2 rounded-full px-2 py-0.5 text-[10px]"
+                  style={{
+                    background: "var(--color-forest)",
+                    color: "var(--color-sand-100)",
+                  }}
+                >
                   hoy
                 </span>
               )}
             </h2>
             {items.length === 0 ? (
-              <p className="text-xs text-gray-500 pl-1">Sin reservas.</p>
+              <p className="text-xs text-fg3 pl-1">Sin reservas.</p>
             ) : (
               <ul className="space-y-2">
                 {items.map((b) => (

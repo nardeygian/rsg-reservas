@@ -32,12 +32,15 @@ export function MonthView({
 
   return (
     <div>
-      <div className="grid grid-cols-7 text-center text-[10px] uppercase tracking-wide text-gray-500 mb-1">
+      <div className="grid grid-cols-7 text-center text-fg2 mb-1">
+        {/* eyebrow inline para weekdays */}
         {WEEKDAY_LABELS.map((w) => (
-          <div key={w}>{w}</div>
+          <div key={w} className="eyebrow">
+            {w}
+          </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-md overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-line border border-line rounded-[14px] overflow-hidden">
         {days.map((day) => {
           const key = dayKey(day);
           const count = byDay.get(key) ?? 0;
@@ -53,21 +56,27 @@ export function MonthView({
             <Link
               key={key}
               href={`/calendario?${sp.toString()}`}
-              className={`min-h-14 p-1 flex flex-col items-start gap-1 bg-white dark:bg-gray-950 ${
-                inMonth ? "" : "text-gray-400 dark:text-gray-600"
+              className={`min-h-14 p-1 flex flex-col items-start gap-1 bg-bg-elev ${
+                inMonth ? "" : "text-fg3 opacity-60"
               }`}
             >
               <span
                 className={`text-xs tabular-nums ${
-                  today
-                    ? "bg-blue-600 text-white rounded-full px-1.5"
-                    : "font-medium"
+                  today ? "rounded-full px-1.5" : "font-medium"
                 }`}
+                style={
+                  today
+                    ? {
+                        background: "var(--color-forest)",
+                        color: "var(--color-sand-100)",
+                      }
+                    : undefined
+                }
               >
                 {formatDayNumber(day)}
               </span>
               {count > 0 && (
-                <span className="text-[10px] text-gray-600 dark:text-gray-400">
+                <span className="text-[10px] text-fg2">
                   {count} {count === 1 ? "reserva" : "reservas"}
                 </span>
               )}

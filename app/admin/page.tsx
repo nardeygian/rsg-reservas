@@ -24,36 +24,32 @@ export default async function AdminLandingPage() {
   return (
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold">Administración</h1>
-        <Link
-          href="/"
-          className="text-sm underline text-gray-600 dark:text-gray-400"
-        >
+        <div>
+          <p className="eyebrow">Staff</p>
+          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+            Administración
+          </h1>
+        </div>
+        <Link href="/" className="text-sm underline text-fg2">
           Inicio
         </Link>
       </header>
 
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        Gestión del catálogo de alquiler. Lo que configures acá se usará en las
-        reservas externas (próxima fase).
+      <p className="text-sm text-fg2">
+        Gestión del catálogo de alquiler. Lo que configures acá se usa en las
+        reservas externas.
       </p>
 
       <nav className="grid grid-cols-1 gap-3">
-        <Link
-          href="/admin/items"
-          className="block rounded-md border border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-900"
-        >
-          <p className="font-medium">Items del catálogo</p>
-          <p className="text-sm text-gray-500">
+        <Link href="/admin/items" className="card card-hover block">
+          <p className="font-serif text-xl">Items del catálogo</p>
+          <p className="text-sm text-fg2 mt-1">
             Sillas, sonido, mesas, micrófonos. Cantidad disponible y precio.
           </p>
         </Link>
-        <Link
-          href="/admin/espacios"
-          className="block rounded-md border border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-900"
-        >
-          <p className="font-medium">Espacios y tarifas</p>
-          <p className="text-sm text-gray-500">
+        <Link href="/admin/espacios" className="card card-hover block">
+          <p className="font-serif text-xl">Espacios y tarifas</p>
+          <p className="text-sm text-fg2 mt-1">
             Define la tarifa por hora de cada espacio. Sin tarifa = no se
             alquila por la plataforma.
           </p>

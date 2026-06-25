@@ -9,15 +9,19 @@ export default async function ExitoPage({
 
   return (
     <main className="min-h-dvh px-4 py-8 max-w-md mx-auto space-y-4 text-center">
-      <h1 className="text-2xl font-semibold">¡Solicitud enviada!</h1>
-      <p className="text-sm text-gray-600 dark:text-gray-400">
+      <p className="eyebrow">Listo</p>
+      <h1 className="font-serif text-3xl mt-1 tracking-[-0.02em]">
+        Solicitud enviada
+      </h1>
+      <p className="text-sm text-fg2">
         Tu reserva quedó en revisión. Quedará aprobada una vez confirmemos tu
         pago y te avisaremos por email.
       </p>
       {token && (
-        <div className="space-y-2 rounded-md border border-gray-200 dark:border-gray-800 p-4">
-          <p className="text-xs text-gray-500">
-            Guarda este enlace para consultar el estado de tu reserva:
+        <div className="card space-y-2 text-left">
+          <p className="eyebrow">Tu enlace</p>
+          <p className="text-xs text-fg3">
+            Guárdalo para consultar el estado de tu reserva.
           </p>
           <Link
             href={`/alquilar/${token}`}
@@ -27,10 +31,7 @@ export default async function ExitoPage({
           </Link>
         </div>
       )}
-      <Link
-        href="/alquilar"
-        className="inline-block text-sm underline text-gray-600 dark:text-gray-400"
-      >
+      <Link href="/alquilar" className="btn-secondary inline-flex">
         Hacer otra reserva
       </Link>
     </main>

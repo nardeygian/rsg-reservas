@@ -57,11 +57,13 @@ export default async function NewBookingPage({
   return (
     <main className="min-h-dvh px-4 py-4 max-w-md mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold">Crear reserva</h1>
-        <Link
-          href="/calendario"
-          className="text-sm underline text-gray-600 dark:text-gray-400"
-        >
+        <div>
+          <p className="eyebrow">Nueva</p>
+          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+            Crear reserva
+          </h1>
+        </div>
+        <Link href="/calendario" className="text-sm underline text-fg2">
           Cancelar
         </Link>
       </header>
@@ -76,7 +78,7 @@ export default async function NewBookingPage({
             name="space_id"
             required
             defaultValue={prefilledSpace ?? ""}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           >
             <option value="" disabled>
               Elige un espacio
@@ -100,7 +102,7 @@ export default async function NewBookingPage({
               type="datetime-local"
               required
               defaultValue={toDatetimeLocalBogota(startDefault)}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             />
           </div>
           <div>
@@ -113,7 +115,7 @@ export default async function NewBookingPage({
               type="datetime-local"
               required
               defaultValue={toDatetimeLocalBogota(endDefault)}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             />
           </div>
         </div>
@@ -127,7 +129,7 @@ export default async function NewBookingPage({
             name="use_type"
             required
             defaultValue=""
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           >
             <option value="" disabled>
               Elige el tipo
@@ -150,7 +152,7 @@ export default async function NewBookingPage({
             type="text"
             maxLength={120}
             placeholder="Ej. Reunión de líderes"
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           />
         </div>
 
@@ -164,32 +166,33 @@ export default async function NewBookingPage({
             type="number"
             min={1}
             max={5000}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            className="input"
           />
         </div>
 
         {(itemsAvail ?? []).length > 0 && (
-          <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
-            <legend className="text-sm font-medium">
-              ¿Necesitas algo más?
-            </legend>
-            <p className="text-xs text-gray-500">
+          <fieldset className="border-t border-line pt-4 space-y-2">
+            <legend className="eyebrow">¿Necesitas algo más?</legend>
+            <p className="text-xs text-fg2">
               Para reservas internas no hay costo. Solo es para que el equipo
-              sepa qué montar. El número entre paréntesis es la disponibilidad
-              para la franja default; si cambias hora, se revalida al guardar.
+              sepa qué montar. El número es la disponibilidad para la franja
+              default; si cambias hora, se revalida al guardar.
             </p>
-            <p className="text-xs text-amber-700 dark:text-amber-300">
+            <p
+              className="text-xs"
+              style={{ color: "var(--color-notice)" }}
+            >
               Las series recurrentes ignoran items en esta versión.
             </p>
             <ul className="space-y-2">
               {(itemsAvail ?? []).map((it) => (
                 <li
                   key={it.item_id}
-                  className="flex items-center gap-3 rounded-md border border-gray-200 dark:border-gray-800 px-3 py-2"
+                  className="flex items-center gap-3 rounded-[14px] border border-line bg-bg-elev px-3 py-2"
                 >
                   <div className="flex-1">
                     <p className="text-sm font-medium">{it.name}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-fg2">
                       {it.available} disponibles
                     </p>
                   </div>
@@ -199,7 +202,7 @@ export default async function NewBookingPage({
                     min={0}
                     max={it.available}
                     defaultValue={0}
-                    className="w-20 rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-2 py-1 text-sm text-right tabular-nums"
+                    className="w-20 rounded-[10px] border border-line bg-bg-elev px-2 py-1 text-sm text-right tabular-nums"
                     aria-label={`Cantidad de ${it.name}`}
                   />
                 </li>
@@ -214,18 +217,22 @@ export default async function NewBookingPage({
         />
 
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <p
+            role="alert"
+            className="text-sm rounded-[14px] px-4 py-3"
+            style={{
+              background: "#f2e3dd",
+              color: "var(--color-critical)",
+            }}
+          >
             {error}
           </p>
         )}
 
-        <button
-          type="submit"
-          className="w-full rounded-md bg-black text-white py-2 font-medium dark:bg-white dark:text-black"
-        >
+        <button type="submit" className="btn-primary w-full">
           Crear
         </button>
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-fg3 text-center">
           Si el espacio requiere aprobación, queda como pendiente hasta que un
           pastor o admin la apruebe.
         </p>

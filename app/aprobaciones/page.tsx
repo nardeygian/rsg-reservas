@@ -106,11 +106,13 @@ export default async function ApprovalsPage({
   return (
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold">Aprobaciones pendientes</h1>
-        <Link
-          href="/"
-          className="text-sm underline text-gray-600 dark:text-gray-400"
-        >
+        <div>
+          <p className="eyebrow">Por revisar</p>
+          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+            Aprobaciones
+          </h1>
+        </div>
+        <Link href="/" className="text-sm underline text-fg2">
           Inicio
         </Link>
       </header>
@@ -118,7 +120,7 @@ export default async function ApprovalsPage({
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
         >
           {ok}
         </p>
@@ -126,18 +128,19 @@ export default async function ApprovalsPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-md border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3"
+          style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
         >
           {error}
         </p>
       )}
 
       {queryError ? (
-        <p className="text-sm text-red-600">
+        <p className="text-sm" style={{ color: "var(--color-critical)" }}>
           No se pudo cargar la lista: {queryError.message}
         </p>
       ) : (pending ?? []).length === 0 ? (
-        <p className="text-sm text-gray-500 py-8 text-center">
+        <p className="text-sm text-fg3 py-8 text-center">
           No hay reservas pendientes.
         </p>
       ) : (
@@ -145,10 +148,10 @@ export default async function ApprovalsPage({
           {(pending ?? []).map((b) => (
             <li
               key={b.id}
-              className={`rounded-md border p-4 space-y-3 ${
+              className={`rounded-[22px] border p-5 space-y-3 ${
                 b.is_external
-                  ? "border-blue-200 bg-blue-50/40 dark:border-blue-900 dark:bg-blue-950/20"
-                  : "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20"
+                  ? "border-[color:var(--color-blue-400)] bg-blue-200/30"
+                  : "border-[color:#f3ecdc] bg-[#f3ecdc]/30"
               }`}
             >
               <div className="flex items-baseline justify-between gap-2">
@@ -156,9 +159,7 @@ export default async function ApprovalsPage({
                   {formatDateLong(b.starts_at)}
                 </p>
                 {b.is_external && (
-                  <span className="text-[10px] uppercase tracking-wide rounded-full bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-200 px-2 py-0.5">
-                    Alquiler externo
-                  </span>
+                  <span className="badge badge-external">Alquiler externo</span>
                 )}
               </div>
 

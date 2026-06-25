@@ -12,14 +12,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  requested:
-    "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200",
-  approved:
-    "border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950/30 dark:text-green-200",
-  rejected:
-    "border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200",
-  cancelled:
-    "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  requested: "border-[color:#f3ecdc] bg-[#f3ecdc]/60",
+  approved: "border-[color:var(--color-sage-200)] bg-sage-100",
+  rejected: "border-[color:#f2e3dd] bg-[#f2e3dd]/60",
+  cancelled: "border-line bg-bg-muted",
 };
 
 export const dynamic = "force-dynamic";
@@ -48,17 +44,22 @@ export default async function ExternalStatusPage({
 
   return (
     <main className="min-h-dvh px-4 py-6 max-w-md mx-auto space-y-4">
-      <h1 className="text-2xl font-semibold">Tu reserva</h1>
+      <div>
+        <p className="eyebrow">Mi reserva</p>
+        <h1 className="font-serif text-3xl mt-1 tracking-[-0.02em]">
+          Estado
+        </h1>
+      </div>
 
       <section
-        className={`rounded-md border px-4 py-3 space-y-1 ${
+        className={`rounded-[22px] border px-5 py-4 space-y-1 ${
           STATUS_STYLES[data.status] ?? STATUS_STYLES.cancelled
         }`}
       >
-        <p className="text-xs uppercase tracking-wide">
+        <p className="eyebrow">
           {STATUS_LABELS[data.status] ?? data.status}
         </p>
-        <p className="font-semibold capitalize">
+        <p className="font-serif text-xl capitalize">
           {formatDateLong(data.starts_at)}
         </p>
         <p className="text-sm tabular-nums">
@@ -68,35 +69,35 @@ export default async function ExternalStatusPage({
         </p>
       </section>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm rounded-md border border-gray-200 dark:border-gray-800 px-4 py-3">
-        <dt className="text-gray-500">A nombre de</dt>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm card">
+        <dt className="text-fg2">A nombre de</dt>
         <dd>{data.client_name}</dd>
-        <dt className="text-gray-500">Email</dt>
+        <dt className="text-fg2">Email</dt>
         <dd>{data.client_email}</dd>
-        <dt className="text-gray-500">Total</dt>
+        <dt className="text-fg2">Total</dt>
         <dd className="font-medium">{formatCents(data.total_cents ?? 0)}</dd>
       </dl>
 
       {data.status === "requested" && (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Estamos verificando tu pago. Te avisamos por email apenas un pastor
-          confirme la aprobación.
+        <p className="text-sm text-fg2">
+          Estamos verificando tu pago. Te avisamos por email apenas confirmemos
+          la aprobación.
         </p>
       )}
       {data.status === "approved" && (
-        <p className="text-sm text-green-700 dark:text-green-300">
+        <p className="text-sm" style={{ color: "var(--color-positive)" }}>
           ¡Listo! Tu reserva está confirmada. Te esperamos.
         </p>
       )}
       {data.status === "rejected" && (
-        <p className="text-sm text-red-700 dark:text-red-300">
+        <p className="text-sm" style={{ color: "var(--color-critical)" }}>
           Tu reserva fue rechazada. Si crees que es un error, contáctanos.
         </p>
       )}
 
       <Link
         href="/alquilar"
-        className="inline-block text-sm underline text-gray-600 dark:text-gray-400"
+        className="inline-block text-sm underline text-fg2"
       >
         Hacer otra reserva
       </Link>

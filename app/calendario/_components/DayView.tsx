@@ -3,7 +3,7 @@ import { BookingCard, type CalendarBooking } from "./BookingCard";
 export function DayView({ bookings }: { bookings: CalendarBooking[] }) {
   if (bookings.length === 0) {
     return (
-      <p className="text-sm text-gray-500 py-8 text-center">
+      <p className="text-sm text-fg3 py-8 text-center">
         No hay reservas este día.
       </p>
     );

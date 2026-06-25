@@ -36,11 +36,13 @@ export default async function ItemsPage({
   return (
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold">Items del catálogo</h1>
-        <Link
-          href="/admin"
-          className="text-sm underline text-gray-600 dark:text-gray-400"
-        >
+        <div>
+          <p className="eyebrow">Catálogo</p>
+          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+            Items
+          </h1>
+        </div>
+        <Link href="/admin" className="text-sm underline text-fg2">
           ← Admin
         </Link>
       </header>
@@ -48,7 +50,7 @@ export default async function ItemsPage({
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
         >
           {ok}
         </p>
@@ -56,17 +58,18 @@ export default async function ItemsPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-md border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3"
+          style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
         >
           {error}
         </p>
       )}
 
-      <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4 space-y-3">
-        <h2 className="font-medium">Agregar item</h2>
+      <section className="card space-y-3">
+        <h2 className="eyebrow">Agregar item</h2>
         <form action={createItemAction} className="space-y-3">
           <div>
-            <label htmlFor="name" className="block text-xs text-gray-500 mb-1">
+            <label htmlFor="name" className="block text-xs text-fg2 mb-1">
               Nombre
             </label>
             <input
@@ -75,13 +78,13 @@ export default async function ItemsPage({
               type="text"
               required
               placeholder="Sillas plegables"
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             />
           </div>
           <div>
             <label
               htmlFor="description"
-              className="block text-xs text-gray-500 mb-1"
+              className="block text-xs text-fg2 mb-1"
             >
               Descripción <span className="opacity-60">(opcional)</span>
             </label>
@@ -90,14 +93,14 @@ export default async function ItemsPage({
               name="description"
               type="text"
               placeholder="Sillas para hasta 80 personas"
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label
                 htmlFor="unit_price"
-                className="block text-xs text-gray-500 mb-1"
+                className="block text-xs text-fg2 mb-1"
               >
                 Precio (COP por reserva)
               </label>
@@ -108,13 +111,13 @@ export default async function ItemsPage({
                 inputMode="numeric"
                 required
                 placeholder="50000"
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+                className="input"
               />
             </div>
             <div>
               <label
                 htmlFor="total_quantity"
-                className="block text-xs text-gray-500 mb-1"
+                className="block text-xs text-fg2 mb-1"
               >
                 Cantidad disponible
               </label>
@@ -125,13 +128,13 @@ export default async function ItemsPage({
                 min={0}
                 required
                 placeholder="100"
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+                className="input"
               />
             </div>
           </div>
           <button
             type="submit"
-            className="rounded-md bg-black text-white px-4 py-2 text-sm font-medium dark:bg-white dark:text-black"
+            className="btn-primary"
           >
             Crear
           </button>
@@ -139,18 +142,16 @@ export default async function ItemsPage({
       </section>
 
       <section className="space-y-2">
-        <h2 className="font-medium">Items existentes</h2>
+        <h2 className="eyebrow">Items existentes</h2>
         {(items ?? []).length === 0 ? (
-          <p className="text-sm text-gray-500">Aún no hay items.</p>
+          <p className="text-sm text-fg3">Aún no hay items.</p>
         ) : (
           <ul className="space-y-2">
             {(items ?? []).map((item) => (
               <li
                 key={item.id}
-                className={`rounded-md border p-3 ${
-                  item.active
-                    ? "border-gray-200 dark:border-gray-800"
-                    : "border-gray-200 dark:border-gray-800 opacity-60"
+                className={`rounded-[14px] border bg-bg-elev p-3 ${
+                  item.active ? "border-line" : "border-line opacity-60"
                 }`}
               >
                 <div className="flex items-baseline justify-between gap-2">
@@ -161,17 +162,13 @@ export default async function ItemsPage({
                     {item.name}
                   </Link>
                   {!item.active && (
-                    <span className="text-[10px] uppercase tracking-wide text-gray-500">
-                      Inactivo
-                    </span>
+                    <span className="eyebrow">Inactivo</span>
                   )}
                 </div>
                 {item.description && (
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {item.description}
-                  </p>
+                  <p className="text-xs text-fg2">{item.description}</p>
                 )}
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-xs text-fg2 mt-1">
                   {formatCents(item.unit_price_cents)} · {item.total_quantity}{" "}
                   unidades
                 </p>
@@ -187,7 +184,7 @@ export default async function ItemsPage({
                   />
                   <button
                     type="submit"
-                    className="text-xs underline text-gray-600 dark:text-gray-400"
+                    className="text-xs underline text-fg2"
                   >
                     {item.active ? "Desactivar" : "Activar"}
                   </button>

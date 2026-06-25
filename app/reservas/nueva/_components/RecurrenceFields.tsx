@@ -27,7 +27,7 @@ export function RecurrenceFields({
   const [freq, setFreq] = useState<Freq>("weekly");
 
   return (
-    <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">
+    <fieldset className="border-t border-line pt-4 space-y-3">
       <label className="flex items-center gap-2 text-sm cursor-pointer">
         <input
           type="checkbox"
@@ -45,7 +45,7 @@ export function RecurrenceFields({
           <div>
             <label
               htmlFor="recurrence_freq"
-              className="block text-xs text-gray-500 mb-1"
+              className="block text-xs text-fg2 mb-1"
             >
               Frecuencia
             </label>
@@ -54,7 +54,7 @@ export function RecurrenceFields({
               name="recurrence_freq"
               value={freq}
               onChange={(e) => setFreq(e.target.value as Freq)}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             >
               <option value="daily">Diariamente</option>
               <option value="weekly">Semanalmente</option>
@@ -65,7 +65,7 @@ export function RecurrenceFields({
 
           {freq === "custom" && (
             <div className="space-y-2">
-              <p className="text-xs text-gray-500">Días de la semana</p>
+              <p className="text-xs text-fg2">Días de la semana</p>
               <div className="grid grid-cols-7 gap-1">
                 {WEEKDAYS.map((d) => (
                   <label
@@ -87,7 +87,7 @@ export function RecurrenceFields({
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-fg2">
                 El día de inicio debe estar entre los marcados.
               </p>
             </div>
@@ -96,7 +96,7 @@ export function RecurrenceFields({
           <div>
             <label
               htmlFor="recurrence_until"
-              className="block text-xs text-gray-500 mb-1"
+              className="block text-xs text-fg2 mb-1"
             >
               Hasta
             </label>
@@ -105,11 +105,11 @@ export function RecurrenceFields({
               name="recurrence_until"
               type="date"
               defaultValue={defaultUntil}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+              className="input"
             />
           </div>
 
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-fg2">
             Las ocurrencias que choquen con otra reserva se saltan
             automáticamente. Máximo 365 ocurrencias.
           </p>

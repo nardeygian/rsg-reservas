@@ -43,25 +43,27 @@ export default async function SpacesAdminPage({
   return (
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold">Espacios y tarifas</h1>
-        <Link
-          href="/admin"
-          className="text-sm underline text-gray-600 dark:text-gray-400"
-        >
+        <div>
+          <p className="eyebrow">Catálogo</p>
+          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+            Espacios y tarifas
+          </h1>
+        </div>
+        <Link href="/admin" className="text-sm underline text-fg2">
           ← Admin
         </Link>
       </header>
 
-      <p className="text-sm text-gray-600 dark:text-gray-400">
+      <p className="text-sm text-fg2">
         Define la tarifa por hora de cada espacio. Si dejas el campo vacío y
-        guardas, el espacio queda como{" "}
-        <strong>no rentable</strong> por la plataforma.
+        guardas, el espacio queda como <strong>no rentable</strong> por la
+        plataforma.
       </p>
 
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
         >
           {ok}
         </p>
@@ -69,7 +71,8 @@ export default async function SpacesAdminPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-md border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3"
+          style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
         >
           {error}
         </p>
@@ -82,21 +85,19 @@ export default async function SpacesAdminPage({
           return (
             <li
               key={s.id}
-              className={`rounded-md border p-3 ${
-                isDisabled
-                  ? "border-gray-200 dark:border-gray-800 opacity-60"
-                  : "border-gray-200 dark:border-gray-800"
+              className={`rounded-[14px] border bg-bg-elev p-3 ${
+                isDisabled ? "border-line opacity-60" : "border-line"
               }`}
             >
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-medium">{s.name}</p>
-                <span className="text-[10px] uppercase tracking-wide text-gray-500">
+                <span className="eyebrow">
                   {STATUS_LABELS[s.status] ?? s.status}
                 </span>
               </div>
 
               {isExternal ? (
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-fg3 mt-2">
                   Este espacio lo administra un tercero. No se renta por la
                   plataforma.
                 </p>
@@ -110,7 +111,7 @@ export default async function SpacesAdminPage({
                     <div className="flex-1">
                       <label
                         htmlFor={`rate-${s.id}`}
-                        className="block text-xs text-gray-500 mb-1"
+                        className="block text-xs text-fg2 mb-1"
                       >
                         Tarifa por hora (COP)
                       </label>
@@ -125,12 +126,12 @@ export default async function SpacesAdminPage({
                             ? String(s.hourly_rate_cents / 100)
                             : ""
                         }
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                        className="input !h-11 text-sm"
                       />
                     </div>
                     <button
                       type="submit"
-                      className="rounded-md bg-black text-white px-3 py-2 text-sm dark:bg-white dark:text-black"
+                      className="btn-primary !h-11 !px-5 !text-sm"
                     >
                       Guardar
                     </button>
@@ -147,7 +148,7 @@ export default async function SpacesAdminPage({
                     />
                     <button
                       type="submit"
-                      className="text-xs underline text-gray-600 dark:text-gray-400"
+                      className="text-xs underline text-fg2"
                     >
                       {isDisabled
                         ? "Reactivar espacio"

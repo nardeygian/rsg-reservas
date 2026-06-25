@@ -36,14 +36,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  approved:
-    "border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950/40 dark:text-green-200",
-  requested:
-    "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
-  rejected:
-    "border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200",
-  cancelled:
-    "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  approved: "border-[color:var(--color-sage-200)] bg-sage-100/50",
+  requested: "border-[color:#f3ecdc] bg-[#f3ecdc]/40",
+  rejected: "border-[color:#f2e3dd] bg-[#f2e3dd]/40",
+  cancelled: "border-line bg-bg-muted",
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -173,14 +169,19 @@ export default async function BookingDetailPage({
   return (
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold">Detalle de reserva</h1>
+        <div>
+          <p className="eyebrow">Detalle</p>
+          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+            Reserva
+          </h1>
+        </div>
         <Link
           href={
             base.starts_at
               ? `/calendario?view=dia&date=${toDateParam(new Date(base.starts_at))}`
               : "/calendario"
           }
-          className="text-sm underline text-gray-600 dark:text-gray-400"
+          className="text-sm underline text-fg2"
         >
           ← Calendario
         </Link>
@@ -189,7 +190,7 @@ export default async function BookingDetailPage({
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
         >
           {ok}
         </p>
@@ -197,7 +198,8 @@ export default async function BookingDetailPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-md border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2"
+          className="text-sm rounded-[14px] px-4 py-3"
+          style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
         >
           {error}
         </p>
@@ -226,35 +228,35 @@ export default async function BookingDetailPage({
         </p>
       </section>
 
-      <section className="rounded-md border border-gray-200 dark:border-gray-800 p-4">
+      <section className="card">
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
-          <dt className="text-gray-500">Reserva</dt>
+          <dt className="text-fg2">Reserva</dt>
           <dd className="font-medium">{base.display_owner ?? "—"}</dd>
 
           {base.use_type && (
             <>
-              <dt className="text-gray-500">Tipo</dt>
+              <dt className="text-fg2">Tipo</dt>
               <dd>{USE_TYPE_LABELS[base.use_type] ?? base.use_type}</dd>
             </>
           )}
 
           {base.title && (
             <>
-              <dt className="text-gray-500">Título</dt>
+              <dt className="text-fg2">Título</dt>
               <dd>{base.title}</dd>
             </>
           )}
 
           {base.has_montaje_lock && (
             <>
-              <dt className="text-gray-500">Montaje</dt>
+              <dt className="text-fg2">Montaje</dt>
               <dd>🔒 Bloqueado</dd>
             </>
           )}
 
           {(bookedItems ?? []).length > 0 && (
             <>
-              <dt className="text-gray-500">Items</dt>
+              <dt className="text-fg2">Items</dt>
               <dd>
                 <ul className="list-disc pl-4">
                   {(bookedItems ?? []).map((bi, idx) => (
@@ -270,8 +272,17 @@ export default async function BookingDetailPage({
       </section>
 
       {isStaff && detail && (
-        <section className="rounded-md border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20 p-4">
-          <h2 className="text-xs uppercase tracking-wide text-blue-900 dark:text-blue-200 mb-2">
+        <section
+          className="rounded-[22px] p-6 border"
+          style={{
+            background: "var(--color-blue-200)",
+            borderColor: "var(--color-blue-400)",
+            color: "var(--color-forest-500)",
+          }}
+        >
+          <h2 className="eyebrow mb-2"
+            style={{ color: "var(--color-forest-500)" }}
+          >
             {detail.is_external
               ? "Detalle del cliente externo"
               : "Detalle interno (staff)"}
@@ -279,12 +290,12 @@ export default async function BookingDetailPage({
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
             {detail.is_external ? (
               <>
-                <dt className="text-gray-500">Cliente</dt>
+                <dt className="text-fg2">Cliente</dt>
                 <dd className="font-medium">{detail.client_name ?? "—"}</dd>
 
                 {detail.client_email && (
                   <>
-                    <dt className="text-gray-500">Email</dt>
+                    <dt className="text-fg2">Email</dt>
                     <dd>
                       <a
                         href={`mailto:${detail.client_email}`}
@@ -298,7 +309,7 @@ export default async function BookingDetailPage({
 
                 {detail.client_phone && (
                   <>
-                    <dt className="text-gray-500">Teléfono</dt>
+                    <dt className="text-fg2">Teléfono</dt>
                     <dd>
                       <a
                         href={`tel:${detail.client_phone}`}
@@ -310,7 +321,7 @@ export default async function BookingDetailPage({
                   </>
                 )}
 
-                <dt className="text-gray-500">Total cobrado</dt>
+                <dt className="text-fg2">Total cobrado</dt>
                 <dd className="font-semibold">
                   {detail.total_cents != null
                     ? `$ ${(detail.total_cents / 100).toLocaleString("es-CO")}`
@@ -319,15 +330,15 @@ export default async function BookingDetailPage({
               </>
             ) : (
               <>
-                <dt className="text-gray-500">Solicita</dt>
+                <dt className="text-fg2">Solicita</dt>
                 <dd>{detail.creator?.full_name ?? "—"}</dd>
 
-                <dt className="text-gray-500">Organización</dt>
+                <dt className="text-fg2">Organización</dt>
                 <dd>{detail.organizations?.name ?? "—"}</dd>
 
                 {detail.ministry && (
                   <>
-                    <dt className="text-gray-500">
+                    <dt className="text-fg2">
                       {detail.ministry.type === "departamento"
                         ? "Departamento"
                         : "Ministerio"}
@@ -340,12 +351,12 @@ export default async function BookingDetailPage({
 
             {detail.expected_attendance != null && (
               <>
-                <dt className="text-gray-500">Asistencia esperada</dt>
+                <dt className="text-fg2">Asistencia esperada</dt>
                 <dd>{detail.expected_attendance}</dd>
               </>
             )}
 
-            <dt className="text-gray-500">Pago</dt>
+            <dt className="text-fg2">Pago</dt>
             <dd>
               {PAYMENT_LABELS[detail.payment_status] ?? detail.payment_status}
               {detail.payment_actor && (
@@ -369,14 +380,14 @@ export default async function BookingDetailPage({
               )}
             </dd>
 
-            <dt className="text-gray-500">Compartido</dt>
+            <dt className="text-fg2">Compartido</dt>
             <dd>
               {detail.shared_occupancy_allowed
                 ? "Permite ocupación compartida"
                 : "Exclusivo"}
             </dd>
 
-            <dt className="text-gray-500">Visibilidad</dt>
+            <dt className="text-fg2">Visibilidad</dt>
             <dd>
               {detail.visibility === "private_label"
                 ? "Privada (Estudio business)"
@@ -387,7 +398,7 @@ export default async function BookingDetailPage({
 
             {requirementsList.length > 0 && (
               <>
-                <dt className="text-gray-500">Requerimientos</dt>
+                <dt className="text-fg2">Requerimientos</dt>
                 <dd>
                   <ul className="list-disc pl-4">
                     {requirementsList.map(([k, v]) => (
@@ -403,7 +414,7 @@ export default async function BookingDetailPage({
 
             {detail.internal_notes && (
               <>
-                <dt className="text-gray-500">Notas internas</dt>
+                <dt className="text-fg2">Notas internas</dt>
                 <dd className="whitespace-pre-wrap">{detail.internal_notes}</dd>
               </>
             )}
@@ -419,7 +430,11 @@ export default async function BookingDetailPage({
                 <input type="hidden" name="id" value={base.id ?? ""} />
                 <button
                   type="submit"
-                  className="rounded-md bg-green-600 text-white px-4 py-2 text-sm font-medium"
+                  className="rounded-full px-5 h-11 text-sm font-semibold inline-flex items-center gap-2 active:scale-[0.97] transition"
+                  style={{
+                    background: "var(--color-positive)",
+                    color: "var(--color-sand-100)",
+                  }}
                 >
                   ✓ Aprobar
                 </button>
@@ -428,7 +443,11 @@ export default async function BookingDetailPage({
                 <input type="hidden" name="id" value={base.id ?? ""} />
                 <button
                   type="submit"
-                  className="rounded-md border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-2 text-sm font-medium"
+                  className="rounded-full px-5 h-11 text-sm font-semibold inline-flex items-center gap-2 border active:scale-[0.97] transition"
+                  style={{
+                    borderColor: "var(--color-critical)",
+                    color: "var(--color-critical)",
+                  }}
                 >
                   ✗ Rechazar
                 </button>
@@ -440,7 +459,7 @@ export default async function BookingDetailPage({
               <input type="hidden" name="id" value={base.id ?? ""} />
               <button
                 type="submit"
-                className="rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm"
+                className="btn-secondary !h-11"
               >
                 Cancelar solo esta
               </button>
@@ -451,7 +470,11 @@ export default async function BookingDetailPage({
               <input type="hidden" name="id" value={base.id ?? ""} />
               <button
                 type="submit"
-                className="rounded-md border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-2 text-sm"
+                className="rounded-full px-5 h-11 text-sm font-semibold inline-flex items-center gap-2 border active:scale-[0.97] transition"
+              style={{
+                borderColor: "var(--color-critical)",
+                color: "var(--color-critical)",
+              }}
               >
                 Cancelar toda la serie
               </button>
@@ -461,8 +484,8 @@ export default async function BookingDetailPage({
       )}
 
       {isStaff && detail && base.id && (
-        <section className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">
-          <h2 className="text-base font-semibold">Comprobante de pago</h2>
+        <section className="border-t border-line pt-4 space-y-3">
+          <h2 className="eyebrow">Comprobante de pago</h2>
           {detail.payment_receipt_url ? (
             <div className="space-y-2">
               <p className="text-sm">
@@ -485,7 +508,8 @@ export default async function BookingDetailPage({
                 <input type="hidden" name="id" value={base.id} />
                 <button
                   type="submit"
-                  className="text-sm underline text-red-700 dark:text-red-300"
+                  className="text-sm underline"
+                  style={{ color: "var(--color-critical)" }}
                 >
                   Eliminar comprobante
                 </button>
@@ -505,13 +529,13 @@ export default async function BookingDetailPage({
                 required
                 className="block w-full text-sm"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-fg3">
                 PDF, PNG o JPG. Máximo 5 MB. Al subirlo la reserva queda
                 marcada como pagada.
               </p>
               <button
                 type="submit"
-                className="rounded-md bg-black text-white px-4 py-2 text-sm font-medium dark:bg-white dark:text-black"
+                className="btn-primary"
               >
                 Subir comprobante
               </button>
@@ -521,15 +545,15 @@ export default async function BookingDetailPage({
       )}
 
       {(isStaff || isCreator) && base.id && (
-        <section className="border-t border-gray-200 dark:border-gray-800 pt-4">
+        <section className="border-t border-line pt-4">
           <a
             href={`/api/bookings/${base.id}/ics`}
             download
-            className="inline-flex items-center gap-2 text-sm underline text-gray-700 dark:text-gray-300"
+            className="inline-flex items-center gap-2 text-sm underline text-fg2"
           >
             📅 Agregar a mi calendario (.ics)
           </a>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-fg3 mt-1">
             Importa este evento como una foto puntual. Si la reserva cambia
             después, tu calendario no se actualiza solo.
           </p>
