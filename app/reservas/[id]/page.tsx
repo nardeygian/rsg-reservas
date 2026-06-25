@@ -11,6 +11,8 @@ import {
   cancelBookingAction,
   cancelSeriesAction,
   rejectBookingAction,
+  removePaymentReceiptAction,
+  uploadPaymentReceiptAction,
 } from "./actions";
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
@@ -113,6 +115,7 @@ export default async function BookingDetailPage({
 
   // Staff: completa con detalle interno desde bookings_staff (incluye joins).
   let detail: StaffBooking | null = null;
+  let receiptSignedUrl: string | null = null;
   if (isStaff) {
     const { data } = await supabase
       .from("bookings_staff")
@@ -131,6 +134,13 @@ export default async function BookingDetailPage({
       .maybeSingle()
       .returns<StaffBooking>();
     detail = data;
+
+    if (detail?.payment_receipt_url) {
+      const { data: signed } = await supabase.storage
+        .from("payment-receipts")
+        .createSignedUrl(detail.payment_receipt_url, 60 * 60);
+      receiptSignedUrl = signed?.signedUrl ?? null;
+    }
   }
 
   const isCreator = base.created_by === user.id;
@@ -270,16 +280,16 @@ export default async function BookingDetailPage({
                   · {detail.payment_actor.full_name}
                 </span>
               )}
-              {detail.payment_receipt_url && (
+              {receiptSignedUrl && (
                 <>
                   {" · "}
                   <a
-                    href={detail.payment_receipt_url}
+                    href={receiptSignedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
                   >
-                    Comprobante
+                    Ver comprobante
                   </a>
                 </>
               )}
@@ -370,6 +380,66 @@ export default async function BookingDetailPage({
                 className="rounded-md border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-2 text-sm"
               >
                 Cancelar toda la serie
+              </button>
+            </form>
+          )}
+        </section>
+      )}
+
+      {isStaff && detail && base.id && (
+        <section className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">
+          <h2 className="text-base font-semibold">Comprobante de pago</h2>
+          {detail.payment_receipt_url ? (
+            <div className="space-y-2">
+              <p className="text-sm">
+                Archivo cargado.
+                {receiptSignedUrl && (
+                  <>
+                    {" "}
+                    <a
+                      href={receiptSignedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Abrir
+                    </a>
+                  </>
+                )}
+              </p>
+              <form action={removePaymentReceiptAction}>
+                <input type="hidden" name="id" value={base.id} />
+                <button
+                  type="submit"
+                  className="text-sm underline text-red-700 dark:text-red-300"
+                >
+                  Eliminar comprobante
+                </button>
+              </form>
+            </div>
+          ) : (
+            <form
+              action={uploadPaymentReceiptAction}
+              encType="multipart/form-data"
+              className="space-y-2"
+            >
+              <input type="hidden" name="id" value={base.id} />
+              <input
+                type="file"
+                name="receipt"
+                accept="image/png,image/jpeg,application/pdf"
+                required
+                className="block w-full text-sm"
+              />
+              <p className="text-xs text-gray-500">
+                PDF, PNG o JPG. Máximo 5 MB. Al subirlo la reserva queda
+                marcada como pagada.
+              </p>
+              <button
+                type="submit"
+                className="rounded-md bg-black text-white px-4 py-2 text-sm font-medium dark:bg-white dark:text-black"
+              >
+                Subir comprobante
               </button>
             </form>
           )}

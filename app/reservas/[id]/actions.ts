@@ -6,6 +6,16 @@ import { createClient } from "@/lib/supabase/server";
 import { notifyBookingEvent } from "@/lib/notifications";
 import { sendChannelMessage } from "@/lib/slack";
 
+const PAYMENT_BUCKET = "payment-receipts";
+const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "application/pdf"]);
+const MAX_RECEIPT_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const MIME_EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "application/pdf": "pdf",
+};
+
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
 
 async function getUserRole() {
@@ -122,6 +132,102 @@ export async function cancelSeriesAction(formData: FormData) {
   redirect(
     detailPath(id, { ok: `Serie cancelada (${count} reservas).` })
   );
+}
+
+export async function uploadPaymentReceiptAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) redirect("/calendario");
+
+  const file = formData.get("receipt");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(detailPath(id, { error: "Adjunta un archivo." }));
+  }
+  if (file.size > MAX_RECEIPT_BYTES) {
+    redirect(
+      detailPath(id, { error: "El archivo supera 5 MB." })
+    );
+  }
+  if (!ALLOWED_MIME.has(file.type)) {
+    redirect(
+      detailPath(id, { error: "Tipo de archivo no permitido (usa PDF, PNG o JPG)." })
+    );
+  }
+
+  const { supabase, user, role } = await getUserRole();
+  if (!STAFF_ROLES.includes(role)) {
+    redirect(detailPath(id, { error: "Sin permiso" }));
+  }
+
+  const ext = MIME_EXT[file.type] ?? "bin";
+  const path = `${id}/receipt.${ext}`;
+
+  // upsert=true para que un re-upload sobrescriba el comprobante anterior.
+  const { error: uploadError } = await supabase.storage
+    .from(PAYMENT_BUCKET)
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (uploadError) {
+    redirect(
+      detailPath(id, { error: `No se pudo subir: ${uploadError.message}` })
+    );
+  }
+
+  const { error: updateError } = await supabase
+    .from("bookings")
+    .update({
+      payment_receipt_url: path,
+      payment_status: "paid",
+      payment_marked_by: user.id,
+    })
+    .eq("id", id);
+  if (updateError) {
+    redirect(
+      detailPath(id, {
+        error: `Comprobante subido pero no se pudo marcar como pagado: ${updateError.message}`,
+      })
+    );
+  }
+
+  revalidatePath(`/reservas/${id}`);
+  redirect(detailPath(id, { ok: "Comprobante subido. Reserva marcada como pagada." }));
+}
+
+export async function removePaymentReceiptAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) redirect("/calendario");
+
+  const { supabase, role } = await getUserRole();
+  if (!STAFF_ROLES.includes(role)) {
+    redirect(detailPath(id, { error: "Sin permiso" }));
+  }
+
+  // Borrar todos los archivos del folder de esta reserva.
+  const { data: list } = await supabase.storage
+    .from(PAYMENT_BUCKET)
+    .list(id);
+  if (list && list.length > 0) {
+    const paths = list.map((f) => `${id}/${f.name}`);
+    await supabase.storage.from(PAYMENT_BUCKET).remove(paths);
+  }
+
+  const { error: updateError } = await supabase
+    .from("bookings")
+    .update({
+      payment_receipt_url: null,
+      payment_status: "pending",
+      payment_marked_by: null,
+    })
+    .eq("id", id);
+  if (updateError) {
+    redirect(
+      detailPath(id, { error: `No se pudo limpiar: ${updateError.message}` })
+    );
+  }
+
+  revalidatePath(`/reservas/${id}`);
+  redirect(detailPath(id, { ok: "Comprobante eliminado." }));
 }
 
 export async function cancelBookingAction(formData: FormData) {
