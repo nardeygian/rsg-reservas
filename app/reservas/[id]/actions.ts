@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyBookingEvent } from "@/lib/notifications";
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
 
@@ -35,7 +36,7 @@ async function staffTransition(
   const id = String(formData.get("id") ?? "").trim();
   if (!id) redirect("/calendario");
 
-  const { supabase, role } = await getUserRole();
+  const { supabase, user, role } = await getUserRole();
   if (!STAFF_ROLES.includes(role)) {
     redirect(detailPath(id, { error: "Sin permiso" }));
   }
@@ -52,6 +53,8 @@ async function staffTransition(
   if (!count) {
     redirect(detailPath(id, { error: "La reserva ya no está pendiente" }));
   }
+
+  await notifyBookingEvent(id, next, user.id);
 
   revalidatePath(`/reservas/${id}`);
   revalidatePath("/calendario");
@@ -73,7 +76,7 @@ export async function cancelBookingAction(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) redirect("/calendario");
 
-  const { supabase } = await getUserRole();
+  const { supabase, user } = await getUserRole();
 
   // RLS hace el gating: creator con status in (requested, approved) o staff.
   const { error, count } = await supabase
@@ -92,6 +95,8 @@ export async function cancelBookingAction(formData: FormData) {
       })
     );
   }
+
+  await notifyBookingEvent(id, "cancelled", user.id);
 
   revalidatePath(`/reservas/${id}`);
   revalidatePath("/calendario");

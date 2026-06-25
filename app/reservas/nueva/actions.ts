@@ -1,8 +1,10 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { parseBogotaDatetimeLocal, toDateParam } from "@/lib/datetime";
+import { notifyBookingEvent } from "@/lib/notifications";
 
 const VALID_USE_TYPES = [
   "reunion_departamento",
@@ -86,7 +88,12 @@ export async function createBookingAction(formData: FormData) {
   const status =
     space.booking_policy === "self_serve" ? "approved" : "requested";
 
+  // Generamos el id en cliente para poder notificar sin necesidad de SELECT
+  // sobre bookings (los leaders no tienen esa policy y RETURNING fallaría).
+  const newId = randomUUID();
+
   const { error: insertError } = await supabase.from("bookings").insert({
+    id: newId,
     space_id: space.id,
     owner_org_id: rsg.id,
     created_by: user.id,
@@ -107,6 +114,8 @@ export async function createBookingAction(formData: FormData) {
     }
     backWithError(`No se pudo crear la reserva: ${insertError.message}`);
   }
+
+  await notifyBookingEvent(newId, "created", user.id);
 
   redirect(`/calendario?view=dia&date=${toDateParam(startsAt)}`);
 }

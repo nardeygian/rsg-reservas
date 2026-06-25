@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyBookingEvent } from "@/lib/notifications";
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
 
@@ -35,6 +36,9 @@ async function transition(
   }
 
   const supabase = await requireStaff();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Solo transicionar si sigue 'requested' — evita pisar decisiones de otros.
   // No usamos .select() porque el cliente no tiene SELECT directo sobre
@@ -59,8 +63,11 @@ async function transition(
     );
   }
 
+  await notifyBookingEvent(id, next, user?.id);
+
   revalidatePath("/aprobaciones");
   revalidatePath("/calendario");
+  revalidatePath(`/reservas/${id}`);
   redirect(
     `/aprobaciones?ok=${next === "approved" ? "Aprobada" : "Rechazada"}`
   );
