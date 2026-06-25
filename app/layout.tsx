@@ -1,9 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ServiceWorkerRegister } from "./_components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: "RSG Reservas",
   description: "Plataforma de reservas de espacios de la iglesia RSG.",
+  appleWebApp: {
+    capable: true,
+    title: "RSG",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
@@ -11,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#ffffff",
+  themeColor: "#003b2d",
 };
 
 export default function RootLayout({
@@ -21,7 +27,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        {children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }
