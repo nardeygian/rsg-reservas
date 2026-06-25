@@ -196,12 +196,22 @@ export async function submitExternalBookingAction(formData: FormData) {
   const siteUrl =
     process.env.SITE_URL ?? "https://rsg-reservas.vercel.app";
   const detailLink = `${siteUrl}/reservas/${bookingId}`;
+
+  // Signed URL del comprobante directamente en el mensaje. Válido 7 días
+  // para que el staff pueda abrirlo desde Slack sin pasar primero por la
+  // plataforma.
+  const { data: signed } = await admin.storage
+    .from(PAYMENT_BUCKET)
+    .createSignedUrl(receiptPath, 60 * 60 * 24 * 7);
+  const receiptLink = signed?.signedUrl ?? null;
+
   await sendChannelMessage(
     `💰 *Reserva externa por aprobar*\n` +
       `${clientName} (${clientEmail}) — *${space.name}*\n` +
       `${startsRaw.replace("T", " ")} → ${endsRaw.replace("T", " ")}\n` +
       `Total: *${formatCents(totalCents)}*\n` +
-      `<${detailLink}|Verificar pago y aprobar>`
+      `<${detailLink}|Verificar pago y aprobar>` +
+      (receiptLink ? ` · <${receiptLink}|Ver comprobante>` : "")
   );
 
   revalidatePath("/calendario");
