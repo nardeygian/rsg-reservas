@@ -33,6 +33,7 @@ export function RentalForm({
   const [startsAt, setStartsAt] = useState(defaultStart);
   const [endsAt, setEndsAt] = useState(defaultEnd);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const space = spaces.find((s) => s.id === spaceId);
 
@@ -228,17 +229,47 @@ export function RentalForm({
       <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
         <legend className="text-sm font-medium">Comprobante de pago</legend>
         <p className="text-xs text-gray-500">
-          Realiza la transferencia por el total y adjunta el comprobante. La
-          reserva queda en revisión hasta que un pastor la apruebe.
+          Realiza la transferencia por el total y adjunta el comprobante. Tu
+          reserva quedará aprobada una vez confirmemos el pago.
         </p>
-        <input
-          type="file"
-          name="receipt"
-          accept="image/png,image/jpeg,application/pdf"
-          required
-          className="block w-full text-sm"
-        />
-        <p className="text-xs text-gray-500">PDF, PNG o JPG. Máx 5 MB.</p>
+
+        <label
+          htmlFor="receipt-input"
+          className={`mt-2 flex flex-col items-center justify-center gap-1 cursor-pointer rounded-md border-2 border-dashed px-4 py-6 text-center transition ${
+            receiptFile
+              ? "border-green-400 bg-green-50 dark:border-green-700 dark:bg-green-950/30"
+              : "border-gray-300 dark:border-gray-700 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
+          }`}
+        >
+          <input
+            id="receipt-input"
+            type="file"
+            name="receipt"
+            accept="image/png,image/jpeg,application/pdf"
+            required
+            onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
+            className="sr-only"
+          />
+          {receiptFile ? (
+            <>
+              <p className="text-base font-medium">
+                ✓ {receiptFile.name}
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                Toca para cambiar de archivo
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-base font-medium">
+                📎 Adjuntar comprobante
+              </p>
+              <p className="text-xs text-gray-500">
+                PDF, PNG o JPG · Máximo 5 MB
+              </p>
+            </>
+          )}
+        </label>
       </fieldset>
 
       <button

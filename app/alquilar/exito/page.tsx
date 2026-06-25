@@ -11,8 +11,8 @@ export default async function ExitoPage({
     <main className="min-h-dvh px-4 py-8 max-w-md mx-auto space-y-4 text-center">
       <h1 className="text-2xl font-semibold">¡Solicitud enviada!</h1>
       <p className="text-sm text-gray-600 dark:text-gray-400">
-        Tu reserva quedó en revisión. Un pastor verificará tu comprobante de
-        pago y te confirmará por email.
+        Tu reserva quedó en revisión. Quedará aprobada una vez confirmemos tu
+        pago y te avisaremos por email.
       </p>
       {token && (
         <div className="space-y-2 rounded-md border border-gray-200 dark:border-gray-800 p-4">

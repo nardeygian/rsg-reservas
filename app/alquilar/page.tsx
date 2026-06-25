@@ -47,8 +47,8 @@ export default async function AlquilarPage({
       <header>
         <h1 className="text-2xl font-semibold">Alquilar un espacio</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Reserva espacios de RSG para tu evento. Te confirmamos cuando el
-          pastor verifique el pago.
+          Reserva espacios de RSG para tu evento. Tu reserva quedará aprobada
+          una vez confirmemos el pago.
         </p>
       </header>
 
