@@ -2,7 +2,11 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { regenerateFeedTokenAction } from "./actions";
+import {
+  autoLinkSlackByEmailAction,
+  regenerateFeedTokenAction,
+  updateSlackUserIdAction,
+} from "./actions";
 
 const ROLE_LABELS: Record<string, string> = {
   leader: "Líder",
@@ -27,7 +31,7 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role, calendar_feed_token")
+    .select("full_name, role, calendar_feed_token, slack_user_id")
     .eq("id", user.id)
     .single();
 
@@ -132,6 +136,71 @@ export default async function ProfilePage({
             Regenerar enlace (revoca el anterior)
           </button>
         </form>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold">Notificaciones por Slack</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Vincula tu Slack para recibir un DM cuando aprueben o rechacen tus
+          reservas. Sin esto, los mensajes solo van al canal del staff.
+        </p>
+
+        {profile.slack_user_id ? (
+          <p className="text-sm rounded-md border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30 px-3 py-2">
+            Vinculado a{" "}
+            <span className="font-mono">{profile.slack_user_id}</span>.
+          </p>
+        ) : (
+          <p className="text-sm rounded-md border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/40 px-3 py-2">
+            Sin vincular.
+          </p>
+        )}
+
+        <form action={autoLinkSlackByEmailAction}>
+          <button
+            type="submit"
+            className="rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm"
+          >
+            Vincular automáticamente (por mi email)
+          </button>
+        </form>
+
+        <form action={updateSlackUserIdAction} className="space-y-2">
+          <label htmlFor="slack_user_id" className="block text-xs text-gray-500">
+            O pega tu Slack ID manual
+          </label>
+          <input
+            id="slack_user_id"
+            name="slack_user_id"
+            type="text"
+            defaultValue={profile.slack_user_id ?? ""}
+            placeholder="U0123ABC..."
+            pattern="[UWuw][A-Za-z0-9]{6,20}"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm font-mono"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              className="rounded-md bg-black text-white px-3 py-2 text-sm dark:bg-white dark:text-black"
+            >
+              Guardar
+            </button>
+            <span className="text-xs text-gray-500">
+              Dejarlo vacío y guardar desvincula.
+            </span>
+          </div>
+        </form>
+
+        <details className="text-xs text-gray-600 dark:text-gray-400">
+          <summary className="cursor-pointer">
+            ¿Cómo encuentro mi Slack ID?
+          </summary>
+          <ol className="list-decimal pl-5 mt-2 space-y-1">
+            <li>En Slack, click en tu foto de perfil arriba a la derecha.</li>
+            <li>Profile → click los tres puntos &quot;...&quot; → Copy member ID.</li>
+            <li>Pégalo arriba (empieza con U).</li>
+          </ol>
+        </details>
       </section>
     </main>
   );
