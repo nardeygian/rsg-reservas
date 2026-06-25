@@ -25,10 +25,8 @@ const USE_TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  approved:
-    "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40",
-  requested:
-    "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40",
+  approved: "border-[color:var(--color-sage-200)]",
+  requested: "border-[color:#f3ecdc]",
 };
 
 export function BookingCard({ booking }: { booking: CalendarBooking }) {
@@ -38,24 +36,22 @@ export function BookingCard({ booking }: { booking: CalendarBooking }) {
     ? USE_TYPE_LABELS[booking.use_type] ?? booking.use_type
     : null;
 
-  const statusClass =
-    STATUS_STYLES[booking.status ?? ""] ??
-    "border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/40";
+  const statusClass = STATUS_STYLES[booking.status ?? ""] ?? "border-line";
 
   const inner = (
     <>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="font-medium tabular-nums">
+        <span className="font-mono text-sm tabular-nums text-forest-500 dark:text-sage-400">
           {formatTime(booking.starts_at)} – {formatTime(booking.ends_at)}
         </span>
         {booking.status === "requested" && (
-          <span className="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">
-            Por aprobar
-          </span>
+          <span className="badge badge-pending">Por aprobar</span>
         )}
       </div>
-      <p className="font-medium truncate">{booking.display_owner ?? "—"}</p>
-      <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+      <p className="font-serif text-lg truncate mt-1">
+        {booking.display_owner ?? "—"}
+      </p>
+      <p className="text-xs text-fg2 truncate">
         {booking.space_name}
         {useTypeLabel && <span> · {useTypeLabel}</span>}
         {booking.has_montaje_lock && <span> · 🔒 montaje</span>}
@@ -63,7 +59,7 @@ export function BookingCard({ booking }: { booking: CalendarBooking }) {
     </>
   );
 
-  const baseClass = `rounded-md border px-3 py-2 text-sm ${statusClass}`;
+  const baseClass = `rounded-[14px] border bg-bg-elev px-3 py-3 text-sm ${statusClass}`;
 
   if (!booking.id) {
     return <article className={baseClass}>{inner}</article>;
@@ -72,7 +68,7 @@ export function BookingCard({ booking }: { booking: CalendarBooking }) {
   return (
     <Link
       href={`/reservas/${booking.id}`}
-      className={`${baseClass} block transition hover:brightness-95 dark:hover:brightness-110`}
+      className={`${baseClass} block transition hover:shadow-md hover:-translate-y-[2px]`}
     >
       {inner}
     </Link>

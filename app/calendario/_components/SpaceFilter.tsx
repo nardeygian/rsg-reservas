@@ -29,7 +29,7 @@ export function SpaceFilter({
           router.push(`?${next.toString()}`);
         });
       }}
-      className="rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-2 py-1 text-sm"
+      className="rounded-[14px] border border-line bg-bg-elev px-3 h-10 text-sm"
     >
       <option value="">Todos los espacios</option>
       {spaces.map((s) => (

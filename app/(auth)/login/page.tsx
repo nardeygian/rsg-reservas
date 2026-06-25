@@ -10,24 +10,20 @@ export default async function LoginPage({
 
   return (
     <form action={loginAction} className="space-y-4">
-      <div>
-        <label htmlFor="email" className="block text-sm mb-1">
-          Email
-        </label>
+      <label className="block">
+        <span className="eyebrow">Email</span>
         <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+          className="input mt-2"
         />
-      </div>
+      </label>
 
-      <div>
-        <label htmlFor="password" className="block text-sm mb-1">
-          Contraseña
-        </label>
+      <label className="block">
+        <span className="eyebrow">Contraseña</span>
         <input
           id="password"
           name="password"
@@ -35,24 +31,28 @@ export default async function LoginPage({
           autoComplete="current-password"
           required
           minLength={6}
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+          className="input mt-2"
         />
-      </div>
+      </label>
 
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p
+          className="text-sm rounded-[14px] px-4 py-3"
+          style={{
+            background: "#f2e3dd",
+            color: "var(--color-critical)",
+          }}
+          role="alert"
+        >
           {error}
         </p>
       )}
 
-      <button
-        type="submit"
-        className="w-full rounded-md bg-black text-white py-2 font-medium dark:bg-white dark:text-black"
-      >
+      <button type="submit" className="btn-primary w-full">
         Entrar
       </button>
 
-      <p className="text-sm text-center">
+      <p className="text-sm text-center text-fg2">
         ¿No tienes cuenta?{" "}
         <Link href="/signup" className="underline">
           Regístrate

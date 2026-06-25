@@ -70,18 +70,20 @@ export function CalendarHeader({
   return (
     <header className="space-y-3">
       <div className="flex items-baseline justify-between gap-2">
-        <h1 className="text-xl font-semibold capitalize">{title}</h1>
-        <div className="flex items-center gap-3 text-sm">
+        <div>
+          <p className="eyebrow">Calendario</p>
+          <h1 className="font-serif text-2xl mt-1 capitalize tracking-[-0.02em]">
+            {title}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
           <Link
             href="/reservas/nueva"
-            className="rounded-md bg-black text-white px-3 py-1 dark:bg-white dark:text-black"
+            className="btn-primary !h-10 !px-4 !text-sm"
           >
             + Nueva
           </Link>
-          <Link
-            href="/"
-            className="underline text-gray-600 dark:text-gray-400"
-          >
+          <Link href="/" className="text-fg2 underline">
             Inicio
           </Link>
         </div>
@@ -90,20 +92,20 @@ export function CalendarHeader({
       <div className="flex items-center gap-1">
         <Link
           href={buildHref({ view, date: prevDate, space })}
-          className="px-2 py-1 rounded-md border border-gray-300 dark:border-gray-700 text-sm"
+          className="px-3 h-9 inline-flex items-center rounded-full border border-line text-sm hover:bg-bg-muted transition"
           aria-label="Anterior"
         >
           ‹
         </Link>
         <Link
           href={buildHref({ view, date: todayParam, space })}
-          className="px-2 py-1 rounded-md border border-gray-300 dark:border-gray-700 text-sm"
+          className="px-3 h-9 inline-flex items-center rounded-full border border-line text-sm hover:bg-bg-muted transition font-medium"
         >
           Hoy
         </Link>
         <Link
           href={buildHref({ view, date: nextDate, space })}
-          className="px-2 py-1 rounded-md border border-gray-300 dark:border-gray-700 text-sm"
+          className="px-3 h-9 inline-flex items-center rounded-full border border-line text-sm hover:bg-bg-muted transition"
           aria-label="Siguiente"
         >
           ›
@@ -113,7 +115,7 @@ export function CalendarHeader({
           <div
             role="tablist"
             aria-label="Vista"
-            className="inline-flex rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden"
+            className="inline-flex rounded-full border border-line overflow-hidden bg-bg-elev"
           >
             {VIEWS.map((v) => {
               const active = v.value === view;
@@ -127,10 +129,10 @@ export function CalendarHeader({
                   })}
                   role="tab"
                   aria-selected={active}
-                  className={`px-2 py-1 text-xs ${
+                  className={`px-3 h-9 inline-flex items-center text-xs font-medium ${
                     active
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : ""
+                      ? "bg-[var(--color-action-bg)] text-[var(--color-action-fg)]"
+                      : "text-fg2 hover:bg-bg-muted"
                   }`}
                 >
                   {v.label}

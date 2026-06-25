@@ -1,24 +1,223 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Class-based dark mode. .dark va sobre <html> (set por el bootstrap script). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =====================================================================
+   Tokens de marca RSG
+   ===================================================================== */
+@theme {
+  /* Brand fijo */
+  --color-forest: #003329;
+  --color-forest-900: #00271f;
+  --color-forest-700: #003329;
+  --color-forest-500: #1c5043;
+  --color-forest-300: #6f9085;
+  --color-espresso: #342b21;
+  --color-ink: #181918;
+  --color-sage-100: #eef5f0;
+  --color-sage-200: #dcebe1;
+  --color-sage-400: #c4dccb;
+  --color-sage: #c4dccb;
+  --color-blue-200: #d6e4e8;
+  --color-blue-400: #b0c9d1;
+  --color-blue: #b0c9d1;
+  --color-sand-100: #f3f2e7;
+  --color-sand-200: #ecebda;
+  --color-sand-400: #e4e4ce;
+  --color-sand: #e4e4ce;
+
+  /* Estados — terrosos */
+  --color-positive: #2f6d4f;
+  --color-notice: #9a7b3f;
+  --color-critical: #9c4b34;
+
+  /* Tipografía */
+  --font-sans: var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-riccione), Georgia, serif;
+  --font-display: var(--font-fk), var(--font-riccione), Georgia, serif;
+  --font-script: var(--font-compendium), cursive;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  /* Radios */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+
+  /* Sombras (tinte verde, nunca negro duro) */
+  --shadow-sm: 0 1px 2px rgba(0, 51, 41, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 51, 41, 0.08);
+  --shadow-lg: 0 18px 48px rgba(0, 51, 41, 0.12);
+
+  /* Tracking */
+  --tracking-tightish: -0.02em;
+  --tracking-caps: 0.16em;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* =====================================================================
+   Tokens semánticos — flipan con dark mode vía CSS vars
+   ===================================================================== */
+:root {
+  color-scheme: light;
+  --color-bg: var(--color-sand-100);
+  --color-bg-elev: #ffffff;
+  --color-bg-muted: var(--color-sage-100);
+  --color-bg-invert: var(--color-forest);
+  --color-fg1: var(--color-forest);
+  --color-fg2: #4a5b54;
+  --color-fg3: #8a978f;
+  --color-fg-invert: var(--color-sand-100);
+  --color-fg-invert-2: #9db5ab;
+  --color-line: #d7d6c2;
+  --color-line-strong: #b9b8a2;
+  /* Botón primario (CTA) */
+  --color-action-bg: var(--color-forest);
+  --color-action-fg: var(--color-sand-100);
+  /* Anillo de foco */
+  --color-focus-ring: rgba(28, 80, 67, 0.35);
+}
+
+.dark {
+  color-scheme: dark;
+  --color-bg: #001a14;
+  --color-bg-elev: var(--color-forest);
+  --color-bg-muted: rgba(228, 228, 206, 0.05);
+  --color-bg-invert: var(--color-sand-100);
+  --color-fg1: var(--color-sand-100);
+  --color-fg2: #9db5ab;
+  --color-fg3: var(--color-forest-300);
+  --color-fg-invert: var(--color-forest);
+  --color-fg-invert-2: #4a5b54;
+  --color-line: rgba(228, 228, 206, 0.18);
+  --color-line-strong: rgba(228, 228, 206, 0.28);
+  /* En dark el CTA invierte: pill claro sobre fondo oscuro */
+  --color-action-bg: var(--color-sand-100);
+  --color-action-fg: var(--color-forest);
+  --color-focus-ring: rgba(196, 220, 203, 0.45);
+}
+
+/* =====================================================================
+   Base
+   ===================================================================== */
+body {
+  background: var(--color-bg);
+  color: var(--color-fg1);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Eyebrow / overline — dispositivo de marca central */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-fg2);
+}
+
+/* Foco accesible y de marca */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Respeta prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
-html {
-  color-scheme: light dark;
-}
+/* =====================================================================
+   Atajos de componentes (clases utilitarias semánticas)
+   ===================================================================== */
+@layer components {
+  /* Botón primario — pill */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold text-[15px] px-7 h-12 transition active:scale-[0.97];
+    background: var(--color-action-bg);
+    color: var(--color-action-fg);
+  }
+  .btn-primary:hover {
+    filter: brightness(0.92);
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  /* Secundario — outline */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold text-[15px] px-7 h-12 transition active:scale-[0.97] bg-transparent;
+    color: var(--color-fg1);
+    border: 1px solid var(--color-line-strong);
+  }
+  .btn-secondary:hover {
+    background: var(--color-bg-muted);
+  }
+
+  /* Ghost */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-[15px] px-5 h-12 transition bg-transparent;
+    color: var(--color-fg1);
+  }
+  .btn-ghost:hover {
+    background: var(--color-bg-muted);
+  }
+
+  /* Tarjeta */
+  .card {
+    @apply rounded-[22px] p-6 transition;
+    background: var(--color-bg-elev);
+    border: 1px solid var(--color-line);
+    box-shadow: var(--shadow-sm);
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Input shell — h-12, line-on-paper */
+  .input {
+    @apply w-full h-12 rounded-[14px] px-4 text-base transition-colors bg-transparent;
+    color: var(--color-fg1);
+    border: 1px solid var(--color-line);
+  }
+  .input::placeholder {
+    color: var(--color-fg3);
+  }
+  .input:focus-visible {
+    border-color: var(--color-forest-500);
+  }
+
+  /* Badges de estado de reserva */
+  .badge {
+    @apply inline-flex items-center gap-2 rounded-full px-3 h-7 text-xs font-semibold;
+  }
+  .badge::before {
+    content: "";
+    @apply w-1.5 h-1.5 rounded-full;
+    background: currentColor;
+  }
+  .badge-pending {
+    background: #f3ecdc;
+    color: var(--color-notice);
+  }
+  .badge-approved {
+    background: var(--color-sage-200);
+    color: var(--color-positive);
+  }
+  .badge-rejected {
+    background: #f2e3dd;
+    color: var(--color-critical);
+  }
+  .badge-external {
+    background: var(--color-blue-200);
+    color: var(--color-forest-500);
+  }
+  .badge-cancelled {
+    background: #efeee2;
+    color: var(--color-fg3);
+  }
 }
