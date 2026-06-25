@@ -9,6 +9,7 @@ import {
 import {
   approveBookingAction,
   cancelBookingAction,
+  cancelSeriesAction,
   rejectBookingAction,
 } from "./actions";
 
@@ -101,7 +102,7 @@ export default async function BookingDetailPage({
   const { data: base } = await supabase
     .from("bookings_calendar")
     .select(
-      "id, space_name, starts_at, ends_at, status, display_owner, use_type, has_montaje_lock, created_by, title"
+      "id, space_name, starts_at, ends_at, status, display_owner, use_type, has_montaje_lock, created_by, title, parent_booking_id"
     )
     .eq("id", id)
     .maybeSingle();
@@ -138,6 +139,8 @@ export default async function BookingDetailPage({
     base.status === "requested" || base.status === "approved";
   const canApprove = isStaff && isPending;
   const canCancel = (isStaff || isCreator) && isCancellable;
+  const isPartOfSeries = !!base.parent_booking_id;
+  const canCancelSeries = isPartOfSeries && (isStaff || isCreator);
 
   const requirementsList =
     detail?.requirements && typeof detail.requirements === "object"
@@ -184,6 +187,9 @@ export default async function BookingDetailPage({
       >
         <p className="text-xs uppercase tracking-wide">
           {STATUS_LABELS[base.status ?? ""] ?? base.status}
+          {isPartOfSeries && (
+            <span className="ml-2">· 🔁 parte de una serie semanal</span>
+          )}
         </p>
         <p className="font-semibold capitalize text-base">
           {base.starts_at ? formatDateLong(base.starts_at) : ""}
@@ -352,7 +358,18 @@ export default async function BookingDetailPage({
                 type="submit"
                 className="rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm"
               >
-                Cancelar reserva
+                Cancelar solo esta
+              </button>
+            </form>
+          )}
+          {canCancelSeries && (
+            <form action={cancelSeriesAction}>
+              <input type="hidden" name="id" value={base.id ?? ""} />
+              <button
+                type="submit"
+                className="rounded-md border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-2 text-sm"
+              >
+                Cancelar toda la serie
               </button>
             </form>
           )}

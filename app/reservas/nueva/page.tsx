@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { nextHourBogota, toDatetimeLocalBogota } from "@/lib/datetime";
+import {
+  nextHourBogota,
+  toDateParam,
+  toDatetimeLocalBogota,
+} from "@/lib/datetime";
 import { createBookingAction } from "./actions";
+import { addMonths } from "date-fns";
 
 const USE_TYPE_OPTIONS = [
   { value: "reunion_departamento", label: "Reunión de departamento" },
@@ -35,6 +40,9 @@ export default async function NewBookingPage({
 
   const startDefault = nextHourBogota();
   const endDefault = new Date(startDefault.getTime() + 60 * 60 * 1000);
+  // Default "hasta" tres meses después del inicio, suficiente para cubrir un
+  // semestre ministerial sin abrumar la cantidad de instancias.
+  const recurrenceUntilDefault = toDateParam(addMonths(startDefault, 3));
 
   return (
     <main className="min-h-dvh px-4 py-4 max-w-md mx-auto space-y-4">
@@ -149,6 +157,37 @@ export default async function NewBookingPage({
             className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
           />
         </div>
+
+        <fieldset className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              name="recurring"
+              value="on"
+              className="h-4 w-4"
+            />
+            <span>Repetir cada semana</span>
+          </label>
+          <div>
+            <label
+              htmlFor="recurrence_until"
+              className="block text-xs text-gray-500 mb-1"
+            >
+              Hasta
+            </label>
+            <input
+              id="recurrence_until"
+              name="recurrence_until"
+              type="date"
+              defaultValue={recurrenceUntilDefault}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Solo aplica si marcaste "Repetir cada semana". Las semanas que
+              choquen con otra reserva se saltan automáticamente.
+            </p>
+          </div>
+        </fieldset>
 
         {error && (
           <p className="text-sm text-red-600" role="alert">

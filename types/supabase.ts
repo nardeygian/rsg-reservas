@@ -367,6 +367,7 @@ export type Database = {
           ends_at: string | null
           has_montaje_lock: boolean | null
           id: string | null
+          parent_booking_id: string | null
           space_id: string | null
           space_name: string | null
           starts_at: string | null
