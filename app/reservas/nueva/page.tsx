@@ -91,7 +91,7 @@ export default async function NewBookingPage({
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor="starts_at" className="block text-sm mb-1">
               Inicio

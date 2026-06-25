@@ -141,7 +141,7 @@ export function RentalForm({
         {spaceId && <SpaceAvailability spaceId={spaceId} />}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label htmlFor="starts_at" className="block text-sm mb-1">
             Inicio
@@ -363,11 +363,11 @@ export function RentalForm({
             className="input"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label
               htmlFor="client_email"
-              className="block text-xs text-gray-500 mb-1"
+              className="block text-xs text-fg2 mb-1"
             >
               Email
             </label>
@@ -382,7 +382,7 @@ export function RentalForm({
           <div>
             <label
               htmlFor="client_phone"
-              className="block text-xs text-gray-500 mb-1"
+              className="block text-xs text-fg2 mb-1"
             >
               Teléfono <span className="opacity-60">(opcional)</span>
             </label>
