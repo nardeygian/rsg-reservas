@@ -41,10 +41,17 @@ type BookingRow = {
   use_type: string;
   title: string | null;
   visibility: string;
+  created_by: string;
   spaces: { name: string } | null;
   creator: { full_name: string; slack_user_id: string | null } | null;
   ministry: { name: string } | null;
 };
+
+const STAFF_ROLES_FOR_NOTIFICATION = [
+  "pastor_sede",
+  "admin_casa",
+  "super_admin",
+];
 
 function siteUrl(): string {
   return process.env.SITE_URL ?? "http://localhost:3010";
@@ -65,7 +72,7 @@ export async function notifyBookingEvent(
     const { data, error } = await admin
       .from("bookings")
       .select(
-        `id, starts_at, ends_at, status, use_type, title, visibility,
+        `id, starts_at, ends_at, status, use_type, title, visibility, created_by,
          spaces:space_id(name),
          creator:created_by(full_name, slack_user_id),
          ministry:ministry_id(name)`
@@ -117,6 +124,33 @@ export async function notifyBookingEvent(
           ? `✅ Tu reserva del ${date} en *${space}* (${time}) fue aprobada.\n<${link}|Ver detalle>`
           : `❌ Tu reserva del ${date} en *${space}* (${time}) fue rechazada.\n<${link}|Ver detalle>`;
       await sendDirectMessage(data.creator.slack_user_id, dmText);
+    }
+
+    // Consejería pendiente: DM a todo el staff con slack_user_id (menos al
+    // creator si resulta ser staff él mismo).
+    if (
+      event === "created" &&
+      data.status === "requested" &&
+      data.use_type === "consejeria"
+    ) {
+      const { data: staffWithSlack } = await admin
+        .from("profiles")
+        .select("id, slack_user_id")
+        .in("role", STAFF_ROLES_FOR_NOTIFICATION)
+        .not("slack_user_id", "is", null)
+        .neq("id", data.created_by);
+
+      const dmText =
+        `🔔 *Nueva consejería por aprobar*\n` +
+        `${capitalize(date)} · ${time}\n` +
+        `*${space}*\n` +
+        `<${link}|Ver y aprobar>`;
+
+      await Promise.all(
+        (staffWithSlack ?? []).map((s) =>
+          s.slack_user_id ? sendDirectMessage(s.slack_user_id, dmText) : null
+        )
+      );
     }
   } catch (err) {
     console.error("[notify] error inesperado:", err);
