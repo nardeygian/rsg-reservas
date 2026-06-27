@@ -37,14 +37,15 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifica el JWT localmente con JWKS (sin roundtrip a la Auth
+  // API). En cada navegación esto evita ~200-400ms vs getUser().
+  const { data, error } = await supabase.auth.getClaims();
+  const isAuthenticated = !error && !!data?.claims;
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-  if (!user && !isPublic) {
+  if (!isAuthenticated && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

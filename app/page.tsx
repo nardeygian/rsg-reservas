@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile } from "@/lib/auth";
 import { ThemeToggle } from "./_components/ThemeToggle";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -20,26 +21,15 @@ const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
 const APPROVER_ROLES = [...STAFF_ROLES, "studio_admin"];
 
 export default async function HomePage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role, requested_role")
-    .eq("id", user.id)
-    .single();
+  const session = await getSessionProfile();
+  if (!session) redirect("/login");
+  const { userId, email, profile } = session;
 
   const isStaff = !!profile && STAFF_ROLES.includes(profile.role);
   const canApprove = !!profile && APPROVER_ROLES.includes(profile.role);
   // RLS filtra automáticamente: el studio_admin solo cuenta reservas del Estudio,
   // el staff cuenta todas.
+  const supabase = await createClient();
   const { count: pendingCount } = canApprove
     ? await supabase
         .from("bookings_staff")
@@ -72,7 +62,7 @@ export default async function HomePage() {
       <section className="card mb-4">
         <p className="eyebrow">Sesión activa</p>
         <p className="font-serif text-2xl mt-2">
-          {profile?.full_name ?? user.email}
+          {profile?.full_name ?? email ?? userId}
         </p>
         <p className="text-sm text-fg2 mt-1">
           {profile?.role

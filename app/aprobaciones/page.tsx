@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile } from "@/lib/auth";
 import {
   formatDateLong,
   formatTime,
@@ -66,22 +67,13 @@ export default async function ApprovalsPage({
 }) {
   const { error, ok } = await searchParams;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !STAFF_ROLES.includes(profile.role)) {
+  const session = await getSessionProfile();
+  if (!session) redirect("/login");
+  if (!session.profile || !STAFF_ROLES.includes(session.profile.role)) {
     redirect("/?error=Sin%20permiso");
   }
 
+  const supabase = await createClient();
   const { data: pending, error: queryError } = await supabase
     .from("bookings_staff")
     .select(
@@ -96,17 +88,24 @@ export default async function ApprovalsPage({
     .order("starts_at", { ascending: true })
     .returns<PendingBooking[]>();
 
-  // Genera signed URLs para los comprobantes de reservas externas con pago
-  // pendiente, para que el staff pueda revisar antes de aprobar.
-  const receiptUrls = new Map<string, string>();
-  for (const b of pending ?? []) {
-    if (b.is_external && b.payment_receipt_url) {
-      const { data: signed } = await supabase.storage
+  // Genera signed URLs para reservas externas con comprobante en paralelo —
+  // antes era un loop secuencial que multiplicaba la latencia por N.
+  const externalsWithReceipts = (pending ?? []).filter(
+    (b) => b.is_external && b.payment_receipt_url
+  );
+  const signedResults = await Promise.all(
+    externalsWithReceipts.map((b) =>
+      supabase.storage
         .from("payment-receipts")
-        .createSignedUrl(b.payment_receipt_url, 60 * 60);
-      if (signed?.signedUrl) receiptUrls.set(b.id, signed.signedUrl);
-    }
-  }
+        .createSignedUrl(b.payment_receipt_url!, 60 * 60)
+        .then((r) => [b.id, r.data?.signedUrl ?? null] as const)
+    )
+  );
+  const receiptUrls = new Map<string, string>(
+    signedResults
+      .filter((r): r is [string, string] => r[1] !== null)
+      .map(([id, url]) => [id, url])
+  );
 
   return (
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
