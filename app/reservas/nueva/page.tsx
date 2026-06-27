@@ -34,11 +34,32 @@ export default async function NewBookingPage({
   const { error, space: prefilledSpace } = await searchParams;
 
   const supabase = await createClient();
-  const { data: spaces } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+    : { data: null };
+
+  const isStudioAdmin = profile?.role === "studio_admin";
+
+  let spacesQuery = supabase
     .from("spaces")
     .select("id, name, booking_policy, status")
-    .neq("status", "disabled")
-    .order("name");
+    .neq("status", "disabled");
+
+  // El studio_admin solo puede crear reservas para el Estudio.
+  if (isStudioAdmin) {
+    spacesQuery = spacesQuery.eq("slug", "estudio");
+  }
+
+  const { data: spaces } = await spacesQuery.order("name");
+  const studioSpaceId = isStudioAdmin ? spaces?.[0]?.id ?? "" : "";
 
   const startDefault = nextHourBogota();
   const endDefault = new Date(startDefault.getTime() + 60 * 60 * 1000);
@@ -77,18 +98,30 @@ export default async function NewBookingPage({
             id="space_id"
             name="space_id"
             required
-            defaultValue={prefilledSpace ?? ""}
+            defaultValue={isStudioAdmin ? studioSpaceId : (prefilledSpace ?? "")}
+            disabled={isStudioAdmin}
             className="input"
           >
-            <option value="" disabled>
-              Elige un espacio
-            </option>
+            {!isStudioAdmin && (
+              <option value="" disabled>
+                Elige un espacio
+              </option>
+            )}
             {(spaces ?? []).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name} — {POLICY_LABELS[s.booking_policy] ?? s.booking_policy}
               </option>
             ))}
           </select>
+          {isStudioAdmin && (
+            <>
+              <input type="hidden" name="space_id" value={studioSpaceId} />
+              <p className="text-xs text-fg3 mt-1">
+                Como Admin del Estudio, solo puedes crear reservas para el
+                Estudio.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

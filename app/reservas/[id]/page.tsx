@@ -16,6 +16,7 @@ import {
 } from "./actions";
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
+const ESTUDIO_SPACE_NAME = "Estudio";
 
 const USE_TYPE_LABELS: Record<string, string> = {
   reunion_departamento: "Reunión de departamento",
@@ -99,8 +100,6 @@ export default async function BookingDetailPage({
     .eq("id", user.id)
     .single();
 
-  const isStaff = !!profile && STAFF_ROLES.includes(profile.role);
-
   // Base: lo que todos pueden ver. bookings_calendar enmascara private_label.
   const { data: base } = await supabase
     .from("bookings_calendar")
@@ -113,6 +112,12 @@ export default async function BookingDetailPage({
   if (!base) {
     notFound();
   }
+
+  const isFullStaff = !!profile && STAFF_ROLES.includes(profile.role);
+  // El studio_admin tiene acceso de staff únicamente para reservas del Estudio.
+  const isStudioAdminOnEstudio =
+    profile?.role === "studio_admin" && base.space_name === ESTUDIO_SPACE_NAME;
+  const isStaff = isFullStaff || isStudioAdminOnEstudio;
 
   // Staff: completa con detalle interno desde bookings_staff (incluye joins).
   let detail: StaffBooking | null = null;

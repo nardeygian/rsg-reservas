@@ -17,6 +17,7 @@ const REQUESTED_ROLE_LABELS: Record<string, string> = {
 };
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
+const APPROVER_ROLES = [...STAFF_ROLES, "studio_admin"];
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -36,7 +37,10 @@ export default async function HomePage() {
     .single();
 
   const isStaff = !!profile && STAFF_ROLES.includes(profile.role);
-  const { count: pendingCount } = isStaff
+  const canApprove = !!profile && APPROVER_ROLES.includes(profile.role);
+  // RLS filtra automáticamente: el studio_admin solo cuenta reservas del Estudio,
+  // el staff cuenta todas.
+  const { count: pendingCount } = canApprove
     ? await supabase
         .from("bookings_staff")
         .select("id", { count: "exact", head: true })
@@ -90,7 +94,7 @@ export default async function HomePage() {
           Ver calendario
         </a>
 
-        {isStaff && (
+        {canApprove && (
           <a
             href="/aprobaciones"
             className="card card-hover flex items-center justify-between text-left"

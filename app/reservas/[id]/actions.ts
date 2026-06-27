@@ -17,6 +17,9 @@ const MIME_EXT: Record<string, string> = {
 };
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
+// Aprobar/rechazar lo pueden hacer también los studio_admin, pero RLS solo
+// les deja tocar reservas del Estudio.
+const APPROVER_ROLES = [...STAFF_ROLES, "studio_admin"];
 
 async function getUserRole() {
   const supabase = await createClient();
@@ -47,14 +50,19 @@ async function staffTransition(
   const id = String(formData.get("id") ?? "").trim();
   if (!id) redirect("/calendario");
 
+  const notesRaw = String(formData.get("internal_notes") ?? "").trim();
+
   const { supabase, user, role } = await getUserRole();
-  if (!STAFF_ROLES.includes(role)) {
+  if (!APPROVER_ROLES.includes(role)) {
     redirect(detailPath(id, { error: "Sin permiso" }));
   }
 
+  const update: { status: string; internal_notes?: string } = { status: next };
+  if (notesRaw) update.internal_notes = notesRaw;
+
   const { error, count } = await supabase
     .from("bookings")
-    .update({ status: next }, { count: "exact" })
+    .update(update, { count: "exact" })
     .eq("id", id)
     .eq("status", "requested");
 

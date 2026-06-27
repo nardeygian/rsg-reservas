@@ -12,7 +12,12 @@ import {
   rejectBookingAction,
 } from "./actions";
 
-const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
+const STAFF_ROLES = [
+  "pastor_sede",
+  "admin_casa",
+  "super_admin",
+  "studio_admin",
+];
 
 const USE_TYPE_LABELS: Record<string, string> = {
   reunion_departamento: "Reunión de departamento",
@@ -247,32 +252,42 @@ export default async function ApprovalsPage({
                 )}
               </dl>
 
-              <div className="flex items-center gap-2">
-                <form action={approveBookingAction}>
-                  <input type="hidden" name="id" value={b.id} />
+              <form className="space-y-2">
+                <input type="hidden" name="id" value={b.id} />
+                <label className="block">
+                  <span className="eyebrow">
+                    Notas internas (opcional)
+                  </span>
+                  <textarea
+                    name="internal_notes"
+                    rows={2}
+                    placeholder="Ej. confirmado por WhatsApp, requiere micrófono extra, etc."
+                    className="input mt-2"
+                  />
+                </label>
+                <div className="flex items-center gap-2">
                   <button
                     type="submit"
+                    formAction={approveBookingAction}
                     className="rounded-md bg-green-600 text-white px-3 py-1.5 text-sm font-medium"
                   >
                     ✓ Aprobar
                   </button>
-                </form>
-                <form action={rejectBookingAction}>
-                  <input type="hidden" name="id" value={b.id} />
                   <button
                     type="submit"
+                    formAction={rejectBookingAction}
                     className="rounded-md border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-1.5 text-sm font-medium"
                   >
                     ✗ Rechazar
                   </button>
-                </form>
-                <Link
-                  href={`/reservas/${b.id}`}
-                  className="ml-auto text-xs underline text-gray-600 dark:text-gray-400"
-                >
-                  Detalle
-                </Link>
-              </div>
+                  <Link
+                    href={`/reservas/${b.id}`}
+                    className="ml-auto text-xs underline text-gray-600 dark:text-gray-400"
+                  >
+                    Detalle
+                  </Link>
+                </div>
+              </form>
             </li>
           ))}
         </ul>
