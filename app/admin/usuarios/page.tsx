@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { updateUserRoleAction } from "./actions";
+import { inviteUserAction, updateUserRoleAction } from "./actions";
 
 const ROLES = [
   { value: "leader", label: "Líder" },
@@ -111,6 +111,55 @@ export default async function UsuariosPage({
           {error}
         </p>
       )}
+
+      <details className="card">
+        <summary className="cursor-pointer font-serif text-xl">
+          Invitar usuario
+        </summary>
+        <form action={inviteUserAction} className="space-y-3 mt-4">
+          <p className="text-sm text-fg2">
+            Le enviamos un correo con un enlace para que defina su
+            contraseña. Útil para admin del Estudio, admin de casa o
+            pastores de sede que no se registran solos.
+          </p>
+          <label className="block">
+            <span className="eyebrow">Nombre completo</span>
+            <input
+              name="full_name"
+              type="text"
+              required
+              className="input mt-2"
+            />
+          </label>
+          <label className="block">
+            <span className="eyebrow">Email</span>
+            <input
+              name="email"
+              type="email"
+              required
+              className="input mt-2"
+            />
+          </label>
+          <label className="block">
+            <span className="eyebrow">Rol</span>
+            <select
+              name="role"
+              required
+              defaultValue="studio_admin"
+              className="input mt-2"
+            >
+              {ROLES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="btn-primary w-full">
+            Enviar invitación
+          </button>
+        </form>
+      </details>
 
       {pending.length > 0 && (
         <section className="space-y-3">

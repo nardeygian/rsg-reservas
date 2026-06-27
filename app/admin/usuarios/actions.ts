@@ -18,7 +18,7 @@ function isRole(v: string): v is Role {
   return (VALID_ROLES as readonly string[]).includes(v);
 }
 
-export async function updateUserRoleAction(formData: FormData) {
+async function ensureSuperAdmin() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,6 +34,68 @@ export async function updateUserRoleAction(formData: FormData) {
   if (!me || me.role !== "super_admin") {
     redirect("/admin/usuarios?error=Sin%20permiso");
   }
+  return user;
+}
+
+export async function inviteUserAction(formData: FormData) {
+  await ensureSuperAdmin();
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const role = String(formData.get("role") ?? "");
+
+  if (!email || !fullName) {
+    redirect(
+      "/admin/usuarios?error=Email%20y%20nombre%20son%20obligatorios"
+    );
+  }
+  if (!isRole(role)) {
+    redirect("/admin/usuarios?error=Rol%20inv%C3%A1lido");
+  }
+
+  const service = createServiceClient();
+  const origin =
+    process.env.SITE_URL ?? "https://rsg-reservas.vercel.app";
+
+  const { data, error } = await service.auth.admin.inviteUserByEmail(
+    email,
+    {
+      data: { full_name: fullName },
+      redirectTo: `${origin}/auth/callback?next=/reset-password`,
+    }
+  );
+
+  if (error) {
+    redirect(
+      `/admin/usuarios?error=${encodeURIComponent(error.message)}`
+    );
+  }
+
+  // El trigger crea el profile con role='leader'. Si pedimos otro rol, lo
+  // ajustamos ahora.
+  if (data?.user && role !== "leader") {
+    const { error: roleError } = await service
+      .from("profiles")
+      .update({ role })
+      .eq("id", data.user.id);
+    if (roleError) {
+      redirect(
+        `/admin/usuarios?error=${encodeURIComponent(
+          `Usuario invitado pero el rol no se actualizó: ${roleError.message}`
+        )}`
+      );
+    }
+  }
+
+  redirect(
+    `/admin/usuarios?ok=${encodeURIComponent(
+      `Invitación enviada a ${email}`
+    )}`
+  );
+}
+
+export async function updateUserRoleAction(formData: FormData) {
+  const user = await ensureSuperAdmin();
 
   const userId = String(formData.get("user_id") ?? "");
   const role = String(formData.get("role") ?? "");
