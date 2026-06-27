@@ -54,6 +54,15 @@ export default async function AdminLandingPage() {
             alquila por la plataforma.
           </p>
         </Link>
+        {profile.role === "super_admin" && (
+          <Link href="/admin/usuarios" className="card card-hover block">
+            <p className="font-serif text-xl">Usuarios</p>
+            <p className="text-sm text-fg2 mt-1">
+              Revisa solicitudes de rol y promueve usuarios a pastor de sede,
+              admin de casa o admin del Estudio.
+            </p>
+          </Link>
+        )}
       </nav>
     </main>
   );

@@ -1,0 +1,63 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+
+const VALID_ROLES = [
+  "leader",
+  "pastor_sede",
+  "admin_casa",
+  "studio_admin",
+  "super_admin",
+] as const;
+
+type Role = (typeof VALID_ROLES)[number];
+
+function isRole(v: string): v is Role {
+  return (VALID_ROLES as readonly string[]).includes(v);
+}
+
+export async function updateUserRoleAction(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!me || me.role !== "super_admin") {
+    redirect("/admin/usuarios?error=Sin%20permiso");
+  }
+
+  const userId = String(formData.get("user_id") ?? "");
+  const role = String(formData.get("role") ?? "");
+
+  if (!userId || !isRole(role)) {
+    redirect("/admin/usuarios?error=Datos%20inv%C3%A1lidos");
+  }
+
+  // Evita que el último super_admin se baje a sí mismo y se quede sin acceso.
+  if (userId === user.id && role !== "super_admin") {
+    redirect(
+      "/admin/usuarios?error=No%20puedes%20cambiar%20tu%20propio%20rol%20desde%20aqu%C3%AD"
+    );
+  }
+
+  const service = createServiceClient();
+  const { error } = await service
+    .from("profiles")
+    .update({ role })
+    .eq("id", userId);
+
+  if (error) {
+    redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/admin/usuarios?ok=Rol%20actualizado");
+}
