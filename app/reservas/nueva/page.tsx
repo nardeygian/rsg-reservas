@@ -136,8 +136,8 @@ export default async function NewBookingPage({
               <span className="font-medium block">Cliente externo</span>
               <span className="text-xs text-fg3 block mt-0.5">
                 Marca esta opción si la reserva NO pertenece a la iglesia.
-                Los demás solo verán "Reserva externa" con la franja
-                ocupada.
+                Los demás solo verán &ldquo;Reserva externa&rdquo; con la
+                franja ocupada.
               </span>
             </span>
           </label>
