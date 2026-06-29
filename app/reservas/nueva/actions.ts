@@ -15,6 +15,7 @@ import {
 } from "@/lib/recurrence";
 import { fromZonedTime } from "date-fns-tz";
 import { formatDateLong } from "@/lib/datetime";
+import { getSessionProfile } from "@/lib/auth";
 
 const TZ_BOGOTA = "America/Bogota";
 
@@ -138,17 +139,36 @@ export async function createBookingAction(formData: FormData) {
     backWithError("Ese espacio está deshabilitado.");
   }
 
-  const { data: rsg, error: orgError } = await supabase
+  // Determinar rol del usuario para decidir org/visibility/status.
+  const session = await getSessionProfile();
+  const isStudioAdmin = session?.profile?.role === "studio_admin";
+  const externalClient =
+    isStudioAdmin && String(formData.get("external_client") ?? "") === "on";
+
+  const orgName = isStudioAdmin ? "Studio Prado" : "RSG";
+  const { data: org, error: orgError } = await supabase
     .from("organizations")
     .select("id")
-    .eq("name", "RSG")
+    .eq("name", orgName)
     .single();
-  if (orgError || !rsg) {
-    backWithError("No se encontró la organización RSG.");
+  if (orgError || !org) {
+    backWithError(`No se encontró la organización ${orgName}.`);
   }
 
-  const status =
-    space.booking_policy === "self_serve" ? "approved" : "requested";
+  // El admin del Estudio auto-aprueba (no pasa por flujo de aprobación
+  // de la iglesia). El resto sigue la política del espacio.
+  const status = isStudioAdmin
+    ? "approved"
+    : space.booking_policy === "self_serve"
+      ? "approved"
+      : "requested";
+
+  // Cliente externo del Estudio: visibilidad oculta + tipo forzado a
+  // studio_negocio. Resto: visibilidad full y el tipo que eligió el form.
+  const visibility: "full" | "private_label" = externalClient
+    ? "private_label"
+    : "full";
+  const finalUseType: UseType = externalClient ? "studio_negocio" : useType;
 
   // ─── Items pedidos (solo aplican a reservas únicas internas) ─────────
   // Las series recurrentes ignoran items en esta versión. El form lo dice.
@@ -195,13 +215,14 @@ export async function createBookingAction(formData: FormData) {
     const { error: insertError } = await supabase.from("bookings").insert({
       id: newId,
       space_id: space.id,
-      owner_org_id: rsg.id,
+      owner_org_id: org.id,
       created_by: user.id,
-      use_type: useType,
+      use_type: finalUseType,
       title,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
       status,
+      visibility,
       expected_attendance: expectedAttendance,
     });
 
@@ -271,13 +292,14 @@ export async function createBookingAction(formData: FormData) {
   const { error: templateError } = await supabase.from("bookings").insert({
     id: templateId,
     space_id: space.id,
-    owner_org_id: rsg.id,
+    owner_org_id: org.id,
     created_by: user.id,
-    use_type: useType,
+    use_type: finalUseType,
     title,
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
     status,
+    visibility,
     expected_attendance: expectedAttendance,
     is_recurrence_template: true,
     recurrence_rule: recurrenceRrule(pattern, untilUtc),
@@ -295,13 +317,14 @@ export async function createBookingAction(formData: FormData) {
     const { error } = await supabase.from("bookings").insert({
       id: randomUUID(),
       space_id: space.id,
-      owner_org_id: rsg.id,
+      owner_org_id: org.id,
       created_by: user.id,
-      use_type: useType,
+      use_type: finalUseType,
       title,
       starts_at: occ.start.toISOString(),
       ends_at: occ.end.toISOString(),
       status,
+      visibility,
       expected_attendance: expectedAttendance,
       parent_booking_id: templateId,
     });

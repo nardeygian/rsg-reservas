@@ -124,6 +124,25 @@ export default async function NewBookingPage({
           )}
         </div>
 
+        {isStudioAdmin && (
+          <label className="card flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="external_client"
+              defaultChecked
+              className="mt-1 accent-[var(--color-forest)]"
+            />
+            <span className="block">
+              <span className="font-medium block">Cliente externo</span>
+              <span className="text-xs text-fg3 block mt-0.5">
+                Marca esta opción si la reserva NO pertenece a la iglesia.
+                Los demás solo verán "Reserva externa" con la franja
+                ocupada.
+              </span>
+            </span>
+          </label>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor="starts_at" className="block text-sm mb-1">
