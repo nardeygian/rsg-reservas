@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 const VALID_ROLES = [
   "leader",
+  "mentor",
   "pastor_sede",
   "admin_casa",
   "studio_admin",

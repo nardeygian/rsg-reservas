@@ -6,6 +6,7 @@ import { inviteUserAction, updateUserRoleAction } from "./actions";
 
 const ROLES = [
   { value: "leader", label: "Líder" },
+  { value: "mentor", label: "Mentor" },
   { value: "pastor_sede", label: "Pastor de sede" },
   { value: "admin_casa", label: "Admin de casa" },
   { value: "studio_admin", label: "Admin del Estudio" },
@@ -18,6 +19,7 @@ const ROLE_LABELS: Record<string, string> = Object.fromEntries(
 
 const REQUESTED_LABELS: Record<string, string> = {
   lider_departamento: "Líder de departamento",
+  mentor: "Mentor",
   pastor_ministerio: "Pastor de ministerio",
   pastor_sede: "Pastor de sede",
 };
@@ -31,11 +33,14 @@ type UserRow = {
 };
 
 function isPending(r: UserRow): boolean {
-  return (
-    !!r.requested_role &&
-    r.requested_role !== "lider_departamento" &&
-    r.role === "leader"
-  );
+  if (!r.requested_role) return false;
+  // Los que pidieron líder/mentor y ya tienen el rol equivalente no
+  // cuentan como pendientes; el resto sí (esperan promoción manual).
+  if (r.requested_role === "lider_departamento" && r.role === "leader") {
+    return false;
+  }
+  if (r.requested_role === "mentor" && r.role === "mentor") return false;
+  return r.role === "leader";
 }
 
 export default async function UsuariosPage({

@@ -14,12 +14,15 @@ const USE_TYPE_OPTIONS = [
   { value: "reunion_departamento", label: "Reunión de departamento" },
   { value: "reunion_ministerio", label: "Reunión de ministerio" },
   { value: "consejeria", label: "Consejería" },
-  { value: "discipulado", label: "Discipulado" },
+  { value: "discipulado", label: "Reunión de discipulado" },
   { value: "evento", label: "Evento" },
   { value: "externo", label: "Externo" },
   { value: "studio_negocio", label: "Studio (negocio)" },
   { value: "otro", label: "Otro" },
 ];
+
+// Los mentores solo pueden reservar para estos usos.
+const MENTOR_USE_TYPES = new Set(["discipulado", "consejeria", "otro"]);
 
 const POLICY_LABELS: Record<string, string> = {
   self_serve: "Reserva directa",
@@ -47,6 +50,11 @@ export default async function NewBookingPage({
     : { data: null };
 
   const isStudioAdmin = profile?.role === "studio_admin";
+  const isMentor = profile?.role === "mentor";
+
+  const useTypeOptions = isMentor
+    ? USE_TYPE_OPTIONS.filter((u) => MENTOR_USE_TYPES.has(u.value))
+    : USE_TYPE_OPTIONS;
 
   let spacesQuery = supabase
     .from("spaces")
@@ -186,7 +194,7 @@ export default async function NewBookingPage({
             <option value="" disabled>
               Elige el tipo
             </option>
-            {USE_TYPE_OPTIONS.map((u) => (
+            {useTypeOptions.map((u) => (
               <option key={u.value} value={u.value}>
                 {u.label}
               </option>

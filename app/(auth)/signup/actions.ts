@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const VALID_REQUESTED_ROLES = [
   "lider_departamento",
+  "mentor",
   "pastor_ministerio",
   "pastor_sede",
 ] as const;

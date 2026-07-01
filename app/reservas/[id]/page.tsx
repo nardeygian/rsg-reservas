@@ -22,7 +22,7 @@ const USE_TYPE_LABELS: Record<string, string> = {
   reunion_departamento: "Reunión de departamento",
   reunion_ministerio: "Reunión de ministerio",
   consejeria: "Consejería",
-  discipulado: "Discipulado",
+  discipulado: "Reunión de discipulado",
   evento: "Evento",
   externo: "Externo",
   studio_negocio: "Studio (negocio)",

@@ -24,7 +24,7 @@ const USE_TYPE_LABELS: Record<string, string> = {
   reunion_departamento: "Reunión de departamento",
   reunion_ministerio: "Reunión de ministerio",
   consejeria: "Consejería",
-  discipulado: "Discipulado",
+  discipulado: "Reunión de discipulado",
   evento: "Evento",
   externo: "Externo",
   studio_negocio: "Studio (negocio)",
@@ -33,6 +33,7 @@ const USE_TYPE_LABELS: Record<string, string> = {
 
 const REQUESTED_ROLE_LABELS: Record<string, string> = {
   lider_departamento: "Líder de departamento",
+  mentor: "Mentor",
   pastor_ministerio: "Pastor de ministerio",
   pastor_sede: "Pastor de sede",
 };

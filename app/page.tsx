@@ -5,6 +5,7 @@ import { ThemeToggle } from "./_components/ThemeToggle";
 
 const ROLE_LABELS: Record<string, string> = {
   leader: "Líder",
+  mentor: "Mentor",
   pastor_sede: "Pastor de sede",
   admin_casa: "Admin de casa",
   studio_admin: "Admin del Estudio",
@@ -13,6 +14,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const REQUESTED_ROLE_LABELS: Record<string, string> = {
   lider_departamento: "Líder de departamento",
+  mentor: "Mentor",
   pastor_ministerio: "Pastor de ministerio",
   pastor_sede: "Pastor de sede",
 };
