@@ -10,7 +10,7 @@ import {
 
 const ROLE_LABELS: Record<string, string> = {
   leader: "Líder",
-  mentor: "Mentor",
+  mentor: "Líder de Discipulado",
   pastor_ministerio: "Pastor de ministerio",
   pastor_sede: "Pastor de sede",
   admin_casa: "Admin de casa",

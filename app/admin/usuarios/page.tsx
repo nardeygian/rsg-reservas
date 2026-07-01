@@ -6,7 +6,7 @@ import { inviteUserAction, updateUserRoleAction } from "./actions";
 
 const ROLES = [
   { value: "leader", label: "Líder" },
-  { value: "mentor", label: "Mentor" },
+  { value: "mentor", label: "Líder de Discipulado" },
   { value: "pastor_ministerio", label: "Pastor de ministerio" },
   { value: "pastor_sede", label: "Pastor de sede" },
   { value: "admin_casa", label: "Admin de casa" },
@@ -20,7 +20,7 @@ const ROLE_LABELS: Record<string, string> = Object.fromEntries(
 
 const REQUESTED_LABELS: Record<string, string> = {
   lider_departamento: "Líder de departamento",
-  mentor: "Mentor",
+  mentor: "Líder de Discipulado",
   pastor_ministerio: "Pastor de ministerio",
   pastor_sede: "Pastor de sede",
 };

@@ -149,7 +149,7 @@ export async function createBookingAction(formData: FormData) {
   // El mentor solo puede reservar para discipulado, consejería u otro.
   if (isMentor && !["discipulado", "consejeria", "otro"].includes(useType)) {
     backWithError(
-      "Como mentor solo puedes reservar para reunión de discipulado, consejería u otro."
+      "Como Líder de Discipulado solo puedes reservar para reunión de discipulado, consejería u otro."
     );
   }
 

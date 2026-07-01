@@ -33,7 +33,7 @@ const USE_TYPE_LABELS: Record<string, string> = {
 
 const REQUESTED_ROLE_LABELS: Record<string, string> = {
   lider_departamento: "Líder de departamento",
-  mentor: "Mentor",
+  mentor: "Líder de Discipulado",
   pastor_ministerio: "Pastor de ministerio",
   pastor_sede: "Pastor de sede",
 };

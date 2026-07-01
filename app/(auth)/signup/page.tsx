@@ -3,7 +3,7 @@ import { signupAction } from "./actions";
 
 const ROLE_OPTIONS = [
   { value: "lider_departamento", label: "Líder de departamento" },
-  { value: "mentor", label: "Mentor" },
+  { value: "mentor", label: "Líder de Discipulado" },
   { value: "pastor_ministerio", label: "Pastor de ministerio" },
   { value: "pastor_sede", label: "Pastor de sede" },
 ];
