@@ -7,6 +7,7 @@ import { inviteUserAction, updateUserRoleAction } from "./actions";
 const ROLES = [
   { value: "leader", label: "Líder" },
   { value: "mentor", label: "Mentor" },
+  { value: "pastor_ministerio", label: "Pastor de ministerio" },
   { value: "pastor_sede", label: "Pastor de sede" },
   { value: "admin_casa", label: "Admin de casa" },
   { value: "studio_admin", label: "Admin del Estudio" },
@@ -34,12 +35,14 @@ type UserRow = {
 
 function isPending(r: UserRow): boolean {
   if (!r.requested_role) return false;
-  // Los que pidieron líder/mentor y ya tienen el rol equivalente no
-  // cuentan como pendientes; el resto sí (esperan promoción manual).
+  // lider_departamento se materializa como role='leader' — único caso
+  // donde el nombre no coincide.
   if (r.requested_role === "lider_departamento" && r.role === "leader") {
     return false;
   }
-  if (r.requested_role === "mentor" && r.role === "mentor") return false;
+  // Para mentor, pastor_ministerio y pastor_sede el nombre coincide.
+  if (r.requested_role === r.role) return false;
+  // Sigue pendiente si aún no lo promovieron desde leader.
   return r.role === "leader";
 }
 
