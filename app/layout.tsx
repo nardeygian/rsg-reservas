@@ -1,33 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
+import { Public_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "./_components/ServiceWorkerRegister";
+import { PortalNav } from "./_components/portal/PortalNav";
 
-const manrope = Manrope({
+const publicSans = Public_Sans({
   subsets: ["latin"],
-  variable: "--font-manrope",
+  variable: "--font-public-sans",
   display: "swap",
 });
 
-// Cuando agregues los archivos a /public/fonts/, descomenta y enchúfalos:
-//
-// import localFont from "next/font/local";
-// const riccione = localFont({
-//   variable: "--font-riccione",
-//   src: [
-//     { path: "../public/fonts/RiccioneSerial-Regular.ttf", weight: "400" },
-//     { path: "../public/fonts/RiccioneSerial-Light.ttf", weight: "300" },
-//     // ...
-//   ],
-// });
-// const fk = localFont({
-//   variable: "--font-fk",
-//   src: "../public/fonts/FKDisplay-Regular.otf",
-// });
-// const compendium = localFont({
-//   variable: "--font-compendium",
-//   src: "../public/fonts/Compendium-Regular.ttf",
-// });
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-sora",
+  display: "swap",
+  weight: ["500", "600", "700"],
+});
 
 // Aplica el tema antes de que React hidrate, para evitar flash.
 const themeBootstrap = `
@@ -54,8 +42,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f2e7" },
-    { media: "(prefers-color-scheme: dark)", color: "#001a14" },
+    { media: "(prefers-color-scheme: light)", color: "#F3F5F4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0E1311" },
   ],
 };
 
@@ -65,12 +53,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={manrope.variable} suppressHydrationWarning>
+    <html lang="es" className={`${publicSans.variable} ${sora.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
       <body>
-        {children}
+        <div className="md:pl-[220px]">
+          {children}
+        </div>
+        <PortalNav />
         <ServiceWorkerRegister />
       </body>
     </html>

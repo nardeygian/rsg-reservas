@@ -4,220 +4,303 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* =====================================================================
-   Tokens de marca RSG
+   Tokens de diseño del Portal RSG
+   Referencia exacta: docs/portal/prototipo/ y docs/portal/00-vision-y-arquitectura.md
    ===================================================================== */
 @theme {
-  /* Brand fijo */
-  --color-forest: #003329;
-  --color-forest-900: #00271f;
-  --color-forest-700: #003329;
-  --color-forest-500: #1c5043;
-  --color-forest-300: #6f9085;
-  --color-espresso: #342b21;
-  --color-ink: #181918;
-  --color-sage-100: #eef5f0;
-  --color-sage-200: #dcebe1;
-  --color-sage-400: #c4dccb;
-  --color-sage: #c4dccb;
-  --color-blue-200: #d6e4e8;
-  --color-blue-400: #b0c9d1;
-  --color-blue: #b0c9d1;
-  --color-sand-100: #f3f2e7;
-  --color-sand-200: #ecebda;
-  --color-sand-400: #e4e4ce;
-  --color-sand: #e4e4ce;
-
-  /* Estados — terrosos */
-  --color-positive: #2f6d4f;
-  --color-notice: #9a7b3f;
-  --color-critical: #9c4b34;
-
   /* Tipografía */
-  --font-sans: var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-serif: var(--font-riccione), Georgia, serif;
-  --font-display: var(--font-fk), var(--font-riccione), Georgia, serif;
-  --font-script: var(--font-compendium), cursive;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  --font-sans:    var(--font-public-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-sora), system-ui, sans-serif;
+  --font-serif:   var(--font-sora), system-ui, sans-serif; /* alias compat */
+  --font-mono:    ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
   /* Radios */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
-  --radius-xl: 32px;
+  --radius-sm:  8px;
+  --radius-md:  10px;
+  --radius-lg:  10px;
+  --radius-xl:  12px;
 
-  /* Sombras (tinte verde, nunca negro duro) */
-  --shadow-sm: 0 1px 2px rgba(0, 51, 41, 0.06);
-  --shadow-md: 0 4px 16px rgba(0, 51, 41, 0.08);
-  --shadow-lg: 0 18px 48px rgba(0, 51, 41, 0.12);
+  /* Sombras (tinte verde oscuro) */
+  --shadow-sm: 0 1px 2px rgba(11, 26, 23, 0.06);
+  --shadow-md: 0 4px 16px rgba(11, 26, 23, 0.08);
+  --shadow-lg: 0 18px 48px rgba(11, 26, 23, 0.12);
 
   /* Tracking */
-  --tracking-tightish: -0.02em;
-  --tracking-caps: 0.16em;
+  --tracking-tight: -0.02em;
+  --tracking-caps:   0.08em;
 }
 
 /* =====================================================================
-   Tokens semánticos — flipan con dark mode vía CSS vars
+   Tokens semánticos — modo claro
    ===================================================================== */
 :root {
   color-scheme: light;
-  --color-bg: var(--color-sand-100);
-  --color-bg-elev: #ffffff;
-  --color-bg-muted: var(--color-sage-100);
-  --color-bg-invert: var(--color-forest);
-  --color-fg1: var(--color-forest);
-  --color-fg2: #4a5b54;
-  --color-fg3: #8a978f;
-  --color-fg-invert: var(--color-sand-100);
-  --color-fg-invert-2: #9db5ab;
-  --color-line: #d7d6c2;
-  --color-line-strong: #b9b8a2;
-  /* Botón primario (CTA) */
-  --color-action-bg: var(--color-forest);
-  --color-action-fg: var(--color-sand-100);
+
+  /* Aliases de compatibilidad (páginas que aún usan los tokens anteriores) */
+  --color-fg1:        #131A17;
+  --color-fg2:        #5A6661;
+  --color-fg3:        #8A9590;
+  --color-bg-elev:    #FFFFFF;
+  --color-bg-muted:   #EDF1EF;
+  --color-line-strong: #C4CEC9;
+  --color-forest:     #0B6E55;
+  --color-forest-500: #0B6E55;
+  --color-sage-400:   #DDEFE8;
+  --color-positive:   #0B7A3E;
+  --color-notice:     #9A6B00;
+  --color-critical:   #B3261E;
+  --color-sand-200:   #EDF1EF;
+
+  /* Fondo */
+  --color-bg:        #F3F5F4;
+  --color-surface:   #FFFFFF;
+  --color-surface-2: #EDF1EF;
+
+  /* Texto */
+  --color-ink:   #131A17;
+  --color-muted: #5A6661;
+  --color-faint: #8A9590;
+
+  /* Borde */
+  --color-line: #DCE3DF;
+
+  /* Acento principal */
+  --color-accent:      #0B6E55;
+  --color-accent-dark: #095E49;
+  --color-accent-ink:  #FFFFFF;
+  --color-accent-soft: #DDEFE8;
+
+  /* Semánticos de estado */
+  --color-up:        #0B7A3E;
+  --color-up-soft:   #DCF1E4;
+  --color-down:      #B3261E;
+  --color-down-soft: #FDECEA;
+  --color-gold:      #9A6B00;
+  --color-gold-text: #7A5500;
+  --color-gold-soft: #F6EEDC;
+
+  /* Botón primario */
+  --color-action-bg: #0B6E55;
+  --color-action-fg: #FFFFFF;
+
   /* Anillo de foco */
-  --color-focus-ring: rgba(28, 80, 67, 0.35);
+  --color-focus-ring: rgba(11, 110, 85, 0.3);
 }
 
+/* =====================================================================
+   Tokens semánticos — modo oscuro
+   ===================================================================== */
 .dark {
   color-scheme: dark;
-  --color-bg: #001a14;
-  --color-bg-elev: var(--color-forest);
-  --color-bg-muted: rgba(228, 228, 206, 0.05);
-  --color-bg-invert: var(--color-sand-100);
-  --color-fg1: var(--color-sand-100);
-  --color-fg2: #9db5ab;
-  --color-fg3: var(--color-forest-300);
-  --color-fg-invert: var(--color-forest);
-  --color-fg-invert-2: #4a5b54;
-  --color-line: rgba(228, 228, 206, 0.18);
-  --color-line-strong: rgba(228, 228, 206, 0.28);
-  /* En dark el CTA invierte: pill claro sobre fondo oscuro */
-  --color-action-bg: var(--color-sand-100);
-  --color-action-fg: var(--color-forest);
-  --color-focus-ring: rgba(196, 220, 203, 0.45);
+
+  /* Aliases de compatibilidad — dark */
+  --color-fg1:        #E7EEEA;
+  --color-fg2:        #A1AEA8;
+  --color-fg3:        #76837D;
+  --color-bg-elev:    #161D1A;
+  --color-bg-muted:   #1C2521;
+  --color-line-strong: #3A4641;
+  --color-forest:     #43C29C;
+  --color-forest-500: #43C29C;
+  --color-sage-400:   #193A30;
+  --color-positive:   #5AD08A;
+  --color-notice:     #E3B44C;
+  --color-critical:   #FF8A80;
+  --color-sand-200:   #1C2521;
+
+  --color-bg:        #0E1311;
+  --color-surface:   #161D1A;
+  --color-surface-2: #1C2521;
+
+  --color-ink:   #E7EEEA;
+  --color-muted: #A1AEA8;
+  --color-faint: #76837D;
+
+  --color-line: #2A3531;
+
+  --color-accent:      #43C29C;
+  --color-accent-dark: #38A888;
+  --color-accent-ink:  #06140F;
+  --color-accent-soft: #193A30;
+
+  --color-up:        #5AD08A;
+  --color-up-soft:   #0F3020;
+  --color-down:      #FF8A80;
+  --color-down-soft: #3B0F0F;
+  --color-gold:      #E3B44C;
+  --color-gold-text: #E3B44C;
+  --color-gold-soft: #2E2200;
+
+  --color-action-bg: #43C29C;
+  --color-action-fg: #06140F;
+
+  --color-focus-ring: rgba(67, 194, 156, 0.35);
 }
 
 /* =====================================================================
    Base
    ===================================================================== */
 body {
-  background: var(--color-bg);
-  color: var(--color-fg1);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+  background:              var(--color-bg);
+  color:                   var(--color-ink);
+  font-family:             var(--font-sans);
+  font-size:               14px;
+  line-height:             1.5;
+  -webkit-font-smoothing:  antialiased;
 }
 
-/* Eyebrow / overline — dispositivo de marca central */
-.eyebrow {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: var(--tracking-caps);
-  color: var(--color-fg2);
+@layer base {
+  a {
+    color: var(--color-accent);
+  }
+  a:hover {
+    color: var(--color-accent-dark);
+  }
 }
 
-/* Foco accesible y de marca */
+/* Foco accesible */
 :where(a, button, input, select, textarea):focus-visible {
-  outline: none;
+  outline:    none;
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
-/* Respeta prefers-reduced-motion */
+/* Números tabulares en cifras clave */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Eyebrow / overline */
+.eyebrow {
+  font-family:    var(--font-sans);
+  font-weight:    600;
+  text-transform: uppercase;
+  font-size:      11px;
+  letter-spacing: var(--tracking-caps);
+  color:          var(--color-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
+  *, *::before, *::after {
+    animation-duration:  0.01ms !important;
     transition-duration: 0.01ms !important;
   }
 }
 
 /* =====================================================================
-   Atajos de componentes (clases utilitarias semánticas)
+   Componentes
    ===================================================================== */
 @layer components {
-  /* Botón primario — pill */
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold text-[15px] px-7 h-12 transition active:scale-[0.97];
-    background: var(--color-action-bg);
-    color: var(--color-action-fg);
-  }
-  .btn-primary:hover {
-    filter: brightness(0.92);
-  }
 
-  /* Secundario — outline */
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold text-[15px] px-7 h-12 transition active:scale-[0.97] bg-transparent;
-    color: var(--color-fg1);
-    border: 1px solid var(--color-line-strong);
-  }
-  .btn-secondary:hover {
-    background: var(--color-bg-muted);
-  }
-
-  /* Ghost */
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-full text-[15px] px-5 h-12 transition bg-transparent;
-    color: var(--color-fg1);
-  }
-  .btn-ghost:hover {
-    background: var(--color-bg-muted);
-  }
-
-  /* Tarjeta */
+  /* ── Tarjeta ──────────────────────────────────────────────────────── */
   .card {
-    @apply rounded-[22px] p-6 transition;
-    background: var(--color-bg-elev);
-    border: 1px solid var(--color-line);
-    box-shadow: var(--shadow-sm);
-  }
-  .card-hover:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
+    @apply transition;
+    background:   var(--color-surface);
+    border:       1px solid var(--color-line);
+    border-radius: 10px;
+    box-shadow:   var(--shadow-sm);
   }
 
-  /* Input shell — h-12, line-on-paper */
+  /* ── Botones ──────────────────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-[15px] px-5 min-h-[48px] transition active:scale-[0.97];
+    background:    var(--color-action-bg);
+    color:         var(--color-action-fg);
+    border-radius: 10px;
+    border:        none;
+  }
+  .btn-primary:hover { filter: brightness(0.92); }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-[15px] px-5 min-h-[48px] transition active:scale-[0.97] bg-transparent;
+    color:         var(--color-ink);
+    border:        1px solid var(--color-line);
+    border-radius: 10px;
+  }
+  .btn-secondary:hover { background: var(--color-surface-2); }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 text-[15px] px-4 min-h-[44px] transition bg-transparent;
+    color:         var(--color-ink);
+    border-radius: 8px;
+  }
+  .btn-ghost:hover { background: var(--color-surface-2); }
+
+  /* ── Input ────────────────────────────────────────────────────────── */
   .input {
-    @apply w-full h-12 rounded-[14px] px-4 text-base transition-colors bg-transparent;
-    color: var(--color-fg1);
-    border: 1px solid var(--color-line);
+    @apply w-full min-h-[44px] px-4 text-sm transition-colors bg-transparent;
+    color:         var(--color-ink);
+    border:        1px solid var(--color-line);
+    border-radius: 8px;
   }
-  .input::placeholder {
-    color: var(--color-fg3);
-  }
-  .input:focus-visible {
-    border-color: var(--color-forest-500);
-  }
+  .input::placeholder { color: var(--color-faint); }
+  .input:focus-visible { border-color: var(--color-accent); }
 
-  /* Badges de estado de reserva */
+  /* ── Chip / etiqueta ────────────────────────────────────────────────
+     Uso: <span class="chip chip-accent">Admin</span>               */
+  .chip {
+    @apply inline-flex items-center font-semibold;
+    font-size:     12px;
+    padding:       3px 10px;
+    border-radius: 99px;
+  }
+  .chip-accent  { background: var(--color-accent-soft); color: var(--color-accent); }
+  .chip-muted   { background: var(--color-surface-2);   color: #3E4A45; }
+  .chip-gold    { background: var(--color-gold-soft);   color: var(--color-gold-text); }
+  .chip-up      { background: var(--color-up-soft);     color: var(--color-up); }
+  .chip-down    { background: var(--color-down-soft);   color: var(--color-down); }
+
+  /* ── Badges de reserva (compatibilidad con código existente) ─────── */
   .badge {
-    @apply inline-flex items-center gap-2 rounded-full px-3 h-7 text-xs font-semibold;
+    @apply inline-flex items-center gap-2 px-3 h-7 text-xs font-semibold;
+    border-radius: 99px;
   }
   .badge::before {
     content: "";
     @apply w-1.5 h-1.5 rounded-full;
     background: currentColor;
   }
-  .badge-pending {
-    background: #f3ecdc;
-    color: var(--color-notice);
+  .badge-pending  { background: var(--color-gold-soft);  color: var(--color-gold-text); }
+  .badge-approved { background: var(--color-accent-soft); color: var(--color-accent); }
+  .badge-rejected { background: var(--color-down-soft);  color: var(--color-down); }
+  .badge-external { background: var(--color-surface-2);  color: var(--color-muted); }
+  .badge-cancelled{ background: var(--color-surface-2);  color: var(--color-faint); }
+
+  /* ── Bloque principal (cifra grande sobre fondo acento) ─────────────
+     Uso: <section class="accent-block">                             */
+  .accent-block {
+    background:    var(--color-accent);
+    color:         var(--color-accent-ink);
+    border-radius: 10px;
+    padding:       22px;
   }
-  .badge-approved {
-    background: var(--color-sage-200);
-    color: var(--color-positive);
+
+  /* Filas de acción dentro del accent-block */
+  .accent-row {
+    background:    var(--color-accent-dark);
+    border-radius: 10px;
+    padding:       14px 16px;
   }
-  .badge-rejected {
-    background: #f2e3dd;
-    color: var(--color-critical);
+
+  /* ── Cifra grande ────────────────────────────────────────────────── */
+  .stat-value {
+    font-family:    var(--font-display);
+    font-weight:    700;
+    letter-spacing: -0.02em;
+    line-height:    1.05;
+    font-variant-numeric: tabular-nums;
   }
-  .badge-external {
-    background: var(--color-blue-200);
-    color: var(--color-forest-500);
+
+  /* ── Avatar ─────────────────────────────────────────────────────── */
+  .avatar {
+    @apply flex items-center justify-center flex-none;
+    border-radius: 50%;
+    background:    var(--color-accent-soft);
+    color:         var(--color-accent);
+    font-family:   var(--font-display);
+    font-weight:   700;
   }
-  .badge-cancelled {
-    background: #efeee2;
-    color: var(--color-fg3);
+
+  /* ── Compatibilidad (páginas en migración) ───────────────────────── */
+  .card-hover:hover {
+    transform:  translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
 }

@@ -21,7 +21,6 @@ const USE_TYPE_OPTIONS = [
   { value: "otro", label: "Otro" },
 ];
 
-// Los mentores solo pueden reservar para estos usos.
 const MENTOR_USE_TYPES = new Set(["discipulado", "consejeria", "otro"]);
 
 const POLICY_LABELS: Record<string, string> = {
@@ -61,7 +60,6 @@ export default async function NewBookingPage({
     .select("id, name, booking_policy, status")
     .neq("status", "disabled");
 
-  // El studio_admin solo puede crear reservas para el Estudio.
   if (isStudioAdmin) {
     spacesQuery = spacesQuery.eq("slug", "estudio");
   }
@@ -72,27 +70,29 @@ export default async function NewBookingPage({
   const startDefault = nextHourBogota();
   const endDefault = new Date(startDefault.getTime() + 60 * 60 * 1000);
 
-  // Disponibilidad de items para la franja default. Si el usuario cambia la
-  // hora y sometea, la action vuelve a validar contra la nueva franja —
-  // este número es solo una orientación visual al cargar el form.
   const { data: itemsAvail } = await supabase.rpc("items_available", {
     _starts: startDefault.toISOString(),
     _ends: endDefault.toISOString(),
   });
-  // Default "hasta" tres meses después del inicio, suficiente para cubrir un
-  // semestre ministerial sin abrumar la cantidad de instancias.
   const recurrenceUntilDefault = toDateParam(addMonths(startDefault, 3));
 
   return (
-    <main className="min-h-dvh px-4 py-4 max-w-md mx-auto space-y-4">
+    <main className="min-h-dvh px-4 py-5 max-w-md mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
         <div>
-          <p className="eyebrow">Nueva</p>
-          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+          <span className="eyebrow">Nueva</span>
+          <h1
+            className="text-[22px] font-semibold mt-0.5 leading-tight"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             Crear reserva
           </h1>
         </div>
-        <Link href="/calendario" className="text-sm underline text-fg2">
+        <Link
+          href="/calendario"
+          className="text-sm"
+          style={{ color: "var(--color-muted)" }}
+        >
           Cancelar
         </Link>
       </header>
@@ -124,28 +124,26 @@ export default async function NewBookingPage({
           {isStudioAdmin && (
             <>
               <input type="hidden" name="space_id" value={studioSpaceId} />
-              <p className="text-xs text-fg3 mt-1">
-                Como Admin del Estudio, solo puedes crear reservas para el
-                Estudio.
+              <p className="text-xs mt-1" style={{ color: "var(--color-faint)" }}>
+                Como Admin del Estudio, solo puedes crear reservas para el Estudio.
               </p>
             </>
           )}
         </div>
 
         {isStudioAdmin && (
-          <label className="card flex items-start gap-3 cursor-pointer">
+          <label className="card flex items-start gap-3 cursor-pointer px-4 py-3">
             <input
               type="checkbox"
               name="external_client"
               defaultChecked
-              className="mt-1 accent-[var(--color-forest)]"
+              className="mt-1 accent-[var(--color-accent)]"
             />
             <span className="block">
               <span className="font-medium block">Cliente externo</span>
-              <span className="text-xs text-fg3 block mt-0.5">
+              <span className="text-xs mt-0.5 block" style={{ color: "var(--color-faint)" }}>
                 Marca esta opción si la reserva NO pertenece a la iglesia.
-                Los demás solo verán &ldquo;Reserva externa&rdquo; con la
-                franja ocupada.
+                Los demás solo verán &ldquo;Reserva externa&rdquo; con la franja ocupada.
               </span>
             </span>
           </label>
@@ -204,7 +202,8 @@ export default async function NewBookingPage({
 
         <div>
           <label htmlFor="title" className="block text-sm mb-1">
-            Título <span className="text-gray-500">(opcional)</span>
+            Título{" "}
+            <span style={{ color: "var(--color-faint)" }}>(opcional)</span>
           </label>
           <input
             id="title"
@@ -218,7 +217,8 @@ export default async function NewBookingPage({
 
         <div>
           <label htmlFor="expected_attendance" className="block text-sm mb-1">
-            Asistencia esperada <span className="text-gray-500">(opcional)</span>
+            Asistencia esperada{" "}
+            <span style={{ color: "var(--color-faint)" }}>(opcional)</span>
           </label>
           <input
             id="expected_attendance"
@@ -231,28 +231,28 @@ export default async function NewBookingPage({
         </div>
 
         {(itemsAvail ?? []).length > 0 && (
-          <fieldset className="border-t border-line pt-4 space-y-2">
+          <fieldset
+            className="border-t pt-4 space-y-2"
+            style={{ borderColor: "var(--color-line)" }}
+          >
             <legend className="eyebrow">¿Necesitas algo más?</legend>
-            <p className="text-xs text-fg2">
+            <p className="text-xs" style={{ color: "var(--color-muted)" }}>
               Para reservas internas no hay costo. Solo es para que el equipo
               sepa qué montar. El número es la disponibilidad para la franja
               default; si cambias hora, se revalida al guardar.
             </p>
-            <p
-              className="text-xs"
-              style={{ color: "var(--color-notice)" }}
-            >
+            <p className="text-xs" style={{ color: "var(--color-gold)" }}>
               Las series recurrentes ignoran items en esta versión.
             </p>
             <ul className="space-y-2">
               {(itemsAvail ?? []).map((it) => (
                 <li
                   key={it.item_id}
-                  className="flex items-center gap-3 rounded-[14px] border border-line bg-bg-elev px-3 py-2"
+                  className="flex items-center gap-3 card px-3 py-2"
                 >
                   <div className="flex-1">
                     <p className="text-sm font-medium">{it.name}</p>
-                    <p className="text-xs text-fg2">
+                    <p className="text-xs" style={{ color: "var(--color-muted)" }}>
                       {it.available} disponibles
                     </p>
                   </div>
@@ -262,7 +262,7 @@ export default async function NewBookingPage({
                     min={0}
                     max={it.available}
                     defaultValue={0}
-                    className="w-20 rounded-[10px] border border-line bg-bg-elev px-2 py-1 text-sm text-right tabular-nums"
+                    className="w-20 px-2 py-1 text-sm text-right tabular-nums input"
                     aria-label={`Cantidad de ${it.name}`}
                   />
                 </li>
@@ -279,10 +279,10 @@ export default async function NewBookingPage({
         {error && (
           <p
             role="alert"
-            className="text-sm rounded-[14px] px-4 py-3"
+            className="text-sm rounded-[10px] px-4 py-3"
             style={{
-              background: "#f2e3dd",
-              color: "var(--color-critical)",
+              background: "var(--color-down-soft)",
+              color: "var(--color-down)",
             }}
           >
             {error}
@@ -292,7 +292,10 @@ export default async function NewBookingPage({
         <button type="submit" className="btn-primary w-full">
           Crear
         </button>
-        <p className="text-xs text-fg3 text-center">
+        <p
+          className="text-xs text-center"
+          style={{ color: "var(--color-faint)" }}
+        >
           Si el espacio requiere aprobación, queda como pendiente hasta que un
           pastor o admin la apruebe.
         </p>

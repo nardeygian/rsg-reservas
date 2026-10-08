@@ -16,27 +16,63 @@ export function SpaceFilter({
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
 
+  function navigate(spaceId: string) {
+    const next = new URLSearchParams(params.toString());
+    if (spaceId) next.set("space", spaceId);
+    else next.delete("space");
+    startTransition(() => router.push(`?${next.toString()}`));
+  }
+
   return (
-    <select
-      aria-label="Filtrar por espacio"
-      value={current ?? ""}
-      disabled={pending}
-      onChange={(e) => {
-        const next = new URLSearchParams(params.toString());
-        if (e.target.value) next.set("space", e.target.value);
-        else next.delete("space");
-        startTransition(() => {
-          router.push(`?${next.toString()}`);
-        });
-      }}
-      className="rounded-[14px] border border-line bg-bg-elev px-3 h-10 text-sm"
-    >
-      <option value="">Todos los espacios</option>
-      {spaces.map((s) => (
-        <option key={s.id} value={s.id}>
-          {s.name}
-        </option>
-      ))}
-    </select>
+    <div className="flex gap-2 flex-wrap">
+      <button
+        type="button"
+        onClick={() => navigate("")}
+        disabled={pending}
+        className="inline-flex items-center px-3 py-[5px] rounded-full text-[12.5px] font-semibold border transition"
+        style={
+          !current
+            ? {
+                background: "var(--color-accent-soft)",
+                color: "var(--color-accent)",
+                borderColor: "var(--color-accent)",
+              }
+            : {
+                background: "var(--color-surface)",
+                color: "var(--color-muted)",
+                borderColor: "var(--color-line)",
+              }
+        }
+      >
+        Todos
+      </button>
+      {spaces.map((s) => {
+        const active = current === s.id;
+        return (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => navigate(s.id)}
+            disabled={pending}
+            className="inline-flex items-center px-3 py-[5px] rounded-full text-[12.5px] font-semibold border transition"
+            style={
+              active
+                ? {
+                    background: "var(--color-accent-soft)",
+                    color: "var(--color-accent)",
+                    borderColor: "var(--color-accent)",
+                  }
+                : {
+                    background: "var(--color-surface)",
+                    color: "#3E4A45",
+                    borderColor: "var(--color-line)",
+                  }
+            }
+          >
+            {s.name}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Calendario RSG</title>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=Sora:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0B6E55}a:hover{color:#08523F}
+</style>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F3F5F4; color: #131A17; font-family: 'Public Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="flex: 1; overflow: hidden; padding: 20px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+    <header style="display: flex; justify-content: space-between; align-items: center">
+      <h1 style="margin: 0; font-family: Sora, sans-serif; font-size: 22px; font-weight: 600">Calendario RSG</h1>
+      <div role="group" aria-label="Vista" style="display: inline-flex; background: #EDF1EF; border-radius: 9px; padding: 3px; gap: 2px">
+        <button type="button" style="border: 0; background: transparent; padding: 6px 10px; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; color: #5A6661">Mes</button>
+        <button type="button" style="border: 0; background: transparent; padding: 6px 10px; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; color: #5A6661">Semana</button>
+        <button type="button" aria-pressed="true" style="border: 0; background: #FFFFFF; padding: 6px 10px; border-radius: 7px; font: inherit; font-weight: 600; font-size: 13px; color: #131A17; box-shadow: 0 1px 2px rgba(0,0,0,.08)">Lista</button>
+      </div>
+    </header>
+
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; background: #FFFFFF; border: 1px solid #DCE3DF; border-radius: 10px; padding: 8px 6px">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border-radius: 8px; background: #0B6E55; color: #FFFFFF"><span style="font-size: 11px; font-weight: 600">Dom</span><span style="font-family: Sora, sans-serif; font-weight: 700">11</span><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background: #FFFFFF"></span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0"><span style="font-size: 11px; font-weight: 600; color: #5A6661">Lun</span><span style="font-family: Sora, sans-serif; font-weight: 700">12</span><span style="display: block; width: 5px; height: 5px"></span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0"><span style="font-size: 11px; font-weight: 600; color: #5A6661">Mar</span><span style="font-family: Sora, sans-serif; font-weight: 700">13</span><span style="display: block; width: 5px; height: 5px"></span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0"><span style="font-size: 11px; font-weight: 600; color: #5A6661">Mié</span><span style="font-family: Sora, sans-serif; font-weight: 700">14</span><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background: #0B6E55"></span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0"><span style="font-size: 11px; font-weight: 600; color: #5A6661">Jue</span><span style="font-family: Sora, sans-serif; font-weight: 700">15</span><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background: #2F5E9E"></span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0"><span style="font-size: 11px; font-weight: 600; color: #5A6661">Vie</span><span style="font-family: Sora, sans-serif; font-weight: 700">16</span><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background: #B4651A"></span></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0"><span style="font-size: 11px; font-weight: 600; color: #5A6661">Sáb</span><span style="font-family: Sora, sans-serif; font-weight: 700">17</span><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background: #0B6E55"></span></div>
+    </div>
+
+    <div style="display: flex; gap: 6px; flex-wrap: wrap">
+      <button type="button" aria-pressed="true" style="border: 1px solid #0B6E55; background: #DDEFE8; color: #0B6E55; border-radius: 99px; padding: 5px 12px; font: inherit; font-size: 12.5px; font-weight: 600">Todo</button>
+      <button type="button" style="border: 1px solid #DCE3DF; background: #FFFFFF; color: #3E4A45; border-radius: 99px; padding: 5px 12px; font: inherit; font-size: 12.5px; font-weight: 600">Ministerios</button>
+      <button type="button" style="border: 1px solid #DCE3DF; background: #FFFFFF; color: #3E4A45; border-radius: 99px; padding: 5px 12px; font: inherit; font-size: 12.5px; font-weight: 600">Servolución</button>
+      <button type="button" style="border: 1px solid #DCE3DF; background: #FFFFFF; color: #3E4A45; border-radius: 99px; padding: 5px 12px; font: inherit; font-size: 12.5px; font-weight: 600">Mis reservas</button>
+    </div>
+
+    <span style="font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #5A6661; font-weight: 600">Hoy · domingo 11</span>
+
+    <article style="background: #FFFFFF; border: 1px solid #0B6E55; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: flex-start">
+        <span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: #0B6E55; margin-top: 6px"></span>
+        <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+          <b style="font-family: Sora, sans-serif; font-size: 16px">Reunión Central 11:00 a. m.</b>
+          <span style="font-size: 13px; color: #5A6661">Ministerios · Auditorio reservado hasta la 1:00 p. m.</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px; background: #EDF1EF; border-radius: 8px; padding: 10px 12px; font-size: 13px">
+        <span style="font-weight: 600">Equipo de servidores · 31 asignados</span>
+        <span style="color: #3E4A45">Alabanza 9 · Producción 7 · Bienvenida 6 · Niños 5 · Protocolo 4</span>
+        <a href="Servicio.html" style="font-weight: 600; text-decoration: none">Ver equipo completo</a>
+      </div>
+    </article>
+
+    <article style="background: #FFFFFF; border: 1px solid #DCE3DF; border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start">
+      <span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: #B4651A; margin-top: 6px"></span>
+      <div style="display: flex; flex-direction: column; min-width: 0">
+        <b>Semilleros</b>
+        <span style="font-size: 13px; color: #5A6661">Servolución · Salón 38 · 2:00 p. m.</span>
+      </div>
+    </article>
+
+    <span style="font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #5A6661; font-weight: 600">Miércoles 14</span>
+
+    <article style="background: #FFFFFF; border: 1px solid #DCE3DF; border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start">
+      <span style="flex: none; width: 10px; height: 10px; border-radius: 50%; background: #0B6E55; margin-top: 6px"></span>
+      <div style="display: flex; flex-direction: column; min-width: 0">
+        <b>Reunión Semanal Jóvenes</b>
+        <span style="font-size: 13px; color: #5A6661">Ministerios · Auditorio · 7:00 p. m.</span>
+      </div>
+    </article>
+    <article style="background: #FFFFFF; border: 1px solid #DCE3DF; border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start">
+      <span style="flex: none; width: 10px; height: 10px; border-radius: 2px; background: #2F5E9E; margin-top: 6px"></span>
+      <div style="display: flex; flex-direction: column; min-width: 0">
+        <b>Reunión de líderes</b>
+        <span style="font-size: 13px; color: #5A6661">Reserva · Salón 38 · 7:00 p. m. · Pastores de sede</span>
+      </div>
+    </article>
+  </div>
+
+  <nav aria-label="Módulos" style="flex: none; background: #FFFFFF; border-top: 1px solid #DCE3DF; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 18px">
+    <a href="InicioMentor.html" style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 600; color: #5A6661; text-decoration: none; min-height: 44px; box-sizing: border-box">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"></path><path d="M5 10v10h14V10"></path></svg>Inicio</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 600; color: #0B6E55; text-decoration: none; min-height: 44px; box-sizing: border-box">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Calendario</a>
+    <a href="Reservas.html" style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 600; color: #5A6661; text-decoration: none; min-height: 44px; box-sizing: border-box">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V4h11v17"></path><path d="M15 8h5v13"></path><path d="M11 12h.01"></path></svg>Reservas</a>
+    <a href="Servicio.html" style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 600; color: #5A6661; text-decoration: none; min-height: 44px; box-sizing: border-box">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11l3-3a2 2 0 0 1 3 0l1 1"></path><path d="M3 13l4-4 6 6a2 2 0 0 1-3 3l-1-1"></path><path d="M14 9l3-3 4 4-5 5"></path></svg>Servicio</a>
+    <a href="Discipulos.html" style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 600; color: #5A6661; text-decoration: none; min-height: 44px; box-sizing: border-box">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>Más</a>
+  </nav>
+</div>
+</body>
+</html>

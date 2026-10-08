@@ -96,6 +96,44 @@ export async function inviteUserAction(formData: FormData) {
   );
 }
 
+const VALID_EXTRA_ROLES = ["lider_departamento", "pastor_ministerio", "lider_discipulado"] as const;
+type ExtraRole = (typeof VALID_EXTRA_ROLES)[number];
+function isExtraRole(v: string): v is ExtraRole {
+  return (VALID_EXTRA_ROLES as readonly string[]).includes(v);
+}
+
+export async function addUserRoleAction(formData: FormData) {
+  await ensureSuperAdmin();
+  const userId = String(formData.get("user_id") ?? "");
+  const role = String(formData.get("role") ?? "");
+  const ministryId = String(formData.get("ministry_id") ?? "").trim() || null;
+
+  if (!userId || !isExtraRole(role)) {
+    redirect("/admin/usuarios?error=Datos%20inv%C3%A1lidos");
+  }
+
+  const service = createServiceClient();
+  const { error } = await service.from("user_roles").insert({
+    user_id: userId,
+    role,
+    ministry_id: ministryId,
+  });
+
+  if (error) redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+  redirect("/admin/usuarios?ok=Rol%20agregado");
+}
+
+export async function removeUserRoleAction(formData: FormData) {
+  await ensureSuperAdmin();
+  const roleId = String(formData.get("role_id") ?? "");
+  if (!roleId) redirect("/admin/usuarios?error=Datos%20inv%C3%A1lidos");
+
+  const service = createServiceClient();
+  const { error } = await service.from("user_roles").delete().eq("id", roleId);
+  if (error) redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+  redirect("/admin/usuarios?ok=Rol%20eliminado");
+}
+
 export async function updateUserRoleAction(formData: FormData) {
   const user = await ensureSuperAdmin();
 

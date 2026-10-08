@@ -37,10 +37,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  approved: "border-[color:var(--color-sage-200)] bg-sage-100/50",
-  requested: "border-[color:#f3ecdc] bg-[#f3ecdc]/40",
-  rejected: "border-[color:#f2e3dd] bg-[#f2e3dd]/40",
-  cancelled: "border-line bg-bg-muted",
+  approved: "border-[color:var(--color-accent-soft)] bg-[color:var(--color-accent-soft)]/30",
+  requested: "border-[color:var(--color-gold-soft)] bg-[color:var(--color-gold-soft)]/50",
+  rejected: "border-[color:var(--color-down-soft)] bg-[color:var(--color-down-soft)]/50",
+  cancelled: "border-[color:var(--color-line)] bg-[color:var(--color-surface-2)]",
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -175,8 +175,11 @@ export default async function BookingDetailPage({
     <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
       <header className="flex items-baseline justify-between">
         <div>
-          <p className="eyebrow">Detalle</p>
-          <h1 className="font-serif text-2xl mt-1 tracking-[-0.02em]">
+          <span className="eyebrow">Detalle</span>
+          <h1
+            className="text-[22px] font-semibold mt-0.5 leading-tight"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             Reserva
           </h1>
         </div>
@@ -186,7 +189,8 @@ export default async function BookingDetailPage({
               ? `/calendario?view=dia&date=${toDateParam(new Date(base.starts_at))}`
               : "/calendario"
           }
-          className="text-sm underline text-fg2"
+          className="text-sm"
+          style={{ color: "var(--color-muted)" }}
         >
           ← Calendario
         </Link>
@@ -195,7 +199,11 @@ export default async function BookingDetailPage({
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
+          className="text-sm rounded-[10px] px-4 py-3"
+          style={{
+            background: "var(--color-up-soft)",
+            color: "var(--color-up)",
+          }}
         >
           {ok}
         </p>
@@ -203,8 +211,11 @@ export default async function BookingDetailPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-[14px] px-4 py-3"
-          style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
+          className="text-sm rounded-[10px] px-4 py-3"
+          style={{
+            background: "var(--color-down-soft)",
+            color: "var(--color-down)",
+          }}
         >
           {error}
         </p>
@@ -277,17 +288,8 @@ export default async function BookingDetailPage({
       </section>
 
       {isStaff && detail && (
-        <section
-          className="rounded-[22px] p-6 border"
-          style={{
-            background: "var(--color-blue-200)",
-            borderColor: "var(--color-blue-400)",
-            color: "var(--color-forest-500)",
-          }}
-        >
-          <h2 className="eyebrow mb-2"
-            style={{ color: "var(--color-forest-500)" }}
-          >
+        <section className="card px-4 py-4">
+          <h2 className="eyebrow mb-3">
             {detail.is_external
               ? "Detalle del cliente externo"
               : "Detalle interno (staff)"}
@@ -435,10 +437,10 @@ export default async function BookingDetailPage({
                 <input type="hidden" name="id" value={base.id ?? ""} />
                 <button
                   type="submit"
-                  className="rounded-full px-5 h-11 text-sm font-semibold inline-flex items-center gap-2 active:scale-[0.97] transition"
+                  className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold active:scale-[0.97] transition"
                   style={{
-                    background: "var(--color-positive)",
-                    color: "var(--color-sand-100)",
+                    background: "var(--color-up-soft)",
+                    color: "var(--color-up)",
                   }}
                 >
                   ✓ Aprobar
@@ -448,10 +450,10 @@ export default async function BookingDetailPage({
                 <input type="hidden" name="id" value={base.id ?? ""} />
                 <button
                   type="submit"
-                  className="rounded-full px-5 h-11 text-sm font-semibold inline-flex items-center gap-2 border active:scale-[0.97] transition"
+                  className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
                   style={{
-                    borderColor: "var(--color-critical)",
-                    color: "var(--color-critical)",
+                    borderColor: "var(--color-down)",
+                    color: "var(--color-down)",
                   }}
                 >
                   ✗ Rechazar
@@ -475,11 +477,11 @@ export default async function BookingDetailPage({
               <input type="hidden" name="id" value={base.id ?? ""} />
               <button
                 type="submit"
-                className="rounded-full px-5 h-11 text-sm font-semibold inline-flex items-center gap-2 border active:scale-[0.97] transition"
-              style={{
-                borderColor: "var(--color-critical)",
-                color: "var(--color-critical)",
-              }}
+                className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
+                style={{
+                  borderColor: "var(--color-down)",
+                  color: "var(--color-down)",
+                }}
               >
                 Cancelar toda la serie
               </button>

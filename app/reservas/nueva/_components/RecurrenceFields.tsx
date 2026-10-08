@@ -45,7 +45,7 @@ export function RecurrenceFields({
           <div>
             <label
               htmlFor="recurrence_freq"
-              className="block text-xs text-fg2 mb-1"
+              className="block text-xs mb-1" style={{ color: "var(--color-muted)" }}
             >
               Frecuencia
             </label>
@@ -65,7 +65,7 @@ export function RecurrenceFields({
 
           {freq === "custom" && (
             <div className="space-y-2">
-              <p className="text-xs text-fg2">Días de la semana</p>
+              <p className="text-xs" style={{ color: "var(--color-muted)" }}>Días de la semana</p>
               <div className="grid grid-cols-7 gap-1">
                 {WEEKDAYS.map((d) => (
                   <label
@@ -80,14 +80,15 @@ export function RecurrenceFields({
                       className="peer sr-only"
                     />
                     <span
-                      className="block rounded-md border border-gray-300 dark:border-gray-700 py-2 text-sm font-medium peer-checked:bg-black peer-checked:text-white peer-checked:border-black dark:peer-checked:bg-white dark:peer-checked:text-black dark:peer-checked:border-white"
+                      className="block rounded-[8px] border py-2 text-sm font-medium transition peer-checked:bg-[var(--color-accent)] peer-checked:text-[var(--color-accent-ink)] peer-checked:border-[var(--color-accent)]"
+                      style={{ borderColor: "var(--color-line)" }}
                     >
                       {d.label}
                     </span>
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-fg2">
+              <p className="text-xs" style={{ color: "var(--color-muted)" }}>
                 El día de inicio debe estar entre los marcados.
               </p>
             </div>
@@ -96,7 +97,7 @@ export function RecurrenceFields({
           <div>
             <label
               htmlFor="recurrence_until"
-              className="block text-xs text-fg2 mb-1"
+              className="block text-xs mb-1" style={{ color: "var(--color-muted)" }}
             >
               Hasta
             </label>
@@ -109,7 +110,7 @@ export function RecurrenceFields({
             />
           </div>
 
-          <p className="text-xs text-fg2">
+          <p className="text-xs" style={{ color: "var(--color-muted)" }}>
             Las ocurrencias que choquen con otra reserva se saltan
             automáticamente. Máximo 365 ocurrencias.
           </p>

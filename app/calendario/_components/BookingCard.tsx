@@ -24,51 +24,105 @@ const USE_TYPE_LABELS: Record<string, string> = {
   otro: "Otro",
 };
 
-const STATUS_STYLES: Record<string, string> = {
-  approved: "border-[color:var(--color-sage-200)]",
-  requested: "border-[color:#f3ecdc]",
-};
-
-export function BookingCard({ booking }: { booking: CalendarBooking }) {
+export function BookingCard({
+  booking,
+  isOwn = false,
+}: {
+  booking: CalendarBooking;
+  isOwn?: boolean;
+}) {
   if (!booking.starts_at || !booking.ends_at) return null;
 
   const useTypeLabel = booking.use_type
     ? USE_TYPE_LABELS[booking.use_type] ?? booking.use_type
     : null;
 
-  const statusClass = STATUS_STYLES[booking.status ?? ""] ?? "border-line";
+  const isPending = booking.status === "requested";
+
+  // Dot color: azul = reserva propia, verde = otras aprobadas, amarillo = pendiente
+  const dotColor = isOwn
+    ? "#2F5E9E"
+    : isPending
+      ? "var(--color-gold)"
+      : "var(--color-accent)";
+
+  // Dot shape: cuadrado redondeado para reservas (igual al prototipo de Calendario)
+  const dotRadius = isOwn ? "3px" : "50%";
+
+  const subtitle = [
+    booking.space_name,
+    useTypeLabel,
+    booking.has_montaje_lock ? "🔒 montaje" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const inner = (
-    <>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-mono text-sm tabular-nums text-forest-500 dark:text-sage-400">
-          {formatTime(booking.starts_at)} – {formatTime(booking.ends_at)}
+    <div className="flex gap-[10px] items-start">
+      <span
+        className="flex-none mt-[5px]"
+        style={{
+          width: "10px",
+          height: "10px",
+          borderRadius: dotRadius,
+          background: dotColor,
+        }}
+        aria-hidden="true"
+      />
+      <div className="flex flex-col min-w-0">
+        <b
+          className="leading-snug truncate"
+          style={{ fontFamily: "var(--font-display)", fontSize: "15px" }}
+        >
+          {booking.display_owner ?? "—"}
+        </b>
+        <span className="text-[13px] truncate mt-[1px]" style={{ color: "var(--color-muted)" }}>
+          {booking.space_name && useTypeLabel
+            ? `${booking.space_name} · ${useTypeLabel}`
+            : (subtitle || "—")}
         </span>
-        {booking.status === "requested" && (
-          <span className="badge badge-pending">Por aprobar</span>
-        )}
+        <span className="text-[13px] tabular-nums mt-[1px]" style={{ color: "var(--color-muted)" }}>
+          {formatTime(booking.starts_at)} – {formatTime(booking.ends_at)}
+          {isPending && (
+            <span
+              className="ml-2 inline-flex items-center px-2 py-[1px] rounded-full text-[11px] font-semibold"
+              style={{
+                background: "var(--color-gold-soft)",
+                color: "var(--color-gold-text)",
+              }}
+            >
+              Por aprobar
+            </span>
+          )}
+        </span>
       </div>
-      <p className="font-serif text-lg truncate mt-1">
-        {booking.display_owner ?? "—"}
-      </p>
-      <p className="text-xs text-fg2 truncate">
-        {booking.space_name}
-        {useTypeLabel && <span> · {useTypeLabel}</span>}
-        {booking.has_montaje_lock && <span> · 🔒 montaje</span>}
-      </p>
-    </>
+    </div>
   );
 
-  const baseClass = `rounded-[14px] border bg-bg-elev px-3 py-3 text-sm ${statusClass}`;
+  const cardStyle = {
+    background: "var(--color-surface)",
+    borderColor: isOwn
+      ? "#2F5E9E"
+      : isPending
+        ? "var(--color-gold)"
+        : "var(--color-line)",
+  };
+
+  const className = "card block px-[14px] py-3";
 
   if (!booking.id) {
-    return <article className={baseClass}>{inner}</article>;
+    return (
+      <article className={className} style={cardStyle}>
+        {inner}
+      </article>
+    );
   }
 
   return (
     <Link
       href={`/reservas/${booking.id}`}
-      className={`${baseClass} block transition hover:shadow-md hover:-translate-y-[2px]`}
+      className={`${className} transition hover:-translate-y-[1px]`}
+      style={cardStyle}
     >
       {inner}
     </Link>
