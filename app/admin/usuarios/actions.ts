@@ -96,7 +96,7 @@ export async function inviteUserAction(formData: FormData) {
   );
 }
 
-const VALID_EXTRA_ROLES = ["lider_departamento", "pastor_ministerio", "lider_discipulado"] as const;
+const VALID_EXTRA_ROLES = ["lider_departamento", "pastor_ministerio", "pastor_sede", "lider_discipulado"] as const;
 type ExtraRole = (typeof VALID_EXTRA_ROLES)[number];
 function isExtraRole(v: string): v is ExtraRole {
   return (VALID_EXTRA_ROLES as readonly string[]).includes(v);

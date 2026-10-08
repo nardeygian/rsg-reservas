@@ -11,7 +11,7 @@ import { UserSearch, InviteSection } from "./_components";
 
 const ROLES = [
   { value: "leader", label: "Líder" },
-  { value: "mentor", label: "Mentor" },
+  { value: "mentor", label: "Líder de discipulado" },
   { value: "pastor_ministerio", label: "Pastor de ministerio" },
   { value: "pastor_sede", label: "Pastor de sede" },
   { value: "admin_casa", label: "Admin de casa" },
@@ -26,6 +26,7 @@ const ROLE_LABELS: Record<string, string> = Object.fromEntries(
 const EXTRA_ROLE_LABELS: Record<string, string> = {
   lider_departamento: "Líder de departamento",
   pastor_ministerio: "Pastor de ministerio",
+  pastor_sede: "Pastor de sede",
   lider_discipulado: "Líder de discipulado",
 };
 
@@ -277,6 +278,7 @@ function UserCard({
           style={{ height: 32, paddingTop: 0, paddingBottom: 0, width: 170 }}>
           <option value="lider_departamento">Líder de departamento</option>
           <option value="pastor_ministerio">Pastor de ministerio</option>
+          <option value="pastor_sede">Pastor de sede</option>
           <option value="lider_discipulado">Líder de discipulado</option>
         </select>
         <select name="ministry_id" className="input text-sm flex-1"
