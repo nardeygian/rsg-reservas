@@ -48,23 +48,65 @@ Mejora opcional futura: Supabase Pro (25 USD al mes), por respaldos administrado
 
 ## Roles
 
-Una persona puede tener **varios roles**, y algunos llevan **alcance**. Ejemplo: Gian es `super_admin`, `mentor` del discipulado `gian-camila` y `planeacion`. La interfaz muestra la unión de lo que permiten sus roles.
+Una persona puede tener **varios roles**, y algunos llevan **alcance**. Ejemplo: Gian es `super_admin`, `lider_discipulado` del discipulado `gian-camila` y `servidor_planeacion`. La interfaz muestra la unión de lo que permiten sus roles.
 
-Roles actuales en `profiles.role`: `leader`, `mentor`, `pastor_ministerio`, `pastor_sede`, `admin_casa`, `studio_admin`, `super_admin`. Solicitables en `requested_role`: `lider_departamento`, `mentor`, `pastor_ministerio`, `pastor_sede`, `servidor_planeacion`. La etapa 0 los unifica en una tabla de roles con alcance (ver `etapa-0-bases.md`).
+| Rol (código) | Nombre en pantalla | Alcance | Antes, en reservas |
+|---|---|---|---|
+| `lider_departamento` | Líder de Departamento | departamento | `leader`, `lider_departamento` |
+| `lider_discipulado` | Líder de Discipulado | discipulado | `mentor` |
+| `pastor_sede` | Pastor de Sede | sede | `pastor_sede` |
+| `pastor_ministerio` | Pastor de Ministerio | ministerio | `pastor_ministerio` |
+| `servidor_planeacion` | Servidor Planeación | | `servidor_planeacion` (solo como solicitud) |
+| `admin_casa` | Administrador de casa | | `admin_casa` |
+| `studio_admin` | Administrador del Estudio | | `studio_admin` |
+| `super_admin` | Administración | | `super_admin` |
 
-### Qué ve cada rol
+"Mentor" deja de usarse como nombre: es siempre Líder de Discipulado. Servidor Planeación son los servidores de RSG que trabajan con Planeación.
 
-| | Reservas | Calendario | Servicio | Donaciones | Mis discípulos |
-|---|---|---|---|---|---|
-| super_admin | Todo | Todo | Todo, edita | Todo, edita | Todos los discipulados |
-| planeacion | Según reglas actuales | Todo, con servidores | Todo, edita | **Nada, nunca** | No |
-| mentor (alcance: discipulado) | Según reglas actuales | Eventos | Solo sus discípulos, lectura | Solo Módulo Dar de sus discípulos, sin datos personales | Solo su discipulado |
-| pastor_sede | Detalle completo | Todo | Por decidir | Por decidir | Por decidir |
-| pastor_ministerio, leader, lider_departamento | Según reglas actuales | Eventos | No | No | No |
-| admin_casa | Detalle completo | Eventos | No | No | No |
-| studio_admin | Lo del Estudio | Lo del Estudio | No | No | No |
+### Permisos: los roles son paquetes, el super admin decide
 
-"Por decidir" se pregunta a Gian antes de la etapa correspondiente. Mientras tanto: sin acceso.
+Lo que cada persona ve no depende directamente del rol, sino de sus **permisos**. Cada rol trae un paquete de permisos por defecto, y **el super admin puede dar o quitar cualquier permiso a cualquier persona**, por encima de su rol. Así, por ejemplo, puede darle a un Pastor de Sede la vista de donaciones de un discipulado, o quitarle a alguien el calendario, sin crear roles nuevos.
+
+Catálogo de permisos (algunos llevan alcance):
+
+| Permiso | Qué permite | Alcance |
+|---|---|---|
+| `reservas.usar` | Ver disponibilidad y reservar | |
+| `reservas.detalle` | Ver el detalle completo de reservas (requerimientos, pagos de terceros) | |
+| `reservas.estudio` | Gestionar las reservas del Estudio | |
+| `calendario.ver` | Ver el Calendario RSG | |
+| `calendario.servidores` | Ver los equipos de servidores en el calendario | |
+| `servicio.ver` | Ver todo el módulo de Servicio | |
+| `servicio.editar` | Subir listados, marcar ausencias, corregir servidores | |
+| `servicio.discipulado` | Ver el servicio de los discípulos de un discipulado | discipulado |
+| `donaciones.ver` | Ver todas las donaciones, sin correo ni cédula | |
+| `donaciones.datos_personales` | Ver correo, cédula y referencia de los donantes | |
+| `donaciones.configurar` | Discipulados, asignaciones, formularios, grupos especiales | |
+| `donaciones.discipulado` | Ver los aportes del Módulo Dar de un discipulado, sin datos personales | discipulado |
+| `discipulos.ver` | Ver Mis discípulos (lo que muestra depende de sus otros permisos) | discipulado |
+| `admin.personas` | Gestionar personas, roles y permisos | |
+
+### Paquetes por defecto
+
+| Rol | Permisos por defecto |
+|---|---|
+| super_admin | Todos. No se le pueden quitar. |
+| servidor_planeacion | Todo lo de reservas que tenga hoy, `calendario.ver`, `calendario.servidores`, `servicio.ver`, `servicio.editar`. **Ningún permiso de donaciones.** |
+| lider_discipulado | `reservas.usar`, `calendario.ver`, y para su discipulado: `servicio.discipulado`, `donaciones.discipulado`, `discipulos.ver` |
+| pastor_sede | `reservas.usar`, `reservas.detalle`, `calendario.ver`, `calendario.servidores` |
+| pastor_ministerio, lider_departamento | `reservas.usar`, `calendario.ver` |
+| admin_casa | `reservas.usar`, `reservas.detalle`, `calendario.ver` |
+| studio_admin | `reservas.estudio`, `calendario.ver` (solo lo del Estudio) |
+
+Los paquetes de reservas deben respetar las reglas que reservas ya tiene hoy. Si hay diferencias, manda lo que hace hoy reservas, y se le pregunta a Gian.
+
+### Reglas del sistema de permisos
+
+- **Permisos efectivos** = permisos de sus roles + los que el super admin le dio − los que el super admin le quitó. Una quita gana sobre el rol.
+- **Todo cambio queda registrado:** quién, a quién, qué permiso, cuándo. El registro se ve en `/admin/personas`.
+- **Los permisos de donaciones piden confirmación** al darlos ("Esta persona va a ver aportes de la congregación"), y `donaciones.datos_personales` aparte, con otra confirmación.
+- **No se puede quitar el último super_admin.**
+- **Los permisos se cumplen en la base (RLS)**, no solo escondiendo botones. Una función `has_permission(permiso, alcance)` es la que usan todas las políticas.
 
 ## Sistema visual
 

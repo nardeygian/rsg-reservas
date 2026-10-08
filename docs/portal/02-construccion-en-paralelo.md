@@ -7,15 +7,22 @@ La regla: **nada de lo que funciona hoy cambia mientras se construye.** Las rese
 | | Producción (no se toca) | Construcción |
 |---|---|---|
 | Rama | `main` | `portal` |
-| URL | rsg-reservas.vercel.app | URL de Preview que Vercel crea para la rama `portal` |
-| Supabase | Proyecto actual (ref `yuhfntejqkgajmacqmix`) | Proyecto de desarrollo `rsg-portal-dev`, si hay cupo (ver abajo) |
+| Dónde se prueba | rsg-reservas.vercel.app | `localhost` en el Mac de Gian |
+| Supabase | Proyecto actual (ref `yuhfntejqkgajmacqmix`) | **Supabase local** (CLI de Supabase + Docker) |
 | Panel PHP | Funciona igual | Solo se lee, por exportación |
 
-### Supabase de desarrollo
+### Supabase local
 
-- **Si hay cupo** en el plan gratis (2 proyectos por organización): se crea `rsg-portal-dev`. Las variables de entorno **Preview** de Vercel y el `.env.local` apuntan ahí. Las migraciones se prueban ahí primero.
-- **Si no hay cupo** (por ejemplo, porque RSG Academy usa el otro): se trabaja sobre el proyecto de producción, pero **solo con migraciones aditivas** y siempre con permiso de Gian. Ninguna pantalla nueva se publica en `main` antes de tiempo.
-- **Google en la URL de Preview:** agrega en Supabase (Authentication → URL Configuration) la URL de Preview a las URLs de retorno permitidas.
+El plan gratis permite 2 proyectos y los dos están ocupados (reservas y RSG Academy). Por eso todo el desarrollo se hace con **Supabase local**:
+
+- `supabase start` levanta en el Mac la base, Auth, Storage y Edge Functions. Requiere Docker Desktop.
+- Las migraciones viven en `supabase/migrations/` y se prueban con `supabase db reset`, que recrea la base desde cero.
+- Datos de prueba en `supabase/seed.sql`, más lo que traiga el importador desde Hostinger.
+- En local, el inicio de sesión de prueba es con correo y contraseña. Google se prueba en el ensayo final de cada módulo.
+- Las Edge Functions (sincronización de Asana) se prueban con `supabase functions serve`.
+- **El proyecto de producción solo se toca en el paso a producción de cada módulo**, con permiso de Gian, y solo con migraciones aditivas: tablas nuevas, columnas nuevas que acepten nulos. Nada que borre o renombre lo que usa la app actual.
+- Antes de aplicar migraciones a producción, debe haber un respaldo del día (etapa 0.6).
+- La URL de Preview de Vercel no apunta a datos reales durante la construcción. Se usa solo en el ensayo final, ya con las migraciones aprobadas en producción.
 
 ## Los datos de Hostinger durante la construcción
 
@@ -41,10 +48,10 @@ El importador del portal (script en `scripts/`, corrido por la tarea diaria de G
 
 Cada módulo pasa solo cuando cumple su criterio de "terminado" (en el documento de su etapa). Pasos:
 
-1. **Ensayo:** correr en paralelo al menos un ciclo real (un domingo para servicio, dos a cuatro semanas para donaciones), comparando resultados con el panel PHP.
-2. **Migraciones a producción:** se aplican al Supabase de producción, con permiso.
-3. **Importación final** desde Hostinger.
-4. **Unir `portal` en `main`.**
+1. **Migraciones a producción:** se aplican al Supabase de producción, con permiso y con el respaldo del día hecho. Son aditivas, así que la app actual no cambia.
+2. **Importación** desde Hostinger a producción, y luego diaria.
+3. **Ensayo:** la URL de Preview de la rama `portal`, ahora conectada a producción, se usa en paralelo al menos un ciclo real (un domingo para servicio, dos a cuatro semanas para donaciones), comparando resultados con el panel PHP.
+4. **Importación final y unir `portal` en `main`.**
 5. **Cambiar quién manda:**
    - Servicio: el panel PHP deja de aceptar cambios de servicio (modo solo lectura, por una bandera en su config) y Planeación pasa al portal.
    - Donaciones: el webhook de Wompi empieza además a enviar cada donación a Supabase (ver etapa 2).

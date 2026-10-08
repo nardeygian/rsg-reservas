@@ -56,3 +56,4 @@ Esta app está creciendo para ser el Portal RSG: Reservas, Calendario RSG, Servi
 - Nunca corras migraciones ni cambies datos en el Supabase de producción sin permiso explícito de Gian.
 - Propón el plan de cada etapa y espera aprobación antes de escribir código.
 - Al cerrar un punto, actualiza la tabla de estado de `ROADMAP.md`.
+

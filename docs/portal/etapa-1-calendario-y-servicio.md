@@ -16,10 +16,11 @@ asana_sync       una fila: ultimo_sync, ultimo_error
 ```
 
 - **Vistas SQL de conteo** que implementan las reglas: unidad (Reunión Central del mismo día = una), tipo (`min` o `serv`), y ausentes que no cuentan. El portal no recalcula esto en el cliente.
-- **RLS:**
-  - super_admin y Planeación: leen y escriben todo.
-  - Mentor: lee solo las filas de servidores enlazados a discípulos de sus discipulados, sin notas.
-  - Los demás roles: leen `reuniones` (para el calendario), nada de servicio.
+- **RLS, por permisos** (`has_permission`):
+  - `servicio.editar`: lee y escribe todo.
+  - `servicio.ver`: lee todo, incluidas notas.
+  - `servicio.discipulado` (alcance): lee solo las filas de servidores enlazados a discípulos de ese discipulado, sin notas.
+  - `calendario.ver`: lee `reuniones`. `calendario.servidores`: además, los equipos.
 
 ## 1.2 Sincronización con Asana
 
@@ -65,10 +66,10 @@ Para el mentor: "Servicio de mis discípulos", con la misma lista desplegable, s
 
 ## 1.6 Paso a producción
 
-1. **Ensayo de un domingo:** Planeación carga el listado en el panel PHP como siempre, y además en el portal de Preview. Los conteos por persona, por discipulado y del periodo deben coincidir.
-2. Script de vuelta atrás listo: exportar del portal al formato de `servicio.json`.
-3. Migraciones a producción, con permiso. Importación final.
-4. Merge a `main`.
+1. Script de vuelta atrás listo: exportar del portal al formato de `servicio.json`.
+2. Migraciones a producción, con permiso y con el respaldo del día. Importación desde Hostinger.
+3. **Ensayo de un domingo:** Planeación carga el listado en el panel PHP como siempre, y además en el portal de Preview conectado a producción. Los conteos por persona, por discipulado y del periodo deben coincidir.
+4. Importación final y merge a `main`.
 5. **En `resurgencia-web`** (rama revisada): bandera `servicio_solo_lectura` en la config del panel PHP. Con ella, las acciones `sv_*` de escritura responden "El servicio ahora se maneja en el portal" con el link. La lectura sigue funcionando.
 6. Avisar a Planeación y a los mentores.
 
@@ -78,6 +79,6 @@ Para el mentor: "Servicio de mis discípulos", con la misma lista desplegable, s
 - [ ] El calendario muestra reuniones y reservas, y funciona bien en el celular.
 - [ ] Planeación puede hacer en el portal todo lo que hace hoy en el panel PHP.
 - [ ] Los conteos del ensayo coinciden exactamente con el panel PHP.
-- [ ] Ninguna cuenta de Planeación puede leer nada de donaciones (probado con una consulta directa a la base con ese usuario).
-- [ ] Un mentor solo ve a sus discípulos (probado igual).
+- [ ] Cada permiso hace exactamente lo que dice, probado con consultas directas a la base con usuarios de prueba de cada rol.
+- [ ] Un Líder de Discipulado solo ve a sus discípulos, y si el super admin le da `servicio.ver`, ve todo (y al quitárselo, deja de ver).
 - [ ] Hay script de vuelta atrás probado.

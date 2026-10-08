@@ -4,10 +4,13 @@ Estas reglas están implementadas hoy en PHP (`resurgencia-web/pago/panel-lib.ph
 
 ## Privacidad y permisos
 
-1. **Planeación nunca recibe datos de donaciones**, ni siquiera listas vacías con la estructura. Se cumple en la base (RLS), no solo en la interfaz.
-2. **Un mentor solo ve donaciones del Módulo Dar de sus propios discípulos.** Nunca formularios, nunca otros discipulados, nunca correo, cédula ni referencia.
-3. **Las notas de servicio** (por reunión y por persona) solo las ven super_admin y Planeación.
-4. **Los permisos se cumplen en Supabase con RLS**, con todo cerrado por defecto. Para los mentores, las donaciones se exponen por una vista sin columnas personales.
+Lo que ve cada persona lo deciden sus permisos (ver `00-vision-y-arquitectura.md`). Estas reglas valen para los paquetes por defecto y para cómo se cumplen:
+
+1. **Quien no tiene ningún permiso de donaciones no recibe ningún dato de donaciones**, ni siquiera listas vacías con la estructura. Por defecto, Servidor Planeación no tiene ninguno.
+2. **Con `donaciones.discipulado`, solo se ven donaciones del Módulo Dar de los discípulos de ese discipulado.** Nunca formularios ni otros discipulados.
+3. **Correo, cédula y referencia solo con `donaciones.datos_personales`.** Las demás vistas de donaciones no traen esas columnas.
+4. **Las notas de servicio** (por reunión y por persona) solo con `servicio.ver`.
+5. **Todo se cumple en Supabase con RLS**, cerrado por defecto, usando `has_permission()`. Esconder un botón no cuenta como permiso.
 
 ## Donaciones
 
