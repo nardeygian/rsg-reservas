@@ -43,3 +43,5 @@ Sigue las fases de `docs/06-roadmap.md`. No adelantes funcionalidades de fases p
 - Antes de exponer cualquier dato nuevo, define su política RLS en el mismo cambio.
 - Escribe los tipos de TypeScript a partir del esquema, no a mano.
 - Si una decisión de visibilidad no está clara, asume lo más restrictivo y déjalo anotado.
+
+Para el Portal RSG (unificar calendario, reservas, servicio y donaciones), lee docs/portal.md.
