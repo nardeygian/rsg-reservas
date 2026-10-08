@@ -45,3 +45,14 @@ Sigue las fases de `docs/06-roadmap.md`. No adelantes funcionalidades de fases p
 - Si una decisión de visibilidad no está clara, asume lo más restrictivo y déjalo anotado.
 
 Para el Portal RSG (unificar calendario, reservas, servicio y donaciones), lee docs/portal.md.
+
+## Portal RSG
+
+Esta app está creciendo para ser el Portal RSG: Reservas, Calendario RSG, Servicio, Donaciones y Mis discípulos en una sola app.
+
+- El plan y el estado están en `ROADMAP.md`. Léelo al empezar cualquier trabajo del portal.
+- Antes de cada etapa lee `docs/portal/00-vision-y-arquitectura.md`, `docs/portal/01-reglas-que-no-se-rompen.md`, `docs/portal/02-construccion-en-paralelo.md` y el documento de la etapa.
+- Se construye en paralelo en la rama `portal`. Lo que hoy funciona (reservas en producción y el panel PHP de Hostinger) no se toca hasta el paso a producción de cada módulo.
+- Nunca corras migraciones ni cambies datos en el Supabase de producción sin permiso explícito de Gian.
+- Propón el plan de cada etapa y espera aprobación antes de escribir código.
+- Al cerrar un punto, actualiza la tabla de estado de `ROADMAP.md`.
