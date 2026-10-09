@@ -35,7 +35,7 @@ const TABS = [
     ),
   },
   {
-    href: null,
+    href: "/servicio",
     label: "Servicio",
     matchExact: false,
     icon: (
