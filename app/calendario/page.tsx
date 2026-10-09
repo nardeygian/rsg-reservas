@@ -1,144 +1,119 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import {
-  dayKey,
-  endOfDayBogota,
-  endOfWeekBogota,
-  monthGridRangeBogota,
-  parseDateParam,
-  startOfDayBogota,
-  startOfWeekBogota,
-  toDateParam,
-} from "@/lib/datetime";
-import { CalendarHeader, type View } from "./_components/CalendarHeader";
-import type { CalendarBooking } from "./_components/BookingCard";
-import { DayView } from "./_components/DayView";
-import { WeekView } from "./_components/WeekView";
-import { MonthView } from "./_components/MonthView";
-import { SpaceFilter } from "./_components/SpaceFilter";
+import { createServiceClient } from "@/lib/supabase/service";
+import { getCalendarEvents } from "@/lib/asana";
+import { CalendarioShell } from "./_components/CalendarioShell";
+import { linkEventAction, unlinkEventAction } from "./actions";
 
-function parseView(value: string | undefined): View {
-  if (value === "dia" || value === "semana" || value === "mes") return value;
-  return "semana";
-}
+export type LinkInfo = {
+  booking_id: string;
+  space_name: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+};
 
-function rangeForView(view: View, anchor: Date) {
-  if (view === "dia") {
-    return { start: startOfDayBogota(anchor), end: endOfDayBogota(anchor) };
-  }
-  if (view === "semana") {
-    return { start: startOfWeekBogota(anchor), end: endOfWeekBogota(anchor) };
-  }
-  return monthGridRangeBogota(anchor);
-}
+export type BookingOption = {
+  id: string;
+  space_name: string | null;
+  starts_at: string;
+  ends_at: string;
+};
 
-export default async function CalendarPage({
+export default async function CalendarioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; date?: string; space?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
-  const params = await searchParams;
-  const view = parseView(params.view);
-  const anchor = parseDateParam(params.date);
-  const space = params.space?.trim() || null;
-
-  const { start, end } = rangeForView(view, anchor);
+  const { error, ok } = await searchParams;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const weekStart = startOfWeekBogota(anchor);
-  const weekEnd = endOfWeekBogota(anchor);
+  const service = createServiceClient();
 
-  // Tres queries en paralelo: reservas del período, puntos de la semana, lista de espacios
-  const [
-    { data: bookings, error: bookingsError },
-    { data: weekDots },
-    { data: ownWeekBookings },
-    { data: spaces },
-  ] = await Promise.all([
-    // Reservas del rango seleccionado
-    (() => {
-      let q = supabase
-        .from("bookings_calendar")
-        .select("id, space_id, space_name, starts_at, ends_at, status, display_owner, use_type, has_montaje_lock")
-        .lt("starts_at", end.toISOString())
-        .gt("ends_at", start.toISOString())
-        .in("status", ["requested", "approved"])
-        .order("starts_at", { ascending: true });
-      if (space) q = q.eq("space_id", space);
-      return q;
-    })(),
-    // Días de la semana que tienen algún evento (para los dots)
-    supabase
+  // Determinar si el usuario puede enlazar reuniones con reservas
+  const { data: profile } = await supabase
+    .from("profiles").select("role").eq("id", user.id).single();
+
+  let canLink = ["pastor_sede", "pastor_ministerio", "super_admin"].includes(profile?.role ?? "");
+  if (!canLink) {
+    const { data: extraRoles } = await supabase
+      .from("user_roles")
+      .select("role, ministries(name)")
+      .eq("user_id", user.id);
+    canLink = (extraRoles ?? []).some(
+      (r) => r.role === "lider_departamento" && (r.ministries as { name: string } | null)?.name === "Planeación"
+    );
+  }
+
+  // Eventos de Asana, links actuales y opciones de reserva (en paralelo)
+  const [events, { data: linksRaw }, { data: bookingsRaw }] = await Promise.all([
+    getCalendarEvents(),
+    service.from("calendar_links").select("asana_gid, booking_id"),
+    service
       .from("bookings_calendar")
-      .select("starts_at")
-      .lt("starts_at", weekEnd.toISOString())
-      .gt("ends_at", weekStart.toISOString())
-      .in("status", ["requested", "approved"]),
-    // IDs de las reservas del usuario en la semana (para pintar azul)
-    supabase
-      .from("bookings_calendar")
-      .select("id")
-      .eq("created_by", user.id)
-      .lt("starts_at", weekEnd.toISOString())
-      .gt("ends_at", weekStart.toISOString())
-      .in("status", ["requested", "approved"]),
-    // Espacios disponibles para el filtro
-    supabase.from("spaces").select("id, name").neq("status", "disabled").order("name"),
+      .select("id, space_name, starts_at, ends_at")
+      .eq("status", "approved")
+      .gte("starts_at", new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString())
+      .order("starts_at")
+      .limit(300),
   ]);
 
-  const daysWithEvents = new Set(
-    (weekDots ?? []).map((b) => b.starts_at ? dayKey(b.starts_at) : "").filter(Boolean)
-  );
+  // Mapa booking_id → detalles
+  const bookingById = new Map<string, { space_name: string | null; starts_at: string | null; ends_at: string | null }>();
+  for (const b of bookingsRaw ?? []) {
+    if (!b.id) continue;
+    bookingById.set(b.id, { space_name: b.space_name, starts_at: b.starts_at, ends_at: b.ends_at });
+  }
 
-  const ownBookingIds = new Set(
-    (ownWeekBookings ?? []).map((b) => b.id).filter((id): id is string => !!id)
-  );
+  // Links por asana_gid
+  const linksByGid: Record<string, LinkInfo> = {};
+  for (const link of linksRaw ?? []) {
+    const detail = bookingById.get(link.booking_id);
+    linksByGid[link.asana_gid] = {
+      booking_id: link.booking_id,
+      space_name: detail?.space_name ?? null,
+      starts_at: detail?.starts_at ?? null,
+      ends_at: detail?.ends_at ?? null,
+    };
+  }
 
-  const today = toDateParam(new Date());
-  const isThisWeek =
-    toDateParam(weekStart) <= today && today <= toDateParam(weekEnd);
+  const bookingOptions: BookingOption[] = (bookingsRaw ?? [])
+    .filter((b): b is typeof b & { id: string; starts_at: string } => !!b.id && !!b.starts_at)
+    .map((b) => ({
+      id: b.id,
+      space_name: b.space_name,
+      starts_at: b.starts_at,
+      ends_at: b.ends_at ?? "",
+    }));
 
   return (
-    <main
-      className="min-h-dvh flex flex-col"
-      style={{ background: "var(--color-bg)" }}
-    >
-      <div className="flex-1 px-4 pt-5 pb-4 max-w-2xl mx-auto w-full flex flex-col gap-4">
-        <CalendarHeader
-          view={view}
-          anchor={anchor}
-          space={space}
-          daysWithEvents={daysWithEvents}
-        />
-
-        <SpaceFilter spaces={spaces ?? []} current={space} />
-
-        {bookingsError ? (
-          <p className="text-sm py-4" style={{ color: "var(--color-down)" }}>
-            No se pudo cargar el calendario: {bookingsError.message}
-          </p>
-        ) : view === "dia" ? (
-          <DayView
-            bookings={(bookings ?? []) as CalendarBooking[]}
-            ownBookingIds={ownBookingIds}
-          />
-        ) : view === "semana" ? (
-          <WeekView
-            weekStart={start}
-            bookings={(bookings ?? []) as CalendarBooking[]}
-            ownBookingIds={ownBookingIds}
-          />
-        ) : (
-          <MonthView
-            anchor={anchor}
-            bookings={(bookings ?? []) as CalendarBooking[]}
-            space={space}
-          />
-        )}
-      </div>
+    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+      {(ok || error) && (
+        <div className="px-4 pt-4 max-w-3xl mx-auto">
+          {ok && (
+            <p className="text-sm rounded-[10px] px-4 py-3 mb-2"
+              style={{ background: "var(--color-up-soft)", color: "var(--color-up)", border: "1px solid var(--color-up)" }}>
+              {ok}
+            </p>
+          )}
+          {error && (
+            <p className="text-sm rounded-[10px] px-4 py-3 mb-2"
+              style={{ background: "var(--color-down-soft)", color: "var(--color-down)", border: "1px solid var(--color-down)" }}>
+              {error}
+            </p>
+          )}
+        </div>
+      )}
+      <CalendarioShell
+        events={events}
+        linksByGid={linksByGid}
+        bookingOptions={bookingOptions}
+        canLink={canLink}
+        linkAction={linkEventAction}
+        unlinkAction={unlinkEventAction}
+      />
     </main>
   );
 }

@@ -300,6 +300,56 @@ export type Database = {
           },
         ]
       }
+      calendar_links: {
+        Row: {
+          asana_gid: string
+          booking_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          asana_gid: string
+          booking_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          asana_gid?: string
+          booking_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings_calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "busy_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ministries: {
         Row: {
           created_at: string
