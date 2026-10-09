@@ -180,6 +180,17 @@ function ListaView({
   onEventClick: (e: AsanaEvent) => void;
 }) {
   const today = todayStr();
+  const currentMonthKey = today.slice(0, 7);
+
+  const [showPast, setShowPast] = useState(false);
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+
+  const toggleMonth = (key: string) =>
+    setCollapsedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
 
   const grouped = useMemo(() => {
     const map = new Map<string, AsanaEvent[]>();
@@ -199,56 +210,112 @@ function ListaView({
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      {grouped.map(([monthKey, monthEvents]) => {
-        const [y, m] = monthKey.split("-").map(Number);
-        const byDay = new Map<string, AsanaEvent[]>();
-        for (const e of monthEvents) {
-          if (!byDay.has(e.due_on)) byDay.set(e.due_on, []);
-          byDay.get(e.due_on)!.push(e);
-        }
-        const days = [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const pastGroups = grouped.filter(([key]) => key < currentMonthKey);
+  const currentAndFuture = grouped.filter(([key]) => key >= currentMonthKey);
 
-        return (
-          <div key={monthKey}>
-            <h2 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--color-muted)" }}>
-              {MONTH_NAMES[m - 1]} {y}
-            </h2>
-            <div className="flex flex-col gap-2">
-              {days.map(([dateStr, dayEvents]) => {
-                const d = new Date(dateStr + "T12:00:00");
-                const isPast = dateStr < today;
-                const isToday = dateStr === today;
-                return (
-                  <div key={dateStr} style={{ opacity: isPast ? 0.5 : 1 }}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none"
-                        style={
-                          isToday
-                            ? { background: "var(--color-accent)", color: "var(--color-accent-ink)" }
-                            : { background: "var(--color-surface-2)", color: "var(--color-muted)" }
-                        }
-                      >
-                        {d.getDate()}
-                      </div>
-                      <span className="text-xs capitalize" style={{ color: "var(--color-muted)" }}>
-                        {DAY_NAMES[d.getDay()]}
-                      </span>
+  function renderMonth([monthKey, monthEvents]: [string, AsanaEvent[]]) {
+    const [y, m] = monthKey.split("-").map(Number);
+    const collapsed = collapsedMonths.has(monthKey);
+    const isPastMonth = monthKey < currentMonthKey;
+
+    const byDay = new Map<string, AsanaEvent[]>();
+    for (const e of monthEvents) {
+      if (!byDay.has(e.due_on)) byDay.set(e.due_on, []);
+      byDay.get(e.due_on)!.push(e);
+    }
+    const days = [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b));
+
+    return (
+      <div key={monthKey}>
+        {/* Month header — clicable para plegar */}
+        <button
+          type="button"
+          onClick={() => toggleMonth(monthKey)}
+          className="flex items-center gap-2 w-full mb-3"
+        >
+          <span
+            className="text-xs font-bold uppercase tracking-widest"
+            style={{ color: isPastMonth ? "var(--color-faint)" : "var(--color-muted)" }}
+          >
+            {MONTH_NAMES[m - 1]} {y}
+          </span>
+          <span className="text-[10px]" style={{ color: "var(--color-faint)" }}>
+            {collapsed ? "▶" : "▼"}
+          </span>
+          <span
+            className="text-[11px] font-semibold px-2 py-[1px] rounded-full"
+            style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}
+          >
+            {monthEvents.length}
+          </span>
+        </button>
+
+        {!collapsed && (
+          <div className="flex flex-col gap-2">
+            {days.map(([dateStr, dayEvents]) => {
+              const d = new Date(dateStr + "T12:00:00");
+              const isDayPast = dateStr < today;
+              const isToday = dateStr === today;
+              return (
+                <div key={dateStr} style={{ opacity: isDayPast ? 0.5 : 1 }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none"
+                      style={
+                        isToday
+                          ? { background: "var(--color-accent)", color: "var(--color-accent-ink)" }
+                          : { background: "var(--color-surface-2)", color: "var(--color-muted)" }
+                      }
+                    >
+                      {d.getDate()}
                     </div>
-                    <div className="flex flex-col gap-1.5 pl-9">
-                      {dayEvents.map((e) => (
-                        <EventCard key={e.gid} event={e} hasLink={!!linksByGid[e.gid]} onClick={onEventClick} />
-                      ))}
-                    </div>
+                    <span className="text-xs capitalize" style={{ color: "var(--color-muted)" }}>
+                      {DAY_NAMES[d.getDay()]}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="flex flex-col gap-1.5 pl-9">
+                    {dayEvents.map((e) => (
+                      <EventCard key={e.gid} event={e} hasLink={!!linksByGid[e.gid]} onClick={onEventClick} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Meses anteriores */}
+      {pastGroups.length > 0 && (
+        <div className="flex flex-col gap-5">
+          <button
+            type="button"
+            onClick={() => setShowPast((v) => !v)}
+            className="flex items-center gap-2 text-sm font-semibold"
+            style={{ color: "var(--color-muted)" }}
+          >
+            <span
+              className="w-5 h-5 flex items-center justify-center rounded-full text-[10px]"
+              style={{ background: "var(--color-surface-2)" }}
+            >
+              {showPast ? "▲" : "▼"}
+            </span>
+            {showPast ? "Ocultar meses anteriores" : `Ver meses anteriores (${pastGroups.length})`}
+          </button>
+          {showPast && (
+            <div className="flex flex-col gap-5 pl-2 border-l-2" style={{ borderColor: "var(--color-line)" }}>
+              {pastGroups.map(renderMonth)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mes actual y futuros */}
+      {currentAndFuture.map(renderMonth)}
     </div>
   );
 }
