@@ -14,7 +14,7 @@ export default function AuthLayout({
         <div className="text-center mb-8">
           <p className="eyebrow">Iglesia RSG</p>
           <h1 className="font-serif text-3xl mt-2 tracking-[-0.02em]">
-            RSG Reservas
+            Panel RSG
           </h1>
         </div>
         {children}

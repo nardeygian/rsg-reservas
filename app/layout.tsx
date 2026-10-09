@@ -27,8 +27,8 @@ try {
 `.trim();
 
 export const metadata: Metadata = {
-  title: "RSG Reservas",
-  description: "Plataforma de reservas de espacios de la iglesia RSG.",
+  title: "Panel RSG",
+  description: "Panel de la iglesia RSG: reservas, calendario, servicio y más.",
   appleWebApp: {
     capable: true,
     title: "RSG",

@@ -5,10 +5,10 @@ const BRAND_COLOR = "#003b2d";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "RSG Reservas",
-    short_name: "RSG",
+    name: "Panel RSG",
+    short_name: "Panel RSG",
     description:
-      "Plataforma de reservas de espacios de la iglesia RSG.",
+      "Panel de la iglesia RSG: reservas, calendario, servicio y más.",
     start_url: "/",
     scope: "/",
     display: "standalone",
