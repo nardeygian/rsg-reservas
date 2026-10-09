@@ -244,17 +244,24 @@ export default async function ReservasPage({
                           ? "var(--color-gold)"
                           : "var(--color-accent)";
 
-                      return (
+                      const block = (
                         <span
-                          key={b.id ?? idx}
-                          className="absolute top-0 bottom-0 rounded-[6px]"
+                          className="absolute top-0 bottom-0 rounded-[6px] block"
                           style={{
                             left: `${left}%`,
                             width: `${width}%`,
                             background: blockColor,
+                            cursor: b.id ? "pointer" : "default",
                           }}
                           title={`${b.display_owner ?? "—"} · ${b.use_type ? (USE_TYPE_LABELS[b.use_type] ?? b.use_type) : ""}`}
                         />
+                      );
+                      return b.id ? (
+                        <Link key={b.id} href={`/reservas/${b.id}`}>
+                          {block}
+                        </Link>
+                      ) : (
+                        <span key={idx}>{block}</span>
                       );
                     })}
                   </div>
