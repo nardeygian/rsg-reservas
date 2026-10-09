@@ -31,9 +31,9 @@ const POLICY_LABELS: Record<string, string> = {
 export default async function NewBookingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; space?: string }>;
+  searchParams: Promise<{ error?: string; space?: string; date?: string }>;
 }) {
-  const { error, space: prefilledSpace } = await searchParams;
+  const { error, space: prefilledSpace, date: datePrefill } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -67,7 +67,15 @@ export default async function NewBookingPage({
   const { data: spaces } = await spacesQuery.order("name");
   const studioSpaceId = isStudioAdmin ? spaces?.[0]?.id ?? "" : "";
 
-  const startDefault = nextHourBogota();
+  const startDefault =
+    datePrefill && /^\d{4}-\d{2}-\d{2}$/.test(datePrefill)
+      ? (() => {
+          const d = new Date(`${datePrefill}T08:00:00`);
+          // Shift to Bogotá 8am (UTC-5)
+          d.setUTCHours(13, 0, 0, 0);
+          return d;
+        })()
+      : nextHourBogota();
   const endDefault = new Date(startDefault.getTime() + 60 * 60 * 1000);
 
   const { data: itemsAvail } = await supabase.rpc("items_available", {

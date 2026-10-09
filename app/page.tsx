@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth";
 import { dayKey } from "@/lib/datetime";
 import { ThemeToggle } from "./_components/ThemeToggle";
+import { getCalendarEvents } from "@/lib/asana";
 
 const ROLE_LABELS: Record<string, string> = {
   leader: "Líder",
@@ -52,6 +53,29 @@ function formatDayLabel(iso: string): string {
   });
 }
 
+function getGreeting(): string {
+  const hour = parseInt(
+    new Date().toLocaleString("en-US", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: "America/Bogota",
+    }),
+    10
+  );
+  if (hour >= 5 && hour < 12) return "Buenos días";
+  if (hour >= 12 && hour < 19) return "Buenas tardes";
+  return "Buenas noches";
+}
+
+function formatEventDay(due_on: string, todayStr: string): string {
+  if (due_on === todayStr) return "Hoy";
+  const d = new Date(due_on + "T12:00:00");
+  return d
+    .toLocaleDateString("es-CO", { weekday: "short" })
+    .replace(".", "")
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
 function formatShortTime(iso: string): string {
   return new Date(iso)
     .toLocaleTimeString("es-CO", {
@@ -91,10 +115,19 @@ export default async function HomePage() {
       .limit(3),
   ]);
 
+  const calendarEvents = await getCalendarEvents().catch(() => [] as Awaited<ReturnType<typeof getCalendarEvents>>);
+
   const displayName = profile?.full_name ?? email ?? userId;
   const firstName = profile?.full_name?.split(" ")[0] ?? null;
   const roleLabel = profile?.role ? (ROLE_LABELS[profile.role] ?? null) : null;
   const today = new Date();
+  const todayStr = today.toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekEndStr = weekEnd.toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+  const weekEvents = calendarEvents
+    .filter((e) => e.due_on >= todayStr && e.due_on <= weekEndStr)
+    .slice(0, 4);
 
   return (
     <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
@@ -139,7 +172,7 @@ export default async function HomePage() {
                 lineHeight: 1.2,
               }}
             >
-              {firstName ? `Buenos días, ${firstName}` : "Portal RSG"}
+              {firstName ? `${getGreeting()}, ${firstName}` : "Portal RSG"}
             </h1>
           </div>
 
@@ -497,38 +530,62 @@ export default async function HomePage() {
             )}
           </section>
 
-          {/* Esta semana en el calendario — próximamente */}
+          {/* Esta semana en el calendario */}
           <section
             className="card"
-            style={{
-              padding: 18,
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              opacity: 0.5,
-              pointerEvents: "none",
-            }}
-            aria-hidden="true"
+            style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>
-                Esta semana en el calendario
+                Esta semana
               </h2>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-accent)" }}>Ver</span>
+              <Link
+                href="/calendario"
+                style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-accent)" }}
+              >
+                Ver todo
+              </Link>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[["Lun", "Reunión de líderes"], ["Mié", "Grupo de jóvenes"], ["Vie", "Servolución"]].map(([day, name]) => (
-                <div key={name} style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
-                  <span style={{ width: 56, flexShrink: 0, fontSize: 12.5, color: "var(--color-muted)", fontWeight: 600 }}>
-                    {day}
-                  </span>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <b style={{ fontSize: 14 }}>{name}</b>
-                    <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>Próximamente · Asana</span>
+            {weekEvents.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {weekEvents.map((event) => (
+                  <div key={event.gid} style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
+                    <span
+                      style={{
+                        width: 40,
+                        flexShrink: 0,
+                        fontSize: 12.5,
+                        color: "var(--color-muted)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {formatEventDay(event.due_on, todayStr)}
+                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                      <b
+                        style={{
+                          fontSize: 14,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {event.name}
+                      </b>
+                      {event.category && (
+                        <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>
+                          {event.category}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)" }}>
+                Sin eventos esta semana
+              </p>
+            )}
           </section>
 
         </div>

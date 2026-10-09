@@ -4,6 +4,17 @@ import Link from "next/link";
 import type { AsanaEvent } from "@/lib/asana";
 import type { LinkInfo, BookingOption } from "../page";
 
+const USE_TYPE_LABELS: Record<string, string> = {
+  reunion_departamento: "Reunión de departamento",
+  reunion_ministerio: "Reunión de ministerio",
+  consejeria: "Consejería",
+  discipulado: "Reunión de discipulado",
+  evento: "Evento",
+  externo: "Externo",
+  studio_negocio: "Studio (negocio)",
+  otro: "Otro",
+};
+
 const MONTH_NAMES = [
   "enero","febrero","marzo","abril","mayo","junio",
   "julio","agosto","septiembre","octubre","noviembre","diciembre",
@@ -69,9 +80,8 @@ export function EventPanel({
 
   const { bg, color } = categoryStyle(event.category);
 
-  // Reservas del mismo día para el selector
+  // Solo reservas del mismo día
   const sameDay = bookingOptions.filter((b) => toLocalDatePrefix(b.starts_at) === event.due_on);
-  const otherDay = bookingOptions.filter((b) => toLocalDatePrefix(b.starts_at) !== event.due_on);
 
   return (
     <>
@@ -190,39 +200,41 @@ export function EventPanel({
             canLink && (
               <div className="flex flex-col gap-2">
                 <span className="eyebrow">Enlazar con reserva</span>
-                <form action={linkAction} className="flex flex-col gap-2">
-                  <input type="hidden" name="asana_gid" value={event.gid} />
-                  <select
-                    name="booking_id"
-                    required
-                    className="input text-sm"
-                    style={{ height: 40 }}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Elige una reserva…</option>
-                    {sameDay.length > 0 && (
-                      <optgroup label={`Este día (${sameDay.length})`}>
-                        {sameDay.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.space_name} · {formatTimeBogota(b.starts_at)} – {formatTimeBogota(b.ends_at)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {otherDay.length > 0 && (
-                      <optgroup label="Otros días">
-                        {otherDay.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {toLocalDatePrefix(b.starts_at)} · {b.space_name} · {formatTimeBogota(b.starts_at)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                  <button type="submit" className="btn-primary w-full" style={{ height: 40 }}>
-                    Guardar enlace
-                  </button>
-                </form>
+                {sameDay.length > 0 ? (
+                  <form action={linkAction} className="flex flex-col gap-2">
+                    <input type="hidden" name="asana_gid" value={event.gid} />
+                    <select
+                      name="booking_id"
+                      required
+                      className="input text-sm"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Elige una reserva…</option>
+                      {sameDay.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.space_name} · {formatTimeBogota(b.starts_at)}–{formatTimeBogota(b.ends_at)}
+                          {b.display_owner ? ` · ${b.display_owner}` : ""}
+                          {b.use_type ? ` · ${USE_TYPE_LABELS[b.use_type] ?? b.use_type}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit" className="btn-primary w-full" style={{ height: 40 }}>
+                      Guardar enlace
+                    </button>
+                  </form>
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--color-muted)" }}>
+                    No hay reservas aprobadas para este día.
+                  </p>
+                )}
+                <Link
+                  href={`/reservas/nueva?date=${event.due_on}`}
+                  className="text-sm font-medium text-center rounded-[10px] px-4 py-2.5 block"
+                  style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }}
+                  onClick={onClose}
+                >
+                  + Crear reserva para este día
+                </Link>
               </div>
             )
           )}

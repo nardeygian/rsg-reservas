@@ -17,6 +17,8 @@ export type BookingOption = {
   space_name: string | null;
   starts_at: string;
   ends_at: string;
+  display_owner: string | null;
+  use_type: string | null;
 };
 
 export default async function CalendarioPage({
@@ -53,7 +55,7 @@ export default async function CalendarioPage({
     service.from("calendar_links").select("asana_gid, booking_id"),
     service
       .from("bookings_calendar")
-      .select("id, space_name, starts_at, ends_at")
+      .select("id, space_name, starts_at, ends_at, display_owner, use_type")
       .eq("status", "approved")
       .gte("starts_at", new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString())
       .order("starts_at")
@@ -86,6 +88,8 @@ export default async function CalendarioPage({
       space_name: b.space_name,
       starts_at: b.starts_at,
       ends_at: b.ends_at ?? "",
+      display_owner: b.display_owner ?? null,
+      use_type: b.use_type ?? null,
     }));
 
   return (
