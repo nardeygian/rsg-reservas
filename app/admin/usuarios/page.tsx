@@ -6,8 +6,11 @@ import {
   updateUserRoleAction,
   addUserRoleAction,
   removeUserRoleAction,
+  asignarGrupoAction,
 } from "./actions";
-import { UserSearch, InviteSection } from "./_components";
+import { svReadData } from "@/app/servicio/actions";
+import type { SvGrupo } from "@/app/servicio/_lib/types";
+import { UserSearch, InviteSection, AddRoleForm } from "./_components";
 
 const ROLES = [
   { value: "leader", label: "Líder" },
@@ -94,6 +97,7 @@ export default async function UsuariosPage({
     { data: authUsersData },
     { data: allUserRoles },
     { data: ministries },
+    svData,
   ] = await Promise.all([
     profileQuery.returns<UserRow[]>(),
     service.auth.admin.listUsers({ perPage: 200 }),
@@ -101,7 +105,17 @@ export default async function UsuariosPage({
       .from("user_roles")
       .select("id, user_id, role, ministry_id, ministries(name, type)"),
     service.from("ministries").select("id, name, type").order("type").order("name").returns<Ministry[]>(),
+    svReadData(),
   ]);
+
+  const grupos: SvGrupo[] = Object.values(svData.grupos ?? {}).sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, "es")
+  );
+  // Mapa userId → grupo que lidera
+  const grupoByLeader = new Map<string, SvGrupo>();
+  for (const g of grupos) {
+    if (g.lider_user_id) grupoByLeader.set(g.lider_user_id, g);
+  }
 
   const emailById = new Map<string, string>();
   for (const u of authUsersData?.users ?? []) {
@@ -165,7 +179,10 @@ export default async function UsuariosPage({
             {pending.map((p) => (
               <UserCard key={p.id} u={p} email={emailById.get(p.id)}
                 extraRoles={extraRolesByUser.get(p.id) ?? []}
-                ministries={ministries ?? []} highlight isSelf={p.id === user.id} />
+                ministries={ministries ?? []}
+                grupos={grupos}
+                grupoActual={grupoByLeader.get(p.id) ?? null}
+                highlight isSelf={p.id === user.id} />
             ))}
           </section>
         )}
@@ -190,7 +207,10 @@ export default async function UsuariosPage({
           {others.map((p) => (
             <UserCard key={p.id} u={p} email={emailById.get(p.id)}
               extraRoles={extraRolesByUser.get(p.id) ?? []}
-              ministries={ministries ?? []} isSelf={p.id === user.id} />
+              ministries={ministries ?? []}
+              grupos={grupos}
+              grupoActual={grupoByLeader.get(p.id) ?? null}
+              isSelf={p.id === user.id} />
           ))}
         </section>
 
@@ -200,17 +220,18 @@ export default async function UsuariosPage({
 }
 
 function UserCard({
-  u, email, extraRoles, ministries, highlight, isSelf,
+  u, email, extraRoles, ministries, grupos, grupoActual, highlight, isSelf,
 }: {
   u: UserRow;
   email?: string;
   extraRoles: ExtraRole[];
   ministries: Ministry[];
+  grupos: SvGrupo[];
+  grupoActual: SvGrupo | null;
   highlight?: boolean;
   isSelf?: boolean;
 }) {
-  const depts = ministries.filter((m) => m.type === "departamento");
-  const mins = ministries.filter((m) => m.type === "ministerio");
+  const hasDiscipuladoRole = extraRoles.some((r) => r.role === "lider_discipulado");
 
   return (
     <div
@@ -272,34 +293,12 @@ function UserCard({
       )}
 
       {/* Agregar rol adicional */}
-      <form action={addUserRoleAction} className="flex items-center gap-2 pl-11">
-        <input type="hidden" name="user_id" value={u.id} />
-        <select name="role" className="input text-sm flex-none"
-          style={{ height: 32, paddingTop: 0, paddingBottom: 0, width: 170 }}>
-          <option value="lider_departamento">Líder de departamento</option>
-          <option value="pastor_ministerio">Pastor de ministerio</option>
-          <option value="pastor_sede">Pastor de sede</option>
-          <option value="lider_discipulado">Líder de discipulado</option>
-        </select>
-        <select name="ministry_id" className="input text-sm flex-1"
-          style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}>
-          <option value="">— sin vincular —</option>
-          {depts.length > 0 && (
-            <optgroup label="Departamentos">
-              {depts.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </optgroup>
-          )}
-          {mins.length > 0 && (
-            <optgroup label="Ministerios">
-              {mins.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </optgroup>
-          )}
-        </select>
-        <button type="submit" className="text-sm font-semibold flex-none px-3 rounded-[8px] transition"
-          style={{ height: 32, background: "var(--color-surface-2)", color: "var(--color-accent)", border: "1px solid var(--color-line)" }}>
-          + Agregar
-        </button>
-      </form>
+      <AddRoleForm
+        userId={u.id}
+        ministries={ministries}
+        grupos={grupos}
+        addAction={addUserRoleAction}
+      />
 
       {/* Cambiar rol primario */}
       <form action={updateUserRoleAction}
@@ -321,6 +320,51 @@ function UserCard({
         <p className="text-xs pl-0" style={{ color: "var(--color-faint)" }}>
           No puedes cambiar tu propio rol. Pide a otro super admin o usa SQL.
         </p>
+      )}
+
+      {/* Grupo de discipulado — solo para líderes de discipulado */}
+      {hasDiscipuladoRole && (
+        <div
+          className="flex flex-col gap-2 pt-3"
+          style={{ borderTop: "1px solid var(--color-line)" }}
+        >
+          <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
+            Grupo de discipulado
+          </p>
+          {grupoActual && (
+            <p className="text-sm font-semibold" style={{ color: "var(--color-ink)" }}>
+              {grupoActual.nombre}
+            </p>
+          )}
+          <form action={asignarGrupoAction} className="flex items-center gap-2">
+            <input type="hidden" name="user_id" value={u.id} />
+            <select
+              name="grupo_id"
+              defaultValue={grupoActual?.id ?? ""}
+              className="input text-sm flex-1"
+              style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}
+            >
+              <option value="">— Sin grupo —</option>
+              {grupos.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.nombre}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="text-sm font-semibold flex-none px-3 rounded-[8px] transition"
+              style={{
+                height: 32,
+                background: "var(--color-surface-2)",
+                color: "var(--color-accent)",
+                border: "1px solid var(--color-line)",
+              }}
+            >
+              Asignar
+            </button>
+          </form>
+        </div>
       )}
     </div>
   );

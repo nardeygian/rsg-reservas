@@ -3,6 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
+type Ministry = { id: string; name: string; type: string };
+type GrupoOption = { id: string; nombre: string };
+
 /* ── Buscador de usuarios ── */
 export function UserSearch({ defaultValue }: { defaultValue: string }) {
   const router = useRouter();
@@ -142,5 +145,70 @@ export function InviteSection({
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Formulario de agregar rol adicional (reactivo por rol) ── */
+export function AddRoleForm({
+  userId,
+  ministries,
+  grupos,
+  addAction,
+}: {
+  userId: string;
+  ministries: Ministry[];
+  grupos: GrupoOption[];
+  addAction: (formData: FormData) => Promise<void>;
+}) {
+  const [role, setRole] = useState("lider_departamento");
+  const depts = ministries.filter((m) => m.type === "departamento");
+  const mins  = ministries.filter((m) => m.type === "ministerio");
+
+  return (
+    <form action={addAction} className="flex items-center gap-2 pl-11">
+      <input type="hidden" name="user_id" value={userId} />
+      <select
+        name="role"
+        value={role}
+        onChange={(e) => setRole(e.target.value)}
+        className="input text-sm flex-none"
+        style={{ height: 32, paddingTop: 0, paddingBottom: 0, width: 170 }}
+      >
+        <option value="lider_departamento">Líder de departamento</option>
+        <option value="pastor_ministerio">Pastor de ministerio</option>
+        <option value="pastor_sede">Pastor de sede</option>
+        <option value="lider_discipulado">Líder de discipulado</option>
+      </select>
+
+      {role === "lider_departamento" && (
+        <select name="ministry_id" className="input text-sm flex-1"
+          style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}>
+          <option value="">— sin vincular —</option>
+          {depts.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+      )}
+      {role === "pastor_ministerio" && (
+        <select name="ministry_id" className="input text-sm flex-1"
+          style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}>
+          <option value="">— sin vincular —</option>
+          {mins.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+      )}
+      {role === "lider_discipulado" && (
+        <select name="grupo_id" className="input text-sm flex-1"
+          style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}>
+          <option value="">— sin vincular —</option>
+          {grupos.map((g) => <option key={g.id} value={g.id}>{g.nombre}</option>)}
+        </select>
+      )}
+
+      <button
+        type="submit"
+        className="text-sm font-semibold flex-none px-3 rounded-[8px] transition"
+        style={{ height: 32, background: "var(--color-surface-2)", color: "var(--color-accent)", border: "1px solid var(--color-line)" }}
+      >
+        + Agregar
+      </button>
+    </form>
   );
 }

@@ -1,4 +1,4 @@
-import type { SvData, SvReunionUI, SvPer, SvConteoEntry } from "./types";
+import type { SvData, SvReunionUI, SvPer, SvConteoEntry, SvMiembro, SvServicioItem, SvDiscipuloFila } from "./types";
 
 export const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 export const MES3   = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -89,6 +89,55 @@ export function svEnPeriodo(f: string, per: SvPer, y: number, i: number): boolea
 export function esFuturo(per: SvPer, y: number, i: number): boolean {
   const { y: hy, i: hi } = periodoActual(per);
   return y > hy || (y === hy && i > hi);
+}
+
+export function svDiOf(s: { id: string; nombre: string; di?: string | null }, miembros: Record<string, SvMiembro>): string | null {
+  if ("di" in s && s.di !== undefined) return s.di ?? null;
+  const m = Object.values(miembros).find(m => svNorm(m.nombre) === svNorm(s.nombre));
+  return m ? m.id : null;
+}
+
+export function svServiciosGrupo(data: SvData, grupoId: string): SvServicioItem[] {
+  const out: SvServicioItem[] = [];
+  Object.values(data.reuniones).forEach(r => {
+    const reg = data.registros[r.id];
+    if (!reg) return;
+    const t = svTipo(r);
+    const u = svUnidad(r);
+    reg.filas.forEach(f => {
+      const s = data.servidores[f.sid];
+      if (!s) return;
+      const di = svDiOf(s, data.miembros ?? {});
+      if (!di) return;
+      const m = (data.miembros ?? {})[di];
+      if (!m || m.grupo_id !== grupoId) return;
+      out.push({ di, f: r.fecha, r: r.nombre, u, t, aus: !!f.aus, rid: r.id, roles: f.roles ?? [] });
+    });
+  });
+  return out;
+}
+
+export function svTablaDiscipulos(
+  miembros: SvMiembro[],
+  servicios: SvServicioItem[],
+  per: SvPer, y: number, i: number
+): { filas: SvDiscipuloFila[]; sirvieron: number; totMin: number; totServ: number; totAus: number } {
+  const ps = servicios.filter(x => svEnPeriodo(x.f, per, y, i));
+  const filas: SvDiscipuloFila[] = miembros.map(m => {
+    const todos = ps.filter(x => x.di === m.id);
+    const mios  = todos.filter(x => !x.aus);
+    const um = new Map<string, SvServicioItem>(), us = new Map<string, SvServicioItem>();
+    mios.forEach(x => { const d = x.t === "serv" ? us : um; if (!d.has(x.u)) d.set(x.u, x); });
+    const aus = new Set(todos.filter(x => x.aus).map(x => x.rid || x.u + x.f)).size;
+    return { id: m.id, n: m.nombre, min: um.size, serv: us.size, aus, det: todos.slice().sort((a, b) => b.f.localeCompare(a.f)) };
+  }).sort((a, b) => (b.min + b.serv) - (a.min + a.serv) || b.aus - a.aus || a.n.localeCompare(b.n, "es"));
+  return {
+    filas,
+    sirvieron: filas.filter(f => f.min + f.serv > 0).length,
+    totMin:    filas.reduce((a, f) => a + f.min, 0),
+    totServ:   filas.reduce((a, f) => a + f.serv, 0),
+    totAus:    filas.reduce((a, f) => a + f.aus, 0),
+  };
 }
 
 export function svConteo(reuniones: SvReunionUI[]): Map<string, SvConteoEntry> {

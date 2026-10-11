@@ -14,6 +14,20 @@ import {
   removePaymentReceiptAction,
   uploadPaymentReceiptAction,
 } from "./actions";
+import { ReceiptUpload } from "./_components/ReceiptUpload";
+
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-4 py-3">
+      <span className="text-sm flex-none" style={{ color: "var(--color-muted)" }}>
+        {label}
+      </span>
+      <span className="text-sm font-medium text-right" style={{ color: "var(--color-ink)" }}>
+        {value}
+      </span>
+    </div>
+  );
+}
 
 const STAFF_ROLES = ["pastor_sede", "admin_casa", "super_admin"];
 const ESTUDIO_SPACE_NAME = "Estudio";
@@ -171,16 +185,41 @@ export default async function BookingDetailPage({
       ? Object.entries(detail.requirements).filter(([, v]) => v != null && v !== "")
       : [];
 
+  const heroStyle =
+    base.status === "approved"
+      ? { borderColor: "var(--color-accent)", background: "var(--color-accent-soft)" }
+      : base.status === "requested"
+      ? { borderColor: "var(--color-gold)", background: "var(--color-gold-soft)" }
+      : base.status === "rejected"
+      ? { borderColor: "var(--color-down)", background: "var(--color-down-soft)" }
+      : { borderColor: "var(--color-line)", background: "var(--color-surface-2)" };
+
+  const statusBadgeStyle =
+    base.status === "approved"
+      ? { background: "var(--color-accent)", color: "#fff" }
+      : base.status === "requested"
+      ? { background: "var(--color-gold)", color: "#fff" }
+      : base.status === "rejected"
+      ? { background: "var(--color-down)", color: "#fff" }
+      : { background: "var(--color-surface)", color: "var(--color-muted)" };
+
+  const dateStr = base.starts_at ? formatDateLong(base.starts_at) : "";
+  const dateCapitalized = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
   return (
-    <main className="min-h-dvh px-4 py-4 max-w-2xl mx-auto space-y-4">
-      <header className="flex items-baseline justify-between">
+    <main
+      className="min-h-dvh flex flex-col gap-3 px-4 pt-5 pb-8 max-w-xl mx-auto"
+      style={{ background: "var(--color-bg)" }}
+    >
+      {/* Header */}
+      <header className="flex items-center justify-between mb-1">
         <div>
-          <span className="eyebrow">Detalle</span>
+          <span className="eyebrow">Reservas</span>
           <h1
-            className="text-[22px] font-semibold mt-0.5 leading-tight"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="text-[22px] font-bold leading-tight mt-0.5"
+            style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}
           >
-            Reserva
+            Detalle
           </h1>
         </div>
         <Link
@@ -189,21 +228,23 @@ export default async function BookingDetailPage({
               ? `/calendario?view=dia&date=${toDateParam(new Date(base.starts_at))}`
               : "/calendario"
           }
-          className="text-sm"
-          style={{ color: "var(--color-muted)" }}
+          className="flex items-center gap-1 text-sm font-medium px-3 py-2 rounded-[8px]"
+          style={{
+            background: "var(--color-surface)",
+            color: "var(--color-muted)",
+            border: "1px solid var(--color-line)",
+          }}
         >
           ← Calendario
         </Link>
       </header>
 
+      {/* Toasts */}
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-[10px] px-4 py-3"
-          style={{
-            background: "var(--color-up-soft)",
-            color: "var(--color-up)",
-          }}
+          className="text-sm rounded-[10px] px-4 py-3 font-medium"
+          style={{ background: "var(--color-up-soft)", color: "var(--color-up)" }}
         >
           {ok}
         </p>
@@ -211,226 +252,207 @@ export default async function BookingDetailPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-[10px] px-4 py-3"
-          style={{
-            background: "var(--color-down-soft)",
-            color: "var(--color-down)",
-          }}
+          className="text-sm rounded-[10px] px-4 py-3 font-medium"
+          style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
         >
           {error}
         </p>
       )}
 
+      {/* Status hero */}
+      <section className="rounded-[16px] border-2 overflow-hidden" style={heroStyle}>
+        <div className="px-5 pt-5 pb-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
+              style={statusBadgeStyle}
+            >
+              {STATUS_LABELS[base.status ?? ""] ?? base.status}
+            </span>
+            {isPartOfSeries && (
+              <span className="text-xs font-medium" style={{ color: "var(--color-muted)" }}>
+                🔁 serie semanal
+              </span>
+            )}
+          </div>
+          <div>
+            <p
+              className="text-[20px] font-bold leading-tight"
+              style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}
+            >
+              {dateCapitalized}
+            </p>
+            <p className="mt-1 text-sm font-medium" style={{ color: "var(--color-muted)" }}>
+              {base.starts_at && base.ends_at
+                ? `${formatTime(base.starts_at)} – ${formatTime(base.ends_at)}`
+                : ""}
+              {" · "}
+              <span style={{ color: "var(--color-ink)" }}>{base.space_name}</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Basic info */}
       <section
-        className={`rounded-md border px-4 py-3 space-y-1 ${
-          STATUS_STYLES[base.status ?? ""] ?? STATUS_STYLES.cancelled
-        }`}
+        className="rounded-[14px] border overflow-hidden divide-y"
+        style={{
+          borderColor: "var(--color-line)",
+          background: "var(--color-surface)",
+          // @ts-ignore
+          "--tw-divide-opacity": 1,
+        }}
       >
-        <p className="text-xs uppercase tracking-wide">
-          {STATUS_LABELS[base.status ?? ""] ?? base.status}
-          {isPartOfSeries && (
-            <span className="ml-2">· 🔁 parte de una serie semanal</span>
-          )}
-        </p>
-        <p className="font-semibold capitalize text-base">
-          {base.starts_at ? formatDateLong(base.starts_at) : ""}
-        </p>
-        <p className="text-sm tabular-nums">
-          {base.starts_at && base.ends_at
-            ? `${formatTime(base.starts_at)} – ${formatTime(base.ends_at)}`
-            : ""}
-          <span className="opacity-60"> · </span>
-          <span className="font-medium">{base.space_name}</span>
-        </p>
+        <InfoRow label="Quién reserva" value={base.display_owner ?? "—"} />
+        {base.use_type && (
+          <InfoRow label="Tipo" value={USE_TYPE_LABELS[base.use_type] ?? base.use_type} />
+        )}
+        {base.title && <InfoRow label="Título" value={base.title} />}
+        {base.has_montaje_lock && <InfoRow label="Montaje" value="🔒 Bloqueado" />}
+        {(bookedItems ?? []).length > 0 && (
+          <InfoRow
+            label="Items"
+            value={
+              <span className="flex flex-col gap-0.5 items-end">
+                {(bookedItems ?? []).map((bi, idx) => (
+                  <span key={idx}>
+                    {bi.quantity} × {bi.item?.name ?? "—"}
+                  </span>
+                ))}
+              </span>
+            }
+          />
+        )}
       </section>
 
-      <section className="card">
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
-          <dt className="text-fg2">Reserva</dt>
-          <dd className="font-medium">{base.display_owner ?? "—"}</dd>
-
-          {base.use_type && (
-            <>
-              <dt className="text-fg2">Tipo</dt>
-              <dd>{USE_TYPE_LABELS[base.use_type] ?? base.use_type}</dd>
-            </>
-          )}
-
-          {base.title && (
-            <>
-              <dt className="text-fg2">Título</dt>
-              <dd>{base.title}</dd>
-            </>
-          )}
-
-          {base.has_montaje_lock && (
-            <>
-              <dt className="text-fg2">Montaje</dt>
-              <dd>🔒 Bloqueado</dd>
-            </>
-          )}
-
-          {(bookedItems ?? []).length > 0 && (
-            <>
-              <dt className="text-fg2">Items</dt>
-              <dd>
-                <ul className="list-disc pl-4">
-                  {(bookedItems ?? []).map((bi, idx) => (
-                    <li key={idx}>
-                      {bi.quantity} × {bi.item?.name ?? "—"}
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </>
-          )}
-        </dl>
-      </section>
-
+      {/* Staff detail */}
       {isStaff && detail && (
-        <section className="card px-4 py-4">
-          <h2 className="eyebrow mb-3">
-            {detail.is_external
-              ? "Detalle del cliente externo"
-              : "Detalle interno (staff)"}
-          </h2>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
+        <section
+          className="rounded-[14px] border overflow-hidden"
+          style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}
+        >
+          <div className="px-4 py-3 border-b" style={{ borderColor: "var(--color-line)" }}>
+            <span className="eyebrow">
+              {detail.is_external ? "Cliente externo" : "Detalle staff"}
+            </span>
+          </div>
+          <div className="divide-y" style={{ borderColor: "var(--color-line)" }}>
             {detail.is_external ? (
               <>
-                <dt className="text-fg2">Cliente</dt>
-                <dd className="font-medium">{detail.client_name ?? "—"}</dd>
-
+                <InfoRow label="Cliente" value={detail.client_name ?? "—"} />
                 {detail.client_email && (
-                  <>
-                    <dt className="text-fg2">Email</dt>
-                    <dd>
-                      <a
-                        href={`mailto:${detail.client_email}`}
-                        className="underline"
-                      >
+                  <InfoRow
+                    label="Email"
+                    value={
+                      <a href={`mailto:${detail.client_email}`} className="underline">
                         {detail.client_email}
                       </a>
-                    </dd>
-                  </>
+                    }
+                  />
                 )}
-
                 {detail.client_phone && (
-                  <>
-                    <dt className="text-fg2">Teléfono</dt>
-                    <dd>
-                      <a
-                        href={`tel:${detail.client_phone}`}
-                        className="underline"
-                      >
+                  <InfoRow
+                    label="Teléfono"
+                    value={
+                      <a href={`tel:${detail.client_phone}`} className="underline">
                         {detail.client_phone}
                       </a>
-                    </dd>
-                  </>
+                    }
+                  />
                 )}
-
-                <dt className="text-fg2">Total cobrado</dt>
-                <dd className="font-semibold">
-                  {detail.total_cents != null
-                    ? `$ ${(detail.total_cents / 100).toLocaleString("es-CO")}`
-                    : "—"}
-                </dd>
+                <InfoRow
+                  label="Total"
+                  value={
+                    detail.total_cents != null
+                      ? `$ ${(detail.total_cents / 100).toLocaleString("es-CO")}`
+                      : "—"
+                  }
+                />
               </>
             ) : (
               <>
-                <dt className="text-fg2">Solicita</dt>
-                <dd>{detail.creator?.full_name ?? "—"}</dd>
-
-                <dt className="text-fg2">Organización</dt>
-                <dd>{detail.organizations?.name ?? "—"}</dd>
-
+                <InfoRow label="Solicita" value={detail.creator?.full_name ?? "—"} />
+                <InfoRow label="Organización" value={detail.organizations?.name ?? "—"} />
                 {detail.ministry && (
-                  <>
-                    <dt className="text-fg2">
-                      {detail.ministry.type === "departamento"
-                        ? "Departamento"
-                        : "Ministerio"}
-                    </dt>
-                    <dd>{detail.ministry.name}</dd>
-                  </>
+                  <InfoRow
+                    label={detail.ministry.type === "departamento" ? "Departamento" : "Ministerio"}
+                    value={detail.ministry.name}
+                  />
                 )}
               </>
             )}
-
             {detail.expected_attendance != null && (
-              <>
-                <dt className="text-fg2">Asistencia esperada</dt>
-                <dd>{detail.expected_attendance}</dd>
-              </>
+              <InfoRow label="Asistencia esperada" value={String(detail.expected_attendance)} />
             )}
-
-            <dt className="text-fg2">Pago</dt>
-            <dd>
-              {PAYMENT_LABELS[detail.payment_status] ?? detail.payment_status}
-              {detail.payment_actor && (
-                <span className="text-gray-500">
-                  {" "}
-                  · {detail.payment_actor.full_name}
+            <InfoRow
+              label="Pago"
+              value={
+                <span className="flex items-center gap-2 flex-wrap justify-end">
+                  <span>{PAYMENT_LABELS[detail.payment_status] ?? detail.payment_status}</span>
+                  {detail.payment_actor && (
+                    <span style={{ color: "var(--color-muted)" }}>
+                      · {detail.payment_actor.full_name}
+                    </span>
+                  )}
+                  {receiptSignedUrl && (
+                    <a
+                      href={receiptSignedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-xs"
+                      style={{ color: "var(--color-accent)" }}
+                    >
+                      Ver comprobante
+                    </a>
+                  )}
                 </span>
-              )}
-              {receiptSignedUrl && (
-                <>
-                  {" · "}
-                  <a
-                    href={receiptSignedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                  >
-                    Ver comprobante
-                  </a>
-                </>
-              )}
-            </dd>
-
-            <dt className="text-fg2">Compartido</dt>
-            <dd>
-              {detail.shared_occupancy_allowed
-                ? "Permite ocupación compartida"
-                : "Exclusivo"}
-            </dd>
-
-            <dt className="text-fg2">Visibilidad</dt>
-            <dd>
-              {detail.visibility === "private_label"
-                ? "Privada (Estudio business)"
-                : detail.visibility === "limited"
+              }
+            />
+            <InfoRow
+              label="Ocupación"
+              value={detail.shared_occupancy_allowed ? "Compartida" : "Exclusiva"}
+            />
+            <InfoRow
+              label="Visibilidad"
+              value={
+                detail.visibility === "private_label"
+                  ? "Privada"
+                  : detail.visibility === "limited"
                   ? "Limitada"
-                  : "Completa"}
-            </dd>
-
+                  : "Completa"
+              }
+            />
             {requirementsList.length > 0 && (
-              <>
-                <dt className="text-fg2">Requerimientos</dt>
-                <dd>
-                  <ul className="list-disc pl-4">
+              <InfoRow
+                label="Requerimientos"
+                value={
+                  <span className="flex flex-col gap-0.5 items-end">
                     {requirementsList.map(([k, v]) => (
-                      <li key={k}>
-                        <span className="text-gray-500">{k}:</span>{" "}
-                        {String(v)}
-                      </li>
+                      <span key={k} className="text-xs">
+                        {k}: {String(v)}
+                      </span>
                     ))}
-                  </ul>
-                </dd>
-              </>
+                  </span>
+                }
+              />
             )}
-
             {detail.internal_notes && (
-              <>
-                <dt className="text-fg2">Notas internas</dt>
-                <dd className="whitespace-pre-wrap">{detail.internal_notes}</dd>
-              </>
+              <div className="px-4 py-3 flex flex-col gap-1">
+                <span className="text-sm" style={{ color: "var(--color-muted)" }}>
+                  Notas internas
+                </span>
+                <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--color-ink)" }}>
+                  {detail.internal_notes}
+                </p>
+              </div>
             )}
-          </dl>
+          </div>
         </section>
       )}
 
+      {/* Actions */}
       {(canApprove || canCancel) && (
-        <section className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2 pt-1">
           {canApprove && (
             <>
               <form action={approveBookingAction}>
@@ -438,10 +460,7 @@ export default async function BookingDetailPage({
                 <button
                   type="submit"
                   className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold active:scale-[0.97] transition"
-                  style={{
-                    background: "var(--color-up-soft)",
-                    color: "var(--color-up)",
-                  }}
+                  style={{ background: "var(--color-up-soft)", color: "var(--color-up)" }}
                 >
                   ✓ Aprobar
                 </button>
@@ -451,10 +470,7 @@ export default async function BookingDetailPage({
                 <button
                   type="submit"
                   className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
-                  style={{
-                    borderColor: "var(--color-down)",
-                    color: "var(--color-down)",
-                  }}
+                  style={{ borderColor: "var(--color-down)", color: "var(--color-down)" }}
                 >
                   ✗ Rechazar
                 </button>
@@ -464,10 +480,7 @@ export default async function BookingDetailPage({
           {canCancel && (
             <form action={cancelBookingAction}>
               <input type="hidden" name="id" value={base.id ?? ""} />
-              <button
-                type="submit"
-                className="btn-secondary !h-11"
-              >
+              <button type="submit" className="btn-secondary !h-11">
                 Cancelar solo esta
               </button>
             </form>
@@ -478,37 +491,36 @@ export default async function BookingDetailPage({
               <button
                 type="submit"
                 className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
-                style={{
-                  borderColor: "var(--color-down)",
-                  color: "var(--color-down)",
-                }}
+                style={{ borderColor: "var(--color-down)", color: "var(--color-down)" }}
               >
                 Cancelar toda la serie
               </button>
             </form>
           )}
-        </section>
+        </div>
       )}
 
+      {/* Comprobante */}
       {isStaff && detail && base.id && (
-        <section className="border-t border-line pt-4 space-y-3">
-          <h2 className="eyebrow">Comprobante de pago</h2>
+        <section
+          className="rounded-[14px] border p-4 flex flex-col gap-3"
+          style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}
+        >
+          <span className="eyebrow">Comprobante de pago</span>
           {detail.payment_receipt_url ? (
-            <div className="space-y-2">
-              <p className="text-sm">
-                Archivo cargado.
+            <div className="flex flex-col gap-2">
+              <p className="text-sm" style={{ color: "var(--color-ink)" }}>
+                Archivo cargado.{" "}
                 {receiptSignedUrl && (
-                  <>
-                    {" "}
-                    <a
-                      href={receiptSignedUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      Abrir
-                    </a>
-                  </>
+                  <a
+                    href={receiptSignedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium underline"
+                    style={{ color: "var(--color-accent)" }}
+                  >
+                    Abrir
+                  </a>
                 )}
               </p>
               <form action={removePaymentReceiptAction}>
@@ -516,55 +528,36 @@ export default async function BookingDetailPage({
                 <button
                   type="submit"
                   className="text-sm underline"
-                  style={{ color: "var(--color-critical)" }}
+                  style={{ color: "var(--color-down)" }}
                 >
                   Eliminar comprobante
                 </button>
               </form>
             </div>
           ) : (
-            <form
-              action={uploadPaymentReceiptAction}
-              encType="multipart/form-data"
-              className="space-y-2"
-            >
-              <input type="hidden" name="id" value={base.id} />
-              <input
-                type="file"
-                name="receipt"
-                accept="image/png,image/jpeg,application/pdf"
-                required
-                className="block w-full text-sm"
-              />
-              <p className="text-xs text-fg3">
-                PDF, PNG o JPG. Máximo 5 MB. Al subirlo la reserva queda
-                marcada como pagada.
-              </p>
-              <button
-                type="submit"
-                className="btn-primary"
-              >
-                Subir comprobante
-              </button>
-            </form>
+            <ReceiptUpload bookingId={base.id} action={uploadPaymentReceiptAction} />
           )}
         </section>
       )}
 
+      {/* Agregar al calendario */}
       {(isStaff || isCreator) && base.id && (
-        <section className="border-t border-line pt-4">
+        <div
+          className="rounded-[14px] border px-4 py-3 flex flex-col gap-1"
+          style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}
+        >
           <a
             href={`/api/bookings/${base.id}/ics`}
             download
-            className="inline-flex items-center gap-2 text-sm underline text-fg2"
+            className="text-sm font-medium"
+            style={{ color: "var(--color-accent)" }}
           >
             📅 Agregar a mi calendario (.ics)
           </a>
-          <p className="text-xs text-fg3 mt-1">
-            Importa este evento como una foto puntual. Si la reserva cambia
-            después, tu calendario no se actualiza solo.
+          <p className="text-xs" style={{ color: "var(--color-muted)" }}>
+            Importa este evento como una foto puntual. Si la reserva cambia, tu calendario no se actualiza solo.
           </p>
-        </section>
+        </div>
       )}
     </main>
   );

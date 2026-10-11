@@ -17,6 +17,40 @@ export type SvReunionBase = {
 export type SvServidor = {
   id: string;
   nombre: string;
+  di?: string | null;
+};
+
+export type SvGrupo = {
+  id: string;
+  nombre: string;
+  lider: string;
+  lider_user_id: string | null;
+};
+
+export type SvMiembro = {
+  id: string;
+  nombre: string;
+  grupo_id: string;
+};
+
+export type SvServicioItem = {
+  di: string;
+  f: string;
+  r: string;
+  u: string;
+  t: "min" | "serv";
+  aus: boolean;
+  rid: string;
+  roles: string[];
+};
+
+export type SvDiscipuloFila = {
+  id: string;
+  n: string;
+  min: number;
+  serv: number;
+  aus: number;
+  det: SvServicioItem[];
 };
 
 export type SvRegistro = {
@@ -32,6 +66,8 @@ export type SvData = {
   registros: Record<string, SvRegistro>;
   sync: number;
   sync_error: string;
+  grupos: Record<string, SvGrupo>;
+  miembros: Record<string, SvMiembro>;
 };
 
 export type SvReunionUI = SvReunionBase & {

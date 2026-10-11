@@ -45,7 +45,9 @@ export default async function CalendarioPage({
       .select("role, ministries(name)")
       .eq("user_id", user.id);
     canLink = (extraRoles ?? []).some(
-      (r) => r.role === "lider_departamento" && (r.ministries as { name: string } | null)?.name === "Planeación"
+      (r) =>
+        r.role === "pastor_ministerio" ||
+        (r.role === "lider_departamento" && (r.ministries as { name: string } | null)?.name === "Planeación")
     );
   }
 

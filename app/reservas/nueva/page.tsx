@@ -21,8 +21,6 @@ const USE_TYPE_OPTIONS = [
   { value: "otro", label: "Otro" },
 ];
 
-const MENTOR_USE_TYPES = new Set(["discipulado", "consejeria", "otro"]);
-
 const POLICY_LABELS: Record<string, string> = {
   self_serve: "Reserva directa",
   needs_approval: "Requiere aprobación",
@@ -49,11 +47,6 @@ export default async function NewBookingPage({
     : { data: null };
 
   const isStudioAdmin = profile?.role === "studio_admin";
-  const isMentor = profile?.role === "mentor";
-
-  const useTypeOptions = isMentor
-    ? USE_TYPE_OPTIONS.filter((u) => MENTOR_USE_TYPES.has(u.value))
-    : USE_TYPE_OPTIONS;
 
   let spacesQuery = supabase
     .from("spaces")
@@ -200,7 +193,7 @@ export default async function NewBookingPage({
             <option value="" disabled>
               Elige el tipo
             </option>
-            {useTypeOptions.map((u) => (
+            {USE_TYPE_OPTIONS.map((u) => (
               <option key={u.value} value={u.value}>
                 {u.label}
               </option>

@@ -142,16 +142,8 @@ export async function createBookingAction(formData: FormData) {
   // Determinar rol del usuario para decidir org/visibility/status.
   const session = await getSessionProfile();
   const isStudioAdmin = session?.profile?.role === "studio_admin";
-  const isMentor = session?.profile?.role === "mentor";
   const externalClient =
     isStudioAdmin && String(formData.get("external_client") ?? "") === "on";
-
-  // El mentor solo puede reservar para discipulado, consejería u otro.
-  if (isMentor && !["discipulado", "consejeria", "otro"].includes(useType)) {
-    backWithError(
-      "Como Líder de Discipulado solo puedes reservar para reunión de discipulado, consejería u otro."
-    );
-  }
 
   const orgName = isStudioAdmin ? "Studio Prado" : "RSG";
   const { data: org, error: orgError } = await supabase

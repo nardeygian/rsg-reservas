@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -104,9 +105,10 @@ function isExtraRole(v: string): v is ExtraRole {
 
 export async function addUserRoleAction(formData: FormData) {
   await ensureSuperAdmin();
-  const userId = String(formData.get("user_id") ?? "");
-  const role = String(formData.get("role") ?? "");
+  const userId    = String(formData.get("user_id")    ?? "");
+  const role      = String(formData.get("role")       ?? "");
   const ministryId = String(formData.get("ministry_id") ?? "").trim() || null;
+  const grupoId   = String(formData.get("grupo_id")   ?? "").trim() || null;
 
   if (!userId || !isExtraRole(role)) {
     redirect("/admin/usuarios?error=Datos%20inv%C3%A1lidos");
@@ -116,10 +118,30 @@ export async function addUserRoleAction(formData: FormData) {
   const { error } = await service.from("user_roles").insert({
     user_id: userId,
     role,
-    ministry_id: ministryId,
+    ministry_id: role === "lider_discipulado" ? null : ministryId,
   });
 
   if (error) redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+
+  // For discipulado: also assign the group leader in svData
+  if (role === "lider_discipulado" && grupoId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const svTable = (service as any).from("servicio_data");
+    const { data } = await svTable.select("data").eq("id", "main").maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d: any = data?.data ?? { grupos: {} };
+    if (!d.grupos) d.grupos = {};
+    if (d.grupos[grupoId]) {
+      for (const g of Object.values(d.grupos) as Array<{ lider_user_id: string | null }>) {
+        if (g.lider_user_id === userId) g.lider_user_id = null;
+      }
+      d.grupos[grupoId].lider_user_id = userId;
+      await svTable.upsert({ id: "main", data: d, updated_at: new Date().toISOString() });
+      revalidatePath("/servicio");
+      revalidatePath("/discipulos");
+    }
+  }
+
   redirect("/admin/usuarios?ok=Rol%20agregado");
 }
 
@@ -132,6 +154,45 @@ export async function removeUserRoleAction(formData: FormData) {
   const { error } = await service.from("user_roles").delete().eq("id", roleId);
   if (error) redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
   redirect("/admin/usuarios?ok=Rol%20eliminado");
+}
+
+export async function asignarGrupoAction(formData: FormData) {
+  await ensureSuperAdmin();
+
+  const grupoId = String(formData.get("grupo_id") ?? "").slice(0, 80);
+  const userId  = String(formData.get("user_id")  ?? "").trim().slice(0, 40);
+
+  if (!userId) redirect("/admin/usuarios?error=Datos%20inv%C3%A1lidos");
+
+  const service = createServiceClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const svTable = (service as any).from("servicio_data");
+
+  const { data } = await svTable.select("data").eq("id", "main").maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d: any = data?.data ?? { grupos: {} };
+  if (!d.grupos) d.grupos = {};
+
+  if (grupoId && !d.grupos[grupoId]) {
+    redirect("/admin/usuarios?error=Grupo%20no%20encontrado");
+  }
+
+  // Liberar al usuario de cualquier grupo previo
+  for (const g of Object.values(d.grupos) as Array<{ lider_user_id: string | null }>) {
+    if (g.lider_user_id === userId) g.lider_user_id = null;
+  }
+
+  // Asignar al nuevo grupo (o dejar sin grupo si grupoId está vacío)
+  if (grupoId) {
+    d.grupos[grupoId].lider_user_id = userId;
+  }
+
+  await svTable.upsert({ id: "main", data: d, updated_at: new Date().toISOString() });
+  revalidatePath("/servicio");
+  revalidatePath("/discipulos");
+  redirect(
+    `/admin/usuarios?ok=${encodeURIComponent(grupoId ? "Líder asignado al grupo" : "Líder desvinculado del grupo")}`
+  );
 }
 
 export async function updateUserRoleAction(formData: FormData) {

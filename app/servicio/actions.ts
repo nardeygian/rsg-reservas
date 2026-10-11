@@ -6,10 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCalendarEvents } from "@/lib/asana";
 import { svNorm } from "./_lib/sv-logic";
-import type { SvData, SvFila } from "./_lib/types";
+import type { SvData, SvFila, SvGrupo, SvMiembro } from "./_lib/types";
 
 const DEFAULT_DATA: SvData = {
-  reuniones: {}, servidores: {}, registros: {}, sync: 0, sync_error: "",
+  reuniones: {}, servidores: {}, registros: {}, sync: 0, sync_error: "", grupos: {}, miembros: {},
 };
 
 async function assertAccess(): Promise<void> {
@@ -211,5 +211,140 @@ export async function svServidorQuitarAction(fd: FormData): Promise<void> {
     for (const reg of Object.values(d.registros)) {
       reg.filas = reg.filas.filter(f => f.sid !== sid);
     }
+  });
+}
+
+function toSlug(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+const SEED_GRUPOS: Array<{ id: string; nombre: string; miembros: string[] }> = [
+  { id: "francisco-marysol", nombre: "Francisco & Marysol", miembros: ["Zaira Palacios","Yourladys Acosta","Daniel Martinez","Brandon Aricapa","Claudia Galvis","Jiceth Carolay Ruiz","Isaac Pinto","Sheyla De la Hoz","Luisa Oliva","Nestor Peña","Sharon Tapias"] },
+  { id: "cesar-andrea",      nombre: "Cesar & Andrea",      miembros: ["Linda Buelvas","Luis Miguel Utria","Mariangel Torrenegra","Aldair Morales","Carlos De Alba"] },
+  { id: "wilmer-karla",      nombre: "Wilmer & Karla",      miembros: ["Saileth Sarmiento","Karilim Galeano"] },
+  { id: "gian-camila",       nombre: "Gian & Camila",       miembros: ["Itsvan Casares","Karen Tobar","Luis Prieto","Melissa Flores","Susana Leal","Wilmer De los Reyes","Karla Alarcón","Edwin Buelvas","Linda Bello","Ibeth Cortina"] },
+  { id: "linda-bello",       nombre: "Linda Bello",         miembros: ["Lellys Laguna","Laura Cuello Polanco"] },
+];
+
+export async function svSeedDiscipuladosAction(): Promise<{ count: number }> {
+  await assertAccess();
+  const count = await mutate((d) => {
+    if (!d.grupos) d.grupos = {};
+    if (!d.miembros) d.miembros = {};
+    if (Object.keys(d.grupos).length > 0) throw new Error("Ya hay discipulados registrados.");
+    let total = 0;
+    for (const g of SEED_GRUPOS) {
+      d.grupos[g.id] = { id: g.id, nombre: g.nombre, lider: g.nombre, lider_user_id: null };
+      g.miembros.forEach((nombre, i) => {
+        const mid = `${g.id}-${i + 1}`;
+        d.miembros![mid] = { id: mid, nombre, grupo_id: g.id };
+        total++;
+      });
+    }
+    return total;
+  });
+  return { count };
+}
+
+export async function svReadGrupoForUser(): Promise<{ grupo: SvGrupo; miembros: SvMiembro[] } | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const data = await svReadData();
+  const grupo = Object.values(data.grupos ?? {}).find(g => g.lider_user_id === user.id);
+  if (!grupo) return null;
+  const miembros = Object.values(data.miembros ?? {}).filter(m => m.grupo_id === grupo.id);
+  return { grupo, miembros };
+}
+
+export async function svGrupoCrearAction(fd: FormData): Promise<{ id: string }> {
+  await assertAccess();
+  const nombre = String(fd.get("nombre") ?? "").trim().slice(0, 120);
+  const lider  = String(fd.get("lider")  ?? "").trim().slice(0, 120);
+  if (!nombre) throw new Error("Escribe el nombre del discipulado");
+
+  const id = await mutate((d) => {
+    if (!d.grupos) d.grupos = {};
+    const base = toSlug(nombre) || "g";
+    let newId = base;
+    let n = 1;
+    while (d.grupos[newId]) { newId = `${base}-${n++}`; }
+    d.grupos[newId] = { id: newId, nombre, lider, lider_user_id: null };
+    return newId;
+  });
+  return { id };
+}
+
+export async function svGrupoEditarAction(fd: FormData): Promise<void> {
+  await assertAccess();
+  const id     = String(fd.get("id")     ?? "").slice(0, 80);
+  const nombre = String(fd.get("nombre") ?? "").trim().slice(0, 120);
+  const lider  = String(fd.get("lider")  ?? "").trim().slice(0, 120);
+  if (!nombre) throw new Error("Escribe el nombre del discipulado");
+
+  await mutate((d) => {
+    if (!d.grupos) d.grupos = {};
+    if (!d.grupos[id]) throw new Error("Discipulado no encontrado");
+    d.grupos[id].nombre = nombre;
+    d.grupos[id].lider  = lider;
+  });
+}
+
+export async function svGrupoQuitarAction(fd: FormData): Promise<void> {
+  await assertAccess();
+  const id = String(fd.get("id") ?? "").slice(0, 80);
+  await mutate((d) => {
+    if (!d.grupos) d.grupos = {};
+    if (!d.miembros) d.miembros = {};
+    delete d.grupos[id];
+    for (const mid of Object.keys(d.miembros)) {
+      if (d.miembros[mid].grupo_id === id) delete d.miembros[mid];
+    }
+  });
+}
+
+export async function svMiembroAgregarAction(fd: FormData): Promise<{ count: number }> {
+  await assertAccess();
+  const grupoId = String(fd.get("grupo_id") ?? "").slice(0, 80);
+  const nombres = String(fd.get("nombres")  ?? "");
+
+  const count = await mutate((d) => {
+    if (!d.grupos) d.grupos = {};
+    if (!d.miembros) d.miembros = {};
+    if (!d.grupos[grupoId]) throw new Error("Discipulado no encontrado");
+
+    const existentes = new Set(Object.values(d.miembros).map(m => svNorm(m.nombre)));
+    let added = 0;
+    for (const raw of nombres.split("\n")) {
+      const nombre = raw.trim().slice(0, 120);
+      if (!nombre) continue;
+      if (existentes.has(svNorm(nombre))) continue;
+      const mid = "di" + Math.random().toString(36).slice(2, 10);
+      d.miembros[mid] = { id: mid, nombre, grupo_id: grupoId };
+      existentes.add(svNorm(nombre));
+      added++;
+    }
+    return added;
+  });
+  return { count };
+}
+
+export async function svMiembroQuitarAction(fd: FormData): Promise<void> {
+  await assertAccess();
+  const id = String(fd.get("id") ?? "").slice(0, 40);
+  await mutate((d) => {
+    if (!d.miembros) d.miembros = {};
+    delete d.miembros[id];
+  });
+}
+
+export async function svLiderAsignarAction(fd: FormData): Promise<void> {
+  await assertAccess();
+  const grupoId = String(fd.get("grupo_id") ?? "").slice(0, 80);
+  const userId  = String(fd.get("user_id")  ?? "").trim().slice(0, 40);
+  await mutate((d) => {
+    if (!d.grupos) d.grupos = {};
+    if (!d.grupos[grupoId]) throw new Error("Discipulado no encontrado");
+    d.grupos[grupoId].lider_user_id = userId || null;
   });
 }

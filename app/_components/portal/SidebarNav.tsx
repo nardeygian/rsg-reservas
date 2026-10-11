@@ -49,7 +49,7 @@ const MAIN_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: null,
+    href: "/discipulos",
     label: "Mis discípulos",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -58,7 +58,7 @@ const MAIN_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: null,
+    href: "/donaciones",
     label: "Donaciones",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

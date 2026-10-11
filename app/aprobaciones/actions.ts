@@ -10,6 +10,7 @@ const STAFF_ROLES = [
   "admin_casa",
   "super_admin",
   "studio_admin",
+  "pastor_ministerio",
 ];
 
 async function requireStaff() {
@@ -25,9 +26,18 @@ async function requireStaff() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || !STAFF_ROLES.includes(profile.role)) {
-    redirect("/?error=Sin%20permiso");
-  }
+  if (profile && STAFF_ROLES.includes(profile.role)) return supabase;
+
+  // Extra-role check: pastor_ministerio asignado como rol adicional
+  const { data: extraRoles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+  const hasExtraStaff = (extraRoles ?? []).some((r) =>
+    ["pastor_ministerio", "pastor_sede"].includes(r.role)
+  );
+  if (!hasExtraStaff) redirect("/?error=Sin%20permiso");
+
   return supabase;
 }
 

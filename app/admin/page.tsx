@@ -58,6 +58,17 @@ export default async function AdminLandingPage() {
               </svg>
             ),
           },
+          {
+            href: "/admin/preview",
+            title: "Vista previa de roles",
+            description: "Ve el portal como lo vería un servidor de planeación, pastor de ministerio o líder de discipulado.",
+            icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            ),
+          },
         ]
       : []),
   ];

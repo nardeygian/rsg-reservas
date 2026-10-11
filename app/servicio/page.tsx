@@ -4,7 +4,11 @@ import { svReadData } from "./actions";
 import { ServicioShell } from "./_components/ServicioShell";
 import type { SvData } from "./_lib/types";
 
-export default async function ServicioPage() {
+export default async function ServicioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ preview?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -12,6 +16,7 @@ export default async function ServicioPage() {
   const { data: profile } = await supabase
     .from("profiles").select("role").eq("id", user.id).single();
   const role = profile?.role ?? "";
+  const { preview } = await searchParams;
 
   let canEdit = ["super_admin", "pastor_sede"].includes(role);
   if (!canEdit) {
@@ -25,6 +30,11 @@ export default async function ServicioPage() {
 
   if (!canEdit && !["pastor_ministerio", "lider_discipulado", "lider_departamento"].includes(role)) {
     redirect("/?error=Sin+acceso+al+módulo+de+Servicio");
+  }
+
+  // Super-admin previewing read-only pastor view
+  if (preview === "pastor" && ["super_admin", "pastor_sede"].includes(role)) {
+    canEdit = false;
   }
 
   let svData: SvData | null = null;

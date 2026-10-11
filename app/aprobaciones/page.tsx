@@ -18,6 +18,7 @@ const STAFF_ROLES = [
   "admin_casa",
   "super_admin",
   "studio_admin",
+  "pastor_ministerio",
 ];
 
 const USE_TYPE_LABELS: Record<string, string> = {

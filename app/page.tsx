@@ -5,6 +5,9 @@ import { getSessionProfile } from "@/lib/auth";
 import { dayKey } from "@/lib/datetime";
 import { ThemeToggle } from "./_components/ThemeToggle";
 import { getCalendarEvents } from "@/lib/asana";
+import { svReadData } from "@/app/servicio/actions";
+import { donReadData } from "@/app/donaciones/actions";
+import { svNorm, svServiciosGrupo, svTablaDiscipulos, svEnPeriodo, periodoActual, MESES } from "@/app/servicio/_lib/sv-logic";
 
 const ROLE_LABELS: Record<string, string> = {
   leader: "Líder",
@@ -94,11 +97,15 @@ export default async function HomePage() {
   if (!session) redirect("/login");
   const { userId, email, profile } = session;
 
-  const canApprove = !!profile && APPROVER_ROLES.includes(profile.role);
   const supabase = await createClient();
+  let canApprove = !!profile && APPROVER_ROLES.includes(profile.role);
+  if (!canApprove) {
+    const { data: extraRoles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    canApprove = (extraRoles ?? []).some((r) => r.role === "pastor_ministerio" || r.role === "pastor_sede");
+  }
   const now = new Date();
 
-  const [{ count: pendingCount }, { data: upcomingBookings }] = await Promise.all([
+  const [{ count: pendingCount }, { data: upcomingBookings }, svData, donaciones] = await Promise.all([
     canApprove
       ? supabase
           .from("bookings_staff")
@@ -113,6 +120,8 @@ export default async function HomePage() {
       .gte("starts_at", now.toISOString())
       .order("starts_at")
       .limit(3),
+    svReadData(),
+    donReadData(),
   ]);
 
   const calendarEvents = await getCalendarEvents().catch(() => [] as Awaited<ReturnType<typeof getCalendarEvents>>);
@@ -122,6 +131,57 @@ export default async function HomePage() {
   const roleLabel = profile?.role ? (ROLE_LABELS[profile.role] ?? null) : null;
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+
+  // Servicio + Donaciones
+  const isAdmin = ["super_admin", "pastor_sede"].includes(profile?.role ?? "");
+  const { y: perY, i: perI } = periodoActual("mes");
+  const mesLabel = MESES[perI].charAt(0).toUpperCase() + MESES[perI].slice(1);
+  const reunionesToday = Object.values(svData.reuniones ?? {}).filter(r => r.fecha === todayStr).length;
+
+  const myGroup = Object.values(svData.grupos ?? {}).find(g => g.lider_user_id === userId) ?? null;
+  let groupStats: { sirvieron: number; totMin: number; totServ: number; total: number } | null = null;
+  let groupDonTotal = 0;
+  if (myGroup) {
+    const miembros = Object.values(svData.miembros ?? {}).filter(m => m.grupo_id === myGroup.id);
+    const servicios = svServiciosGrupo(svData, myGroup.id);
+    const { sirvieron, totMin, totServ } = svTablaDiscipulos(miembros, servicios, "mes", perY, perI);
+    const memberIds = new Set(miembros.map(m => m.id));
+    const nameToId = new Map(miembros.map(m => [svNorm(m.nombre), m.id]));
+    groupDonTotal = donaciones
+      .filter(d => {
+        const diId = d.di ?? nameToId.get(svNorm(d.n)) ?? null;
+        return diId && memberIds.has(diId) && svEnPeriodo(d.f.slice(0, 10), "mes", perY, perI);
+      })
+      .reduce((sum, d) => sum + (d.m ?? 0), 0);
+    groupStats = { sirvieron, totMin, totServ, total: miembros.length };
+  }
+
+  const donTotalMes = isAdmin
+    ? donaciones.filter(d => svEnPeriodo(d.f.slice(0, 10), "mes", perY, perI)).reduce((sum, d) => sum + (d.m ?? 0), 0)
+    : groupDonTotal;
+
+  // Sum donations for all discipulado groups. Uses d.di first (authoritative from PHP panel),
+  // then falls back to name matching so the Líderes y pastores group (whose members have no d.di)
+  // is included. Each donation is one record so there is no double-counting even when a person
+  // appears in multiple groups.
+  const allMiembros = Object.values(svData.miembros ?? {});
+  const allMemberIds = new Set(allMiembros.map(m => m.id));
+  const allNameToId = new Map<string, string>();
+  for (const m of allMiembros) {
+    if (!allNameToId.has(svNorm(m.nombre))) allNameToId.set(svNorm(m.nombre), m.id);
+  }
+  const allGroupsDonTotal = donaciones
+    .filter(d => {
+      if (!svEnPeriodo(d.f.slice(0, 10), "mes", perY, perI)) return false;
+      const diId = d.di ?? allNameToId.get(svNorm(d.n)) ?? null;
+      return diId !== null && allMemberIds.has(diId);
+    })
+    .reduce((sum, d) => sum + (d.m ?? 0), 0);
+  const fmtCOP = (n: number) =>
+    new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n);
+
+  const allGruposCount = Object.keys(svData.grupos ?? {}).length;
+
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 6);
   const weekEndStr = weekEnd.toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
@@ -260,10 +320,10 @@ export default async function HomePage() {
                   fontWeight: 700,
                   lineHeight: 1.05,
                   letterSpacing: "-.02em",
-                  opacity: 0.4,
+                  opacity: reunionesToday > 0 ? 1 : 0.4,
                 }}
               >
-                — reuniones
+                {reunionesToday > 0 ? reunionesToday : "—"} {reunionesToday === 1 ? "reunión" : "reuniones"}
               </span>
             </div>
           </div>
@@ -279,7 +339,8 @@ export default async function HomePage() {
               gap: 1,
             }}
           >
-            <div
+            <Link
+              href="/servicio"
               style={{
                 background: "var(--color-accent-dark)",
                 padding: "14px 16px",
@@ -288,21 +349,15 @@ export default async function HomePage() {
                 justifyContent: "space-between",
                 gap: "12px 16px",
                 flexWrap: "wrap",
-                opacity: 0.6,
+                textDecoration: "none",
               }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: 17,
-                    fontWeight: 600,
-                  }}
-                >
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, color: "#fff" }}>
                   Módulo de Servicio
                 </span>
-                <span style={{ fontSize: 12.5, opacity: 0.88 }}>
-                  Listados · asistencia · equipo · próximamente
+                <span style={{ fontSize: 12.5, opacity: 0.88, color: "#fff" }}>
+                  Listados · asistencia · equipo
                 </span>
               </div>
               <span
@@ -316,11 +371,12 @@ export default async function HomePage() {
                   boxSizing: "border-box",
                   display: "inline-flex",
                   alignItems: "center",
+                  color: "#fff",
                 }}
               >
-                Próximamente
+                Abrir
               </span>
-            </div>
+            </Link>
           </div>
         </section>
 
@@ -333,67 +389,77 @@ export default async function HomePage() {
           }}
         >
 
-          {/* Mi discipulado — próximamente */}
-          <section
-            className="card"
-            style={{
-              padding: 18,
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-              opacity: 0.5,
-              pointerEvents: "none",
-            }}
-            aria-hidden="true"
-          >
+          {/* Mi discipulado */}
+          <section className="card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>
-                Mi discipulado · octubre
+                {myGroup ? myGroup.nombre : isAdmin ? "Discípulos" : "Mis discípulos"} · {mesLabel}
               </h2>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-accent)" }}>Ver</span>
+              <Link
+                href="/discipulos"
+                style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-accent)" }}
+              >
+                Ver
+              </Link>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-              {[["—", "sirvieron"], ["—", "en reuniones"], ["—", "Servolución"]].map(([n, l]) => (
-                <div
-                  key={l}
-                  style={{
-                    border: "1px solid var(--color-line)",
-                    borderRadius: 10,
-                    padding: 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                  }}
-                >
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{n}</span>
-                  <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{l}</span>
+            {groupStats ? (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+                  {([
+                    [String(groupStats.sirvieron), "sirvieron"],
+                    [String(groupStats.totMin), "en reuniones"],
+                    [String(groupStats.totServ), "Servolución"],
+                  ] as [string, string][]).map(([n, l]) => (
+                    <div
+                      key={l}
+                      style={{ border: "1px solid var(--color-line)", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                      <span style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{n}</span>
+                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{l}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderTop: "1px solid var(--color-line)", paddingTop: 12 }}>
-              <span style={{ color: "var(--color-muted)" }}>Aportes del discipulado</span>
-              <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>$ —</span>
-            </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderTop: "1px solid var(--color-line)", paddingTop: 12 }}>
+                  <span style={{ color: "var(--color-muted)" }}>Aportes del discipulado</span>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>
+                    {groupDonTotal > 0 ? fmtCOP(groupDonTotal) : "$ —"}
+                  </span>
+                </div>
+              </>
+            ) : isAdmin ? (
+              <>
+                <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)" }}>
+                  {allGruposCount} grupos registrados
+                </p>
+                {allGroupsDonTotal > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderTop: "1px solid var(--color-line)", paddingTop: 12 }}>
+                    <span style={{ fontSize: 13, color: "var(--color-muted)" }}>Aportes del mes</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 17 }}>
+                      {fmtCOP(allGroupsDonTotal)}
+                    </span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)" }}>
+                Sin grupo asignado
+              </p>
+            )}
           </section>
 
-          {/* Donaciones — próximamente */}
-          <section
-            className="card"
-            style={{
-              padding: 18,
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              opacity: 0.5,
-              pointerEvents: "none",
-            }}
-            aria-hidden="true"
-          >
+          {/* Donaciones */}
+          {(isAdmin || donTotalMes > 0) && (
+          <section className="card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>
-                Donaciones · octubre
+                Donaciones · {mesLabel}
               </h2>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-accent)" }}>Abrir</span>
+              <Link
+                href="/donaciones"
+                style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-accent)" }}
+              >
+                Abrir
+              </Link>
             </div>
             <span
               style={{
@@ -404,20 +470,10 @@ export default async function HomePage() {
                 lineHeight: 1.1,
               }}
             >
-              $ —
+              {donTotalMes > 0 ? fmtCOP(donTotalMes) : "$ —"}
             </span>
-            <div
-              style={{
-                background: "var(--color-surface-2)",
-                borderRadius: 8,
-                padding: "10px 12px",
-                fontSize: 13,
-                color: "var(--color-muted)",
-              }}
-            >
-              Próximamente
-            </div>
           </section>
+          )}
 
           {/* Mis reservas — activo */}
           <section
