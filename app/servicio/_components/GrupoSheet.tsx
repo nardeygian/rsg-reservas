@@ -112,7 +112,7 @@ export function GrupoSheet({
           <div className="flex flex-col gap-3">
             <h3 className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>Asignar líder (acceso)</h3>
             <p className="text-xs" style={{ color: "var(--color-muted)" }}>
-              UUID del usuario en Supabase. El líder verá este grupo en "Mis discípulos".
+              UUID del usuario en Supabase. El líder verá este grupo en &ldquo;Mis discípulos&rdquo;.
             </p>
             <div className="flex gap-2">
               <input
