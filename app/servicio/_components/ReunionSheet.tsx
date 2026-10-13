@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { svFmt, svNombreLimpio, svTipo, svNorm } from "../_lib/sv-logic";
 import { svGuardarAction, svBorrarAction, svReunionQuitarAction } from "../actions";
 import { svLeerPDF, svInterpretar, svNormPdf } from "../_lib/sv-pdf";
-import type { SvData, SvFila } from "../_lib/types";
+import type { SvData, SvFila, SvRegistro } from "../_lib/types";
 
 type EditFila = { nombre: string; roles: string; aus: boolean; nota: string };
 
@@ -18,6 +18,8 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
   const r   = svData.reuniones[rid];
   const reg = r ? svData.registros[rid] : undefined;
 
+  const hasListado = !!reg;
+  const [editMode, setEditMode] = useState(canEdit && !hasListado);
   const [collapsedDeptos, setCollapsedDeptos] = useState<Set<string>>(new Set());
 
   const [filas, setFilas] = useState<EditFila[]>(() => {
@@ -153,6 +155,17 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
         {/* Header */}
         <div className="px-5 pb-3 flex-none border-b" style={{ borderColor: "var(--color-line)" }}>
           <div className="flex items-start gap-3">
+            {/* Editar / Ver listado toggle — left side */}
+            {canEdit && hasListado && (
+              <button
+                type="button"
+                className="text-xs font-semibold px-3 py-1.5 rounded-[8px] flex-none self-center"
+                style={{ background: editMode ? "var(--color-surface-2)" : "var(--color-accent)", color: editMode ? "var(--color-ink)" : "var(--color-accent-ink)", border: editMode ? "1px solid var(--color-line)" : "none" }}
+                onClick={() => setEditMode(m => !m)}
+              >
+                {editMode ? "← Ver listado" : "Editar"}
+              </button>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
                 {svFmt(r.fecha)}{r.seccion ? ` · ${r.seccion}` : ""}
@@ -162,15 +175,17 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }} aria-label="Cerrar">×</button>
           </div>
           {/* Sum bar */}
-          <div className="flex gap-3 mt-2 text-sm flex-wrap">
-            <span style={{ color: "var(--color-ink)" }}><strong>{validas.length - nAus}</strong> sirvieron</span>
-            {nAus > 0 && <span style={{ color: "var(--color-down)" }}><strong>{nAus}</strong> {nAus === 1 ? "ausente" : "ausentes"}</span>}
-            {cuando ? <span style={{ color: "var(--color-faint)" }}>Guardado {cuando}</span> : <span style={{ color: "var(--color-faint)" }}>Sin guardar todavía</span>}
-          </div>
+          {hasListado && (
+            <div className="flex gap-3 mt-2 text-sm flex-wrap">
+              <span style={{ color: "var(--color-ink)" }}><strong>{reg!.filas.filter(f => !f.aus).length}</strong> sirvieron</span>
+              {reg!.filas.filter(f => f.aus).length > 0 && <span style={{ color: "var(--color-down)" }}><strong>{reg!.filas.filter(f => f.aus).length}</strong> {reg!.filas.filter(f => f.aus).length === 1 ? "ausente" : "ausentes"}</span>}
+              {cuando ? <span style={{ color: "var(--color-faint)" }}>Guardado {cuando}</span> : null}
+            </div>
+          )}
         </div>
 
         <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-5" ref={listRef}>
-          {canEdit && (
+          {canEdit && editMode && (
             <>
               {/* PDF upload */}
               <div className="flex flex-col gap-3">
@@ -278,49 +293,102 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
             </>
           )}
 
-          {/* Read-only view */}
-          {!canEdit && reg && (
-            <div className="flex flex-col gap-3">
-              {reg.filas.length > 0 ? (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ color: "var(--color-muted)" }}>
-                      <th className="text-left py-1 text-xs font-semibold">Servidor</th>
-                      <th className="text-left py-1 text-xs font-semibold">Roles</th>
-                      <th className="text-right py-1 text-xs font-semibold">Asistencia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reg.filas.map((f, i) => {
-                      const s = svData.servidores[f.sid];
-                      return (
-                        <tr key={i} className="border-t" style={{ borderColor: "var(--color-line)" }}>
-                          <td className="py-2 font-semibold" style={{ color: "var(--color-ink)" }}>{s?.nombre ?? "—"}</td>
-                          <td className="py-2 text-xs" style={{ color: "var(--color-muted)" }}>{(f.roles ?? []).join(", ") || "—"}</td>
-                          <td className="py-2 text-right">
-                            {f.aus
-                              ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}>Ausente</span>
-                              : <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--color-up-soft)", color: "var(--color-up)" }}>Sirvió</span>
-                            }
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <p className="text-sm" style={{ color: "var(--color-muted)" }}>Sin servidores registrados.</p>
-              )}
-              {reg.nota && <p className="text-xs" style={{ color: "var(--color-muted)" }}>{reg.nota}</p>}
-            </div>
+          {/* View mode — shown when !editMode (both canEdit+listado and !canEdit) */}
+          {!editMode && reg && (
+            <ViewDeptos reg={reg} svData={svData} />
           )}
 
-          {!canEdit && !reg && (
-            <p className="text-sm text-center py-4" style={{ color: "var(--color-faint)" }}>Listado aún no cargado.</p>
+          {!editMode && !reg && (
+            <p className="text-sm text-center py-4" style={{ color: "var(--color-faint)" }}>
+              {canEdit ? "Todavía no hay listado. Toca \"Editar\" para subir uno." : "Listado aún no cargado."}
+            </p>
           )}
         </div>
       </div>
     </>
+  );
+}
+
+/* ---- ViewDeptos — read-only grouped view ---- */
+function getDeptoFromRoles(roles: string[]): string {
+  const first = (roles[0] ?? "").trim();
+  const sep = first.indexOf(" · ");
+  return sep > 0 ? first.substring(0, sep).trim() : "";
+}
+
+function formatSubRole(role: string): string {
+  const sep = role.indexOf(" · ");
+  return sep > 0 ? role.substring(sep + 3).trim() : role;
+}
+
+function ViewDeptos({ reg, svData }: { reg: SvRegistro; svData: SvData }) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  type FilaEnriq = SvFila & { nombre: string };
+  const groups = new Map<string, FilaEnriq[]>();
+  for (const f of reg.filas) {
+    const nombre = svData.servidores[f.sid]?.nombre ?? "—";
+    const depto = getDeptoFromRoles(f.roles ?? []);
+    const key = depto || "";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push({ ...f, nombre });
+  }
+
+  const hasDeptos = [...groups.keys()].some(k => k !== "");
+  const sorted = [...groups.entries()].sort(([a], [b]) => {
+    if (!a && b) return 1;
+    if (a && !b) return -1;
+    return a.localeCompare(b, "es");
+  });
+
+  if (!reg.filas.length) {
+    return <p className="text-sm" style={{ color: "var(--color-muted)" }}>Sin servidores registrados.</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {sorted.map(([depto, filas]) => {
+        const label = depto || "General";
+        const sirv = filas.filter(f => !f.aus).length;
+        const aus  = filas.filter(f => f.aus).length;
+        const isCollapsed = collapsed.has(label);
+        return (
+          <div key={label}>
+            {hasDeptos && (
+              <button
+                type="button"
+                className="flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-[8px] mb-1"
+                style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
+                onClick={() => setCollapsed(prev => { const s = new Set(prev); s.has(label) ? s.delete(label) : s.add(label); return s; })}
+              >
+                <span className="text-[10px]" style={{ color: "var(--color-muted)" }}>{isCollapsed ? "▶" : "▼"}</span>
+                <span className="font-bold text-xs flex-1">{label}</span>
+                <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
+                  {sirv} sirvieron{aus > 0 && <span style={{ color: "var(--color-down)" }}> · {aus} aus.</span>}
+                </span>
+              </button>
+            )}
+            {!isCollapsed && (
+              <div className={hasDeptos ? "pl-1" : ""}>
+                {filas.map((f, i) => (
+                  <div key={i} className="flex items-center gap-3 py-1.5 border-t" style={{ borderColor: "var(--color-line)" }}>
+                    <span className="font-semibold text-sm flex-1" style={{ color: f.aus ? "var(--color-muted)" : "var(--color-ink)" }}>{f.nombre}</span>
+                    <span className="text-xs" style={{ color: "var(--color-muted)", flex: 1 }}>
+                      {(f.roles ?? []).map(formatSubRole).filter(Boolean).join(", ") || "—"}
+                    </span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-none"
+                      style={{ background: f.aus ? "var(--color-down-soft)" : "var(--color-up-soft)", color: f.aus ? "var(--color-down)" : "var(--color-up)" }}>
+                      {f.aus ? "Ausente" : "Sirvió"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {reg.nota && <p className="text-xs pt-2 border-t" style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}>{reg.nota}</p>}
+    </div>
   );
 }
 
