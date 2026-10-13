@@ -175,10 +175,10 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
           </div>
           {/* Sum bar */}
           {hasListado && (
-            <div className="flex gap-3 mt-2 text-sm flex-wrap">
-              <span style={{ color: "var(--color-ink)" }}><strong>{reg!.filas.filter(f => !f.aus).length}</strong> sirvieron</span>
-              {reg!.filas.filter(f => f.aus).length > 0 && <span style={{ color: "var(--color-down)" }}><strong>{reg!.filas.filter(f => f.aus).length}</strong> {reg!.filas.filter(f => f.aus).length === 1 ? "ausente" : "ausentes"}</span>}
-              {cuando ? <span style={{ color: "var(--color-faint)" }}>Guardado {cuando}</span> : null}
+            <div className="flex flex-col gap-0.5 mt-2">
+              <span className="text-sm" style={{ color: "var(--color-ink)" }}><strong>{reg!.filas.filter(f => !f.aus).length}</strong> sirvieron</span>
+              {reg!.filas.filter(f => f.aus).length > 0 && <span className="text-sm" style={{ color: "var(--color-down)" }}><strong>{reg!.filas.filter(f => f.aus).length}</strong> {reg!.filas.filter(f => f.aus).length === 1 ? "ausente" : "ausentes"}</span>}
+              {cuando && <span className="text-xs" style={{ color: "var(--color-faint)" }}>Guardado {cuando}</span>}
             </div>
           )}
         </div>
