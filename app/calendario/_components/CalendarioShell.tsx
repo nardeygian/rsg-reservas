@@ -5,18 +5,17 @@ import type { AsanaEvent } from "@/lib/asana";
 import type { LinkInfo, BookingOption } from "../page";
 import { EventPanel } from "./EventPanel";
 
-// ── Types ────────────────────────────────────────────────────────────────────
-type View = "lista" | "mes" | "semana" | "dia";
+type View = "lista" | "mes" | "semana";
 
-// ── Color palette por categoría ───────────────────────────────────────────
+// ── Palette ───────────────────────────────────────────────────────────────────
 const PALETTE = [
-  { bg: "var(--color-accent-soft)", color: "var(--color-accent)" },
-  { bg: "rgba(47,94,158,0.12)", color: "#2F7EE8" },
-  { bg: "rgba(124,58,237,0.1)", color: "#8B5CF6" },
-  { bg: "rgba(180,83,9,0.1)", color: "#D97706" },
-  { bg: "rgba(220,38,38,0.1)", color: "#EF4444" },
-  { bg: "rgba(8,145,178,0.1)", color: "#06B6D4" },
-  { bg: "rgba(190,24,93,0.1)", color: "#EC4899" },
+  { bg: "rgba(0,160,112,0.12)",  color: "#00A070" },
+  { bg: "rgba(47,126,232,0.12)", color: "#2F7EE8" },
+  { bg: "rgba(139,92,246,0.12)", color: "#8B5CF6" },
+  { bg: "rgba(217,119,6,0.12)",  color: "#D97706" },
+  { bg: "rgba(239,68,68,0.12)",  color: "#EF4444" },
+  { bg: "rgba(6,182,212,0.12)",  color: "#06B6D4" },
+  { bg: "rgba(236,72,153,0.12)", color: "#EC4899" },
 ];
 
 function hashStr(s: string): number {
@@ -24,54 +23,45 @@ function hashStr(s: string): number {
   for (const c of s) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff;
   return h;
 }
-
-function categoryStyle(cat: string | null) {
+function catStyle(cat: string | null) {
   if (!cat) return PALETTE[0];
   return PALETTE[hashStr(cat) % PALETTE.length];
 }
 
-// ── Date helpers ─────────────────────────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────────────────────────
 function toDateStr(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-
 function todayStr(): string {
-  return toDateStr(new Date());
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 }
-
-function eventsForDate(events: AsanaEvent[], dateStr: string): AsanaEvent[] {
-  return events.filter((e) => e.due_on === dateStr);
+function eventsForDate(events: AsanaEvent[], ds: string): AsanaEvent[] {
+  return events.filter((e) => e.due_on === ds);
 }
-
+function fmtTime(iso: string): string {
+  return new Date(iso)
+    .toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Bogota" })
+    .replace(":00", "").replace(" a. m.", "am").replace(" p. m.", "pm");
+}
 function getMonthGrid(year: number, month: number) {
-  const firstDay = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  let startDow = firstDay.getDay();
-  if (startDow === 0) startDow = 7;
-  const padBefore = startDow - 1;
-
+  const first = new Date(year, month, 1);
+  const dim = new Date(year, month + 1, 0).getDate();
+  let dow = first.getDay();
+  if (dow === 0) dow = 7;
+  const pad = dow - 1;
   const cells: { date: Date; current: boolean }[] = [];
-  for (let i = padBefore - 1; i >= 0; i--) {
-    cells.push({ date: new Date(year, month, -i), current: false });
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({ date: new Date(year, month, d), current: true });
-  }
+  for (let i = pad - 1; i >= 0; i--) cells.push({ date: new Date(year, month, -i), current: false });
+  for (let d = 1; d <= dim; d++) cells.push({ date: new Date(year, month, d), current: true });
   while (cells.length % 7 !== 0) {
-    const n = cells.length - daysInMonth - padBefore + 1;
+    const n = cells.length - dim - pad + 1;
     cells.push({ date: new Date(year, month + 1, n), current: false });
   }
   return cells;
 }
-
 function getWeekDays(anchor: Date): Date[] {
   const dow = anchor.getDay();
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
   const monday = new Date(anchor);
-  monday.setDate(anchor.getDate() + mondayOffset);
+  monday.setDate(anchor.getDate() + (dow === 0 ? -6 : 1 - dow));
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
@@ -79,204 +69,395 @@ function getWeekDays(anchor: Date): Date[] {
   });
 }
 
-const DAY_LABELS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
-const MONTH_NAMES = [
-  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
-];
-const DAY_NAMES = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const DOW   = ["Lu","Ma","Mi","Ju","Vi","Sá","Do"];
+const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DNAMES = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-function EventPill({
-  event,
-  small,
-  hasLink,
-  onClick,
-}: {
-  event: AsanaEvent;
-  small?: boolean;
-  hasLink?: boolean;
-  onClick: (e: AsanaEvent) => void;
+// ── DayEventList ──────────────────────────────────────────────────────────────
+function DayEventList({ events, linksByGid, dateStr, onEventClick }: {
+  events: AsanaEvent[];
+  linksByGid: Record<string, LinkInfo>;
+  dateStr: string;
+  onEventClick: (e: AsanaEvent) => void;
 }) {
-  const { bg, color } = categoryStyle(event.category);
-  return (
-    <button
-      type="button"
-      onClick={() => onClick(event)}
-      style={{
-        background: bg,
-        color,
-        fontSize: small ? 10 : 12,
-        fontWeight: 600,
-        padding: small ? "1px 5px" : "3px 8px",
-        borderRadius: 5,
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        display: "flex",
-        alignItems: "center",
-        gap: 3,
-        maxWidth: "100%",
-        textAlign: "left",
-        cursor: "pointer",
-        border: "none",
-      }}
-      title={event.name}
-    >
-      {hasLink && <span style={{ fontSize: small ? 8 : 10 }}>📍</span>}
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {event.name}
-      </span>
-    </button>
-  );
-}
+  const today = todayStr();
+  const isToday  = dateStr === today;
+  const isPast   = dateStr < today;
+  const d = new Date(dateStr + "T12:00:00");
+  const label = isToday
+    ? "Hoy"
+    : `${DNAMES[d.getDay()].charAt(0).toUpperCase() + DNAMES[d.getDay()].slice(1)}, ${d.getDate()} de ${MONTHS[d.getMonth()].toLowerCase()}`;
 
-function EventCard({
-  event,
-  hasLink,
-  onClick,
-}: {
-  event: AsanaEvent;
-  hasLink?: boolean;
-  onClick: (e: AsanaEvent) => void;
-}) {
-  const { bg, color } = categoryStyle(event.category);
+  const sorted = [...events].sort((a, b) => {
+    const ta = linksByGid[a.gid]?.starts_at ?? "";
+    const tb = linksByGid[b.gid]?.starts_at ?? "";
+    if (ta && tb) return ta.localeCompare(tb);
+    return ta ? -1 : tb ? 1 : 0;
+  });
+
   return (
-    <button
-      type="button"
-      onClick={() => onClick(event)}
-      className="rounded-[10px] px-4 py-3 flex flex-col gap-1 w-full text-left"
-      style={{ background: bg, border: `1px solid ${color}22`, cursor: "pointer" }}
-    >
-      <div className="flex items-center justify-between gap-2">
-        {event.category && (
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color }}>
-            {event.category}
+    <div style={{ opacity: isPast ? 0.72 : 1 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 0 6px" }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: isToday ? "var(--color-accent)" : "var(--color-ink)" }}>
+          {label}
+        </span>
+        {events.length > 0 && (
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 7px", borderRadius: 99, background: "var(--color-surface-2)", color: "var(--color-muted)" }}>
+            {events.length}
           </span>
         )}
-        {hasLink && <span className="text-xs">📍</span>}
       </div>
-      <p className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>
-        {event.name}
-      </p>
-      {event.notes && (
-        <p className="text-xs mt-0.5 line-clamp-2" style={{ color: "var(--color-muted)" }}>
-          {event.notes}
-        </p>
+      {events.length === 0 ? (
+        <p style={{ fontSize: 13, color: "var(--color-faint)", textAlign: "center", padding: "14px 0 20px" }}>Sin eventos</p>
+      ) : (
+        <div>
+          {sorted.map((e) => {
+            const link = linksByGid[e.gid];
+            const { color } = catStyle(e.category);
+            return (
+              <button
+                key={e.gid}
+                type="button"
+                onClick={() => onEventClick(e)}
+                style={{
+                  display: "flex", alignItems: "flex-start", gap: 12,
+                  width: "100%", textAlign: "left",
+                  padding: "11px 4px 11px 12px",
+                  borderTop: "1px solid var(--color-line)",
+                  borderLeft: `3px solid ${color}`,
+                  background: "none", cursor: "pointer", border: "none",
+                  borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--color-line)",
+                  borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: color,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {e.name}
+                  </p>
+                  {e.category && (
+                    <p style={{ margin: "2px 0 0", fontSize: 11.5, color }}>{e.category}</p>
+                  )}
+                  {link?.space_name && (
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-muted)" }}>📍 {link.space_name}</p>
+                  )}
+                </div>
+                {link?.starts_at && (
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: "var(--color-muted)" }}>{fmtTime(link.starts_at)}</p>
+                    {link.ends_at && (
+                      <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--color-faint)" }}>{fmtTime(link.ends_at)}</p>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       )}
-    </button>
+    </div>
   );
 }
 
-// ── Vista: Lista ─────────────────────────────────────────────────────────────
-function ListaView({
-  events,
-  linksByGid,
-  onEventClick,
-}: {
+// ── MesView ───────────────────────────────────────────────────────────────────
+function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
+  events: AsanaEvent[];
+  linksByGid: Record<string, LinkInfo>;
+  anchor: Date;
+  selDay: string;
+  setSelDay: (d: string) => void;
+  onEventClick: (e: AsanaEvent) => void;
+}) {
+  const year  = anchor.getFullYear();
+  const month = anchor.getMonth();
+  const today = todayStr();
+  const cells = useMemo(() => getMonthGrid(year, month), [year, month]);
+  const selDayEvents = useMemo(() => eventsForDate(events, selDay), [events, selDay]);
+
+  return (
+    <div>
+      {/* DOW headers */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+        {DOW.map((l) => (
+          <div key={l} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", padding: "4px 0 6px" }}>
+            {l}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderTop: "1px solid var(--color-line)", borderLeft: "1px solid var(--color-line)" }}>
+        {cells.map(({ date, current }, idx) => {
+          const ds      = toDateStr(date);
+          const dayEvs  = eventsForDate(events, ds);
+          const isToday = ds === today;
+          const isSel   = ds === selDay;
+          const isPast  = ds < today;
+
+          return (
+            <div
+              key={idx}
+              onClick={() => setSelDay(ds)}
+              style={{
+                borderRight: "1px solid var(--color-line)",
+                borderBottom: "1px solid var(--color-line)",
+                minHeight: 64,
+                padding: "5px 3px 8px",
+                cursor: "pointer",
+                background: isSel && !isToday
+                  ? "var(--color-accent-soft)"
+                  : "transparent",
+                transition: "background 0.1s",
+              }}
+            >
+              {/* Number */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 5 }}>
+                <span style={{
+                  width: 28, height: 28,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  borderRadius: "50%", fontSize: 13,
+                  fontWeight: isToday ? 700 : 500,
+                  background: isToday ? "var(--color-accent)" : "transparent",
+                  color: isToday
+                    ? "var(--color-accent-ink)"
+                    : !current ? "var(--color-faint)"
+                    : isPast  ? "var(--color-muted)"
+                    : "var(--color-ink)",
+                }}>
+                  {date.getDate()}
+                </span>
+              </div>
+
+              {/* Event bars */}
+              {dayEvs.length > 0 && (
+                <div style={{ display: "flex", gap: 2, paddingInline: 3, flexWrap: "wrap" }}>
+                  {dayEvs.slice(0, 3).map((e, i) => (
+                    <div key={i} style={{ height: 4, borderRadius: 2, flex: 1, minWidth: 5, maxWidth: 20, background: catStyle(e.category).color, opacity: isPast ? 0.4 : 0.75 }} />
+                  ))}
+                  {dayEvs.length > 3 && (
+                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-faint)", flexShrink: 0, marginTop: 0 }} />
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Selected day event list */}
+      <DayEventList events={selDayEvents} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} />
+    </div>
+  );
+}
+
+// ── SemanaView ────────────────────────────────────────────────────────────────
+function SemanaView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
+  events: AsanaEvent[];
+  linksByGid: Record<string, LinkInfo>;
+  anchor: Date;
+  selDay: string;
+  setSelDay: (d: string) => void;
+  onEventClick: (e: AsanaEvent) => void;
+}) {
+  const weekDays     = useMemo(() => getWeekDays(anchor), [anchor]);
+  const today        = todayStr();
+  const selDayEvents = useMemo(() => eventsForDate(events, selDay), [events, selDay]);
+
+  return (
+    <div>
+      {/* Day strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid var(--color-line)" }}>
+        {weekDays.map((date, i) => {
+          const ds       = toDateStr(date);
+          const isToday  = ds === today;
+          const isSel    = ds === selDay;
+          const hasEvs   = eventsForDate(events, ds).length > 0;
+          return (
+            <button key={i} type="button" onClick={() => setSelDay(ds)}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                padding: "10px 4px 8px",
+                background: "none", cursor: "pointer",
+                borderBottom: isSel ? "2px solid var(--color-accent)" : "2px solid transparent",
+                borderLeft: "none", borderRight: "none", borderTop: "none",
+              }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: isToday ? "var(--color-accent)" : "var(--color-muted)" }}>
+                {DOW[i]}
+              </span>
+              <span style={{
+                width: 32, height: 32,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: "50%", fontSize: 15, fontWeight: 700,
+                background: isToday ? "var(--color-accent)" : "transparent",
+                color: isToday ? "var(--color-accent-ink)" : "var(--color-ink)",
+              }}>
+                {date.getDate()}
+              </span>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: hasEvs ? (isToday ? "var(--color-accent)" : "var(--color-muted)") : "transparent" }} />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Mobile: event list for selected day */}
+      <div className="sm:hidden">
+        <DayEventList events={selDayEvents} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} />
+      </div>
+
+      {/* Desktop: 7-column grid */}
+      <div className="hidden sm:grid grid-cols-7" style={{ borderLeft: "1px solid var(--color-line)" }}>
+        {weekDays.map((date, i) => {
+          const ds      = toDateStr(date);
+          const dayEvs  = eventsForDate(events, ds);
+          const isToday = ds === today;
+          const isPast  = ds < today;
+          return (
+            <div key={i} style={{
+              borderRight: "1px solid var(--color-line)",
+              borderBottom: "1px solid var(--color-line)",
+              minHeight: 180, padding: 6,
+              background: isToday ? "var(--color-accent-soft)" : "transparent",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                {dayEvs.map((e) => {
+                  const link = linksByGid[e.gid];
+                  const { color, bg } = catStyle(e.category);
+                  return (
+                    <button key={e.gid} type="button" onClick={() => onEventClick(e)}
+                      style={{
+                        display: "block", width: "100%", textAlign: "left",
+                        borderRadius: 6, padding: "4px 6px",
+                        background: bg, borderLeft: `3px solid ${color}`,
+                        cursor: "pointer", border: "none",
+                        borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: color,
+                        opacity: isPast ? 0.6 : 1,
+                      }}
+                    >
+                      {link?.starts_at && (
+                        <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color }}>{fmtTime(link.starts_at)}</p>
+                      )}
+                      <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {e.name}
+                      </p>
+                      {link?.space_name && (
+                        <p style={{ margin: 0, fontSize: 10, color: "var(--color-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          📍 {link.space_name}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── ListaView ─────────────────────────────────────────────────────────────────
+function ListaView({ events, linksByGid, onEventClick }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
   onEventClick: (e: AsanaEvent) => void;
 }) {
   const today = todayStr();
-  const currentMonthKey = today.slice(0, 7);
-
+  const curMonthKey = today.slice(0, 7);
   const [showPast, setShowPast] = useState(false);
-  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
-
-  const toggleMonth = (key: string) =>
-    setCollapsedMonths((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const grouped = useMemo(() => {
     const map = new Map<string, AsanaEvent[]>();
     for (const e of events) {
-      const key = e.due_on.slice(0, 7);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(e);
+      const k = e.due_on.slice(0, 7);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(e);
     }
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [events]);
 
-  if (events.length === 0) {
-    return (
-      <p className="text-center py-12 text-sm" style={{ color: "var(--color-muted)" }}>
-        Sin eventos en el calendario
-      </p>
-    );
-  }
+  if (!events.length)
+    return <p style={{ textAlign: "center", padding: "48px 0", fontSize: 14, color: "var(--color-muted)" }}>Sin eventos en el calendario</p>;
 
-  const pastGroups = grouped.filter(([key]) => key < currentMonthKey);
-  const currentAndFuture = grouped.filter(([key]) => key >= currentMonthKey);
+  const pastGroups = grouped.filter(([k]) => k < curMonthKey);
+  const futureGroups = grouped.filter(([k]) => k >= curMonthKey);
 
-  function renderMonth([monthKey, monthEvents]: [string, AsanaEvent[]]) {
-    const [y, m] = monthKey.split("-").map(Number);
-    const collapsed = collapsedMonths.has(monthKey);
-    const isPastMonth = monthKey < currentMonthKey;
-
+  function renderMonth([mk, evs]: [string, AsanaEvent[]]) {
+    const [y, m] = mk.split("-").map(Number);
+    const isPast = mk < curMonthKey;
+    const isCollapsed = collapsed.has(mk);
     const byDay = new Map<string, AsanaEvent[]>();
-    for (const e of monthEvents) {
+    for (const e of evs) {
       if (!byDay.has(e.due_on)) byDay.set(e.due_on, []);
       byDay.get(e.due_on)!.push(e);
     }
     const days = [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b));
 
     return (
-      <div key={monthKey}>
-        {/* Month header — clicable para plegar */}
-        <button
-          type="button"
-          onClick={() => toggleMonth(monthKey)}
-          className="flex items-center gap-2 w-full mb-3"
-        >
-          <span
-            className="text-xs font-bold uppercase tracking-widest"
-            style={{ color: isPastMonth ? "var(--color-faint)" : "var(--color-muted)" }}
-          >
-            {MONTH_NAMES[m - 1]} {y}
+      <div key={mk}>
+        <button type="button" onClick={() => setCollapsed(prev => { const s = new Set(prev); s.has(mk) ? s.delete(mk) : s.add(mk); return s; })}
+          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: isPast ? "var(--color-faint)" : "var(--color-muted)" }}>
+            {MONTHS[m - 1]} {y}
           </span>
-          <span className="text-[10px]" style={{ color: "var(--color-faint)" }}>
-            {collapsed ? "▶" : "▼"}
-          </span>
-          <span
-            className="text-[11px] font-semibold px-2 py-[1px] rounded-full"
-            style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}
-          >
-            {monthEvents.length}
-          </span>
+          <span style={{ fontSize: 10, color: "var(--color-faint)" }}>{isCollapsed ? "▶" : "▼"}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 99, background: "var(--color-surface-2)", color: "var(--color-muted)" }}>{evs.length}</span>
         </button>
 
-        {!collapsed && (
-          <div className="flex flex-col gap-2">
-            {days.map(([dateStr, dayEvents]) => {
-              const d = new Date(dateStr + "T12:00:00");
-              const isDayPast = dateStr < today;
-              const isToday = dateStr === today;
+        {!isCollapsed && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 4 }}>
+            {days.map(([ds, dayEvs]) => {
+              const d = new Date(ds + "T12:00:00");
+              const isDayPast = ds < today;
+              const isToday   = ds === today;
               return (
-                <div key={dateStr} style={{ opacity: isDayPast ? 0.5 : 1 }}>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none"
-                      style={
-                        isToday
-                          ? { background: "var(--color-accent)", color: "var(--color-accent-ink)" }
-                          : { background: "var(--color-surface-2)", color: "var(--color-muted)" }
-                      }
-                    >
+                <div key={ds} style={{ opacity: isDayPast ? 0.55 : 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 700,
+                      background: isToday ? "var(--color-accent)" : "var(--color-surface-2)",
+                      color: isToday ? "var(--color-accent-ink)" : "var(--color-muted)",
+                    }}>
                       {d.getDate()}
                     </div>
-                    <span className="text-xs capitalize" style={{ color: "var(--color-muted)" }}>
-                      {DAY_NAMES[d.getDay()]}
+                    <span style={{ fontSize: 12, textTransform: "capitalize", color: "var(--color-muted)" }}>
+                      {DNAMES[d.getDay()]}
                     </span>
                   </div>
-                  <div className="flex flex-col gap-1.5 pl-9">
-                    {dayEvents.map((e) => (
-                      <EventCard key={e.gid} event={e} hasLink={!!linksByGid[e.gid]} onClick={onEventClick} />
-                    ))}
+                  <div style={{ paddingLeft: 36, display: "flex", flexDirection: "column" }}>
+                    {dayEvs.map((e) => {
+                      const link = linksByGid[e.gid];
+                      const { color } = catStyle(e.category);
+                      return (
+                        <button key={e.gid} type="button" onClick={() => onEventClick(e)}
+                          style={{
+                            display: "flex", alignItems: "flex-start", gap: 12,
+                            width: "100%", textAlign: "left", padding: "9px 4px 9px 10px",
+                            borderTop: "1px solid var(--color-line)",
+                            borderLeft: `3px solid ${color}`,
+                            background: "none", cursor: "pointer",
+                            border: "none",
+                            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--color-line)",
+                            borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: color,
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            {e.category && <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color }}>{e.category}</p>}
+                            <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</p>
+                            {link?.space_name && <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-muted)" }}>📍 {link.space_name}</p>}
+                          </div>
+                          {link?.starts_at && (
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <p style={{ margin: 0, fontSize: 12, color: "var(--color-muted)" }}>{fmtTime(link.starts_at)}</p>
+                              {link.ends_at && <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--color-faint)" }}>{fmtTime(link.ends_at)}</p>}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -288,217 +469,31 @@ function ListaView({
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Meses anteriores */}
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
       {pastGroups.length > 0 && (
-        <div className="flex flex-col gap-5">
-          <button
-            type="button"
-            onClick={() => setShowPast((v) => !v)}
-            className="flex items-center gap-2 text-sm font-semibold"
-            style={{ color: "var(--color-muted)" }}
-          >
-            <span
-              className="w-5 h-5 flex items-center justify-center rounded-full text-[10px]"
-              style={{ background: "var(--color-surface-2)" }}
-            >
+        <>
+          <button type="button" onClick={() => setShowPast(v => !v)}
+            style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+            <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", fontSize: 10 }}>
               {showPast ? "▲" : "▼"}
             </span>
             {showPast ? "Ocultar meses anteriores" : `Ver meses anteriores (${pastGroups.length})`}
           </button>
           {showPast && (
-            <div className="flex flex-col gap-5 pl-2 border-l-2" style={{ borderColor: "var(--color-line)" }}>
+            <div style={{ paddingLeft: 12, borderLeft: "2px solid var(--color-line)", display: "flex", flexDirection: "column", gap: 20 }}>
               {pastGroups.map(renderMonth)}
             </div>
           )}
-        </div>
+        </>
       )}
-
-      {/* Mes actual y futuros */}
-      {currentAndFuture.map(renderMonth)}
+      {futureGroups.map(renderMonth)}
     </div>
   );
 }
 
-// ── Vista: Mes ───────────────────────────────────────────────────────────────
-function MesView({
-  events, linksByGid, anchor, setAnchor, setView, onEventClick,
-}: {
-  events: AsanaEvent[];
-  linksByGid: Record<string, LinkInfo>;
-  anchor: Date;
-  setAnchor: (d: Date) => void;
-  setView: (v: View) => void;
-  onEventClick: (e: AsanaEvent) => void;
-}) {
-  const year = anchor.getFullYear();
-  const month = anchor.getMonth();
-  const today = todayStr();
-  const cells = useMemo(() => getMonthGrid(year, month), [year, month]);
-
-  return (
-    <div>
-      <div className="grid grid-cols-7 mb-1">
-        {DAY_LABELS.map((l) => (
-          <div key={l} className="text-center text-[11px] font-semibold py-1" style={{ color: "var(--color-muted)" }}>
-            {l}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7" style={{ borderTop: "1px solid var(--color-line)", borderLeft: "1px solid var(--color-line)" }}>
-        {cells.map(({ date, current }, idx) => {
-          const ds = toDateStr(date);
-          const dayEvents = eventsForDate(events, ds);
-          const isToday = ds === today;
-
-          return (
-            <div
-              key={idx}
-              style={{
-                minHeight: 72,
-                padding: "4px 4px 6px",
-                borderRight: "1px solid var(--color-line)",
-                borderBottom: "1px solid var(--color-line)",
-              }}
-            >
-              <div
-                className="flex justify-center mb-1 cursor-pointer"
-                onClick={() => { setAnchor(date); setView("dia"); }}
-              >
-                <span
-                  className="w-6 h-6 flex items-center justify-center rounded-full text-[12px] font-semibold"
-                  style={
-                    isToday
-                      ? { background: "var(--color-accent)", color: "var(--color-accent-ink)" }
-                      : { color: current ? "var(--color-ink)" : "var(--color-faint)" }
-                  }
-                >
-                  {date.getDate()}
-                </span>
-              </div>
-              <div className="flex flex-col gap-[2px]">
-                {dayEvents.slice(0, 3).map((e) => (
-                  <EventPill key={e.gid} event={e} small hasLink={!!linksByGid[e.gid]} onClick={onEventClick} />
-                ))}
-                {dayEvents.length > 3 && (
-                  <span className="text-[9px] pl-1" style={{ color: "var(--color-muted)" }}>
-                    +{dayEvents.length - 3} más
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── Vista: Semana ────────────────────────────────────────────────────────────
-function SemanaView({
-  events, linksByGid, anchor, setAnchor, setView, onEventClick,
-}: {
-  events: AsanaEvent[];
-  linksByGid: Record<string, LinkInfo>;
-  anchor: Date;
-  setAnchor: (d: Date) => void;
-  setView: (v: View) => void;
-  onEventClick: (e: AsanaEvent) => void;
-}) {
-  const weekDays = useMemo(() => getWeekDays(anchor), [anchor]);
-  const today = todayStr();
-
-  return (
-    <div className="grid grid-cols-7 gap-0" style={{ borderTop: "1px solid var(--color-line)", borderLeft: "1px solid var(--color-line)" }}>
-      {weekDays.map((date, i) => {
-        const ds = toDateStr(date);
-        const dayEvents = eventsForDate(events, ds);
-        const isToday = ds === today;
-
-        return (
-          <div
-            key={i}
-            style={{
-              borderRight: "1px solid var(--color-line)",
-              borderBottom: "1px solid var(--color-line)",
-              minHeight: 120,
-              padding: "6px 4px",
-              background: isToday ? "var(--color-accent-soft)" : "transparent",
-            }}
-          >
-            <div
-              className="text-center mb-2 cursor-pointer"
-              onClick={() => { setAnchor(date); setView("dia"); }}
-            >
-              <div className="text-[10px] font-semibold uppercase" style={{ color: "var(--color-muted)" }}>
-                {DAY_LABELS[i]}
-              </div>
-              <div
-                className="w-7 h-7 flex items-center justify-center rounded-full text-sm font-bold mx-auto"
-                style={
-                  isToday
-                    ? { background: "var(--color-accent)", color: "var(--color-accent-ink)" }
-                    : { color: "var(--color-ink)" }
-                }
-              >
-                {date.getDate()}
-              </div>
-            </div>
-            <div className="flex flex-col gap-[3px]">
-              {dayEvents.map((e) => (
-                <EventPill key={e.gid} event={e} small hasLink={!!linksByGid[e.gid]} onClick={onEventClick} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Vista: Día ───────────────────────────────────────────────────────────────
-function DiaView({
-  events, linksByGid, anchor, onEventClick,
-}: {
-  events: AsanaEvent[];
-  linksByGid: Record<string, LinkInfo>;
-  anchor: Date;
-  onEventClick: (e: AsanaEvent) => void;
-}) {
-  const ds = toDateStr(anchor);
-  const dayEvents = eventsForDate(events, ds);
-
-  return (
-    <div>
-      <p className="text-sm mb-4 capitalize" style={{ color: "var(--color-muted)" }}>
-        {DAY_NAMES[anchor.getDay()]}, {anchor.getDate()} de {MONTH_NAMES[anchor.getMonth()].toLowerCase()} de {anchor.getFullYear()}
-      </p>
-      {dayEvents.length === 0 ? (
-        <div
-          className="rounded-[12px] px-4 py-8 text-center text-sm"
-          style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-muted)" }}
-        >
-          Sin reuniones este día
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {dayEvents.map((e) => (
-            <EventCard key={e.gid} event={e} hasLink={!!linksByGid[e.gid]} onClick={onEventClick} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main shell ───────────────────────────────────────────────────────────────
+// ── Main shell ────────────────────────────────────────────────────────────────
 export function CalendarioShell({
-  events,
-  linksByGid,
-  bookingOptions,
-  canLink,
-  linkAction,
-  unlinkAction,
+  events, linksByGid, bookingOptions, canLink, linkAction, unlinkAction,
 }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
@@ -507,132 +502,106 @@ export function CalendarioShell({
   linkAction: (fd: FormData) => Promise<void>;
   unlinkAction: (fd: FormData) => Promise<void>;
 }) {
-  const [view, setView] = useState<View>("mes");
-  const [anchor, setAnchor] = useState(() => new Date());
+  const [view,          setView]          = useState<View>("mes");
+  const [anchor,        setAnchor]        = useState(() => new Date());
+  const [selDay,        setSelDay]        = useState(() => todayStr());
   const [selectedEvent, setSelectedEvent] = useState<AsanaEvent | null>(null);
 
-  const year = anchor.getFullYear();
+  const year  = anchor.getFullYear();
   const month = anchor.getMonth();
 
   function prev() {
     const d = new Date(anchor);
-    if (view === "mes") d.setMonth(month - 1);
-    else if (view === "semana") d.setDate(d.getDate() - 7);
-    else d.setDate(d.getDate() - 1);
+    if (view === "mes") {
+      d.setMonth(month - 1);
+      setSelDay(toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)));
+    } else {
+      d.setDate(d.getDate() - 7);
+      setSelDay(toDateStr(d));
+    }
     setAnchor(d);
   }
 
   function next() {
     const d = new Date(anchor);
-    if (view === "mes") d.setMonth(month + 1);
-    else if (view === "semana") d.setDate(d.getDate() + 7);
-    else d.setDate(d.getDate() + 1);
+    if (view === "mes") {
+      d.setMonth(month + 1);
+      setSelDay(toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)));
+    } else {
+      d.setDate(d.getDate() + 7);
+      setSelDay(toDateStr(d));
+    }
     setAnchor(d);
   }
 
+  function goToday() {
+    setAnchor(new Date());
+    setSelDay(todayStr());
+  }
+
   function periodLabel() {
-    if (view === "mes") return `${MONTH_NAMES[month]} ${year}`;
-    if (view === "semana") {
-      const days = getWeekDays(anchor);
-      const first = days[0];
-      const last = days[6];
-      if (first.getMonth() === last.getMonth()) {
-        return `${first.getDate()}–${last.getDate()} ${MONTH_NAMES[first.getMonth()].toLowerCase()}`;
-      }
-      return `${first.getDate()} ${MONTH_NAMES[first.getMonth()].slice(0, 3).toLowerCase()} – ${last.getDate()} ${MONTH_NAMES[last.getMonth()].slice(0, 3).toLowerCase()}`;
-    }
-    if (view === "dia") {
-      return `${anchor.getDate()} ${MONTH_NAMES[month].toLowerCase()} ${year}`;
-    }
-    return "Todas las reuniones";
+    if (view === "mes") return `${MONTHS[month]} ${year}`;
+    const days = getWeekDays(anchor);
+    const f = days[0]; const l = days[6];
+    if (f.getMonth() === l.getMonth())
+      return `${f.getDate()}–${l.getDate()} de ${MONTHS[f.getMonth()].toLowerCase()} ${year}`;
+    return `${f.getDate()} ${MONTHS[f.getMonth()].slice(0, 3).toLowerCase()} – ${l.getDate()} ${MONTHS[l.getMonth()].slice(0, 3).toLowerCase()} ${year}`;
   }
 
   const VIEWS: { key: View; label: string }[] = [
-    { key: "lista", label: "Lista" },
-    { key: "mes", label: "Mes" },
-    { key: "semana", label: "Semana" },
-    { key: "dia", label: "Día" },
+    { key: "lista",   label: "Lista"   },
+    { key: "mes",     label: "Mes"     },
+    { key: "semana",  label: "Semana"  },
   ];
 
   const selectedLink = selectedEvent ? (linksByGid[selectedEvent.gid] ?? null) : null;
 
   return (
-    <div className="px-4 pt-6 pb-10 max-w-3xl mx-auto flex flex-col gap-4">
-      {/* Header */}
-      <header className="flex flex-col gap-1">
-        <span className="eyebrow">Portal RSG</span>
-        <h1 className="text-[26px] font-bold leading-tight" style={{ fontFamily: "var(--font-display)" }}>
-          Calendario
-        </h1>
-      </header>
-
-      {/* View toggle */}
-      <div className="flex rounded-[10px] p-[3px] gap-[2px]" style={{ background: "var(--color-surface-2)", width: "fit-content" }}>
-        {VIEWS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setView(key)}
-            className="text-sm font-semibold px-3 py-1.5 rounded-[8px] transition"
-            style={
-              view === key
-                ? { background: "var(--color-surface)", color: "var(--color-accent)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }
-                : { color: "var(--color-muted)", background: "transparent" }
-            }
-          >
-            {label}
-          </button>
-        ))}
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px clamp(12px, 3vw, 40px) 80px" }}>
+      {/* Page header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "12px 24px", marginBottom: 20, flexWrap: "wrap" }}>
+        <div>
+          <span className="eyebrow">Portal RSG</span>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>
+            Calendario
+          </h1>
+        </div>
+        {/* View toggle */}
+        <div style={{ display: "flex", borderRadius: 10, padding: 3, gap: 2, background: "var(--color-surface-2)" }}>
+          {VIEWS.map(({ key, label }) => (
+            <button key={key} onClick={() => setView(key)} style={{
+              fontSize: 13, fontWeight: 600, padding: "6px 14px", borderRadius: 8,
+              border: "none", cursor: "pointer",
+              background: view === key ? "var(--color-surface)" : "transparent",
+              color:      view === key ? "var(--color-accent)"  : "var(--color-muted)",
+              boxShadow:  view === key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Period navigation */}
+      {/* Period nav */}
       {view !== "lista" && (
-        <div className="flex items-center gap-3">
-          <button
-            onClick={prev}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-lg transition"
-            style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}
-            aria-label="Período anterior"
-          >
-            ‹
-          </button>
-          <span className="font-semibold text-[15px] flex-1 text-center capitalize" style={{ fontFamily: "var(--font-display)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <button onClick={prev} aria-label="Anterior" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>‹</button>
+          <span style={{ flex: 1, fontSize: 20, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--color-ink)", textTransform: "capitalize" }}>
             {periodLabel()}
           </span>
-          <button
-            onClick={next}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-lg transition"
-            style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}
-            aria-label="Período siguiente"
-          >
-            ›
-          </button>
-          <button
-            onClick={() => setAnchor(new Date())}
-            className="text-xs font-semibold px-3 py-1.5 rounded-[8px] transition"
-            style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
-          >
+          <button onClick={goToday} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 8, background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "none", cursor: "pointer" }}>
             Hoy
           </button>
+          <button onClick={next} aria-label="Siguiente" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>›</button>
         </div>
       )}
 
-      {/* Content */}
-      <div>
-        {view === "lista" && (
-          <ListaView events={events} linksByGid={linksByGid} onEventClick={setSelectedEvent} />
-        )}
-        {view === "mes" && (
-          <MesView events={events} linksByGid={linksByGid} anchor={anchor} setAnchor={setAnchor} setView={setView} onEventClick={setSelectedEvent} />
-        )}
-        {view === "semana" && (
-          <SemanaView events={events} linksByGid={linksByGid} anchor={anchor} setAnchor={setAnchor} setView={setView} onEventClick={setSelectedEvent} />
-        )}
-        {view === "dia" && (
-          <DiaView events={events} linksByGid={linksByGid} anchor={anchor} onEventClick={setSelectedEvent} />
-        )}
-      </div>
+      {/* Views */}
+      {view === "lista"  && <ListaView  events={events} linksByGid={linksByGid} onEventClick={setSelectedEvent} />}
+      {view === "mes"    && <MesView    events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={setSelectedEvent} />}
+      {view === "semana" && <SemanaView events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={setSelectedEvent} />}
 
-      {/* Event detail panel */}
+      {/* Event panel */}
       {selectedEvent && (
         <EventPanel
           event={selectedEvent}
