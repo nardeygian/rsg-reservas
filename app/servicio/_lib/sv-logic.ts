@@ -93,8 +93,18 @@ export function esFuturo(per: SvPer, y: number, i: number): boolean {
 
 export function svDiOf(s: { id: string; nombre: string; di?: string | null }, miembros: Record<string, SvMiembro>): string | null {
   if ("di" in s && s.di !== undefined) return s.di ?? null;
-  const m = Object.values(miembros).find(m => svNorm(m.nombre) === svNorm(s.nombre));
-  return m ? m.id : null;
+  const kS = svNorm(s.nombre);
+  const lista = Object.values(miembros);
+  // Exact match
+  const exacto = lista.find(m => svNorm(m.nombre) === kS);
+  if (exacto) return exacto.id;
+  // Prefix match: el PDF a veces agrega/omite palabras (ej. "Luis Miguel Utria Gil" vs "Luis Miguel Utria")
+  const prefijo = lista.find(m => {
+    const kM = svNorm(m.nombre);
+    if (kM.length < 8) return false; // evitar matches accidentales con nombres muy cortos
+    return kS.startsWith(kM + " ") || kM.startsWith(kS + " ");
+  });
+  return prefijo ? prefijo.id : null;
 }
 
 export function svServiciosGrupo(data: SvData, grupoId: string): SvServicioItem[] {
