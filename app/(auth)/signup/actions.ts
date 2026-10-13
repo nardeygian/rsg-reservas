@@ -31,6 +31,7 @@ export async function signupAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const origin = process.env.SITE_URL ?? "https://rsg-reservas.vercel.app";
   const { error } = await supabase.auth.signUp({
     email,
     password,
@@ -39,6 +40,7 @@ export async function signupAction(formData: FormData) {
         full_name: fullName,
         requested_role: rawRequestedRole,
       },
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 

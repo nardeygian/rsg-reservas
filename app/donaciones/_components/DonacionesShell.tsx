@@ -33,7 +33,7 @@ function BarRow({ label, value, total, n }: { label: string; value: number; tota
           {money(value)} <span style={{ color: "var(--color-faint)" }}>· {pct(p)} · {n}</span>
         </span>
       </div>
-      <div className="h-[8px] rounded-full overflow-hidden" style={{ background: "var(--color-surface-2)" }}>
+      <div className="h-[8px] rounded-full overflow-hidden" style={{ background: "var(--color-line)" }}>
         <div className="h-full rounded-full" style={{ width: cssPct(p), background: "var(--color-accent)" }} />
       </div>
     </div>
@@ -108,7 +108,7 @@ export function DonacionesShell({
   const total = suma(lista), totalPrev = suma(listaPrev);
   const delta = totalPrev > 0 ? ((total - totalPrev) / totalPrev) * 100 : null;
   const { bars, labels, title: chartTitle } = chartData(lista, per, y, i);
-  const chartMax = niceMax(Math.max(...bars.map((b) => b.v), 1));
+  const chartMax = Math.max(...bars.map((b) => b.v), 1);
 
   // ── Filtered list for sheet ──────────────────────────────────────────────
   function listadoFiltrado(f?: Sheet & { type: "listado" }) {
@@ -243,34 +243,40 @@ export function DonacionesShell({
                 </span>
               )}
             </div>
-            <div className="relative flex-1 flex items-end gap-[2px] border-b" style={{ height: 140, borderColor: "var(--color-line)", paddingTop: 20 }}>
-              {/* guide lines */}
-              <div className="absolute left-0 right-0 top-0 text-[10px] flex flex-col justify-between h-full pointer-events-none">
-                <span style={{ color: "var(--color-faint)" }}>{moneyShort(chartMax)}</span>
-                <span style={{ color: "var(--color-faint)" }}>{moneyShort(chartMax / 2)}</span>
-              </div>
-              {bars.map((b, idx) => (
-                <div key={idx} className="flex-1 flex flex-col justify-end h-full relative group" style={{ minWidth: 0 }}>
-                  <div
-                    className="rounded-t-sm"
-                    style={{
-                      height: b.v ? `${(b.v / chartMax) * 100}%` : 2,
-                      background: b.v ? "var(--color-accent)" : "var(--color-line)",
-                      minHeight: 2,
-                    }}
-                  />
-                  {b.v > 0 && (
-                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1 rounded-[6px]"
-                      style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
-                    >
-                      {b.t}: {money(b.v)} · {b.n}
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: bars.length * 22 }}>
+                <div className="relative flex items-end gap-[3px] border-b" style={{ height: 200, borderColor: "var(--color-line)", paddingTop: 24 }}>
+                  {/* guide lines */}
+                  <div className="absolute left-0 right-0 top-0 text-[10px] flex flex-col justify-between h-full pointer-events-none">
+                    <span style={{ color: "var(--color-faint)" }}>{moneyShort(chartMax)}</span>
+                    <span style={{ color: "var(--color-faint)" }}>{moneyShort(chartMax / 2)}</span>
+                  </div>
+                  {bars.map((b, idx) => (
+                    <div key={idx} className="flex-1 flex flex-col justify-end h-full relative group" style={{ minWidth: 18 }}>
+                      {b.v > 0 && (
+                        <div
+                          className="rounded-t-[3px]"
+                          style={{
+                            height: `${Math.sqrt(b.v / chartMax) * 100}%`,
+                            background: "var(--color-accent)",
+                            minHeight: 10,
+                          }}
+                        />
+                      )}
+                      {b.v > 0 && (
+                        <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1 rounded-[6px]"
+                          style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
+                        >
+                          {b.t}: {money(b.v)} · {b.n}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="flex gap-[2px]" style={{ fontSize: 10, color: "var(--color-faint)" }}>
-              {labels.map((l, k) => <span key={k} className="flex-1 text-center truncate">{l}</span>)}
+                <div className="flex gap-[3px] mt-1" style={{ fontSize: 10, color: "var(--color-faint)" }}>
+                  {labels.map((l, k) => <span key={k} className="flex-1 text-center truncate" style={{ minWidth: 18 }}>{l}</span>)}
+                </div>
+              </div>
             </div>
           </div>
         </div>
