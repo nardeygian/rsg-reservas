@@ -91,20 +91,38 @@ export function esFuturo(per: SvPer, y: number, i: number): boolean {
   return y > hy || (y === hy && i > hi);
 }
 
+function svNombreClave(norm: string): string | null {
+  const p = norm.split(" ").filter(Boolean);
+  if (p.length < 2) return null;
+  // Estructura colombiana típica: [nombre1, nombre2?, apellido1, apellido2?]
+  // Para 2 palabras: [N, A1] → clave = p[0] + p[1]
+  // Para 3 palabras: [N1, N2, A1] → clave = p[0] + p[2]
+  // Para 4+ palabras: [N1, N2, A1, A2] → clave = p[0] + p[2]
+  const apellidoIdx = Math.min(2, p.length - 1);
+  return p[0] + " " + p[apellidoIdx];
+}
+
 export function svDiOf(s: { id: string; nombre: string; di?: string | null }, miembros: Record<string, SvMiembro>): string | null {
   if ("di" in s && s.di !== undefined) return s.di ?? null;
   const kS = svNorm(s.nombre);
   const lista = Object.values(miembros);
-  // Exact match
+  // 1. Exact match
   const exacto = lista.find(m => svNorm(m.nombre) === kS);
   if (exacto) return exacto.id;
-  // Prefix match: el PDF a veces agrega/omite palabras (ej. "Luis Miguel Utria Gil" vs "Luis Miguel Utria")
+  // 2. Prefix match: "Luis Miguel Utria" ↔ "Luis Miguel Utria Gil"
   const prefijo = lista.find(m => {
     const kM = svNorm(m.nombre);
-    if (kM.length < 8) return false; // evitar matches accidentales con nombres muy cortos
+    if (kM.length < 8) return false;
     return kS.startsWith(kM + " ") || kM.startsWith(kS + " ");
   });
-  return prefijo ? prefijo.id : null;
+  if (prefijo) return prefijo.id;
+  // 3. Primer nombre + primer apellido: "Luis Miguel Utria" ↔ "Luis Antonio Utria"
+  const claveSrv = svNombreClave(kS);
+  if (claveSrv) {
+    const porClave = lista.find(m => svNombreClave(svNorm(m.nombre)) === claveSrv);
+    if (porClave) return porClave.id;
+  }
+  return null;
 }
 
 export function svServiciosGrupo(data: SvData, grupoId: string): SvServicioItem[] {
