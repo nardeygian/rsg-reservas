@@ -309,10 +309,9 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
 }
 
 /* ---- ViewDeptos — read-only grouped view ---- */
-function getDeptoFromRoles(roles: string[]): string {
-  const first = (roles[0] ?? "").trim();
-  const sep = first.indexOf(" · ");
-  return sep > 0 ? first.substring(0, sep).trim() : "";
+function getDeptoFromRole(role: string): string {
+  const sep = role.indexOf(" · ");
+  return sep > 0 ? role.substring(0, sep).trim() : "";
 }
 
 function formatSubRole(role: string): string {
@@ -323,14 +322,29 @@ function formatSubRole(role: string): string {
 function ViewDeptos({ reg, svData }: { reg: SvRegistro; svData: SvData }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
-  type FilaEnriq = SvFila & { nombre: string };
+  // A server with roles in N departments appears once per department
+  type FilaEnriq = { sid: string; roles: string[]; aus?: boolean; nota?: string; nombre: string };
   const groups = new Map<string, FilaEnriq[]>();
   for (const f of reg.filas) {
     const nombre = svData.servidores[f.sid]?.nombre ?? "—";
-    const depto = getDeptoFromRoles(f.roles ?? []);
-    const key = depto || "";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push({ ...f, nombre });
+    const roles = f.roles ?? [];
+    if (roles.length === 0) {
+      const key = "";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push({ ...f, nombre });
+      continue;
+    }
+    // Group this fila's roles by their department prefix
+    const byDepto = new Map<string, string[]>();
+    for (const role of roles) {
+      const key = getDeptoFromRole(role) || "";
+      if (!byDepto.has(key)) byDepto.set(key, []);
+      byDepto.get(key)!.push(role);
+    }
+    for (const [key, deptoRoles] of byDepto) {
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push({ ...f, nombre, roles: deptoRoles });
+    }
   }
 
   const hasDeptos = [...groups.keys()].some(k => k !== "");
