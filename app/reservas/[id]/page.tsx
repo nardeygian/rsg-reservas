@@ -225,8 +225,8 @@ export default async function BookingDetailPage({
         <Link
           href={
             base.starts_at
-              ? `/calendario?view=dia&date=${toDateParam(new Date(base.starts_at))}`
-              : "/calendario"
+              ? `/reservas?date=${toDateParam(new Date(base.starts_at))}`
+              : "/reservas"
           }
           className="flex items-center gap-1 text-sm font-medium px-3 py-2 rounded-[8px]"
           style={{
@@ -235,7 +235,7 @@ export default async function BookingDetailPage({
             border: "1px solid var(--color-line)",
           }}
         >
-          ← Calendario
+          ← Reservas
         </Link>
       </header>
 
