@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import type { AsanaEvent } from "@/lib/asana";
 import type { LinkInfo, BookingOption } from "../page";
 import { EventPanel } from "./EventPanel";
 
-type View = "lista" | "dia" | "semana" | "mes";
+type DesktopView = "lista" | "dia" | "semana" | "mes";
+type MobileView  = "mes" | "2dias";
 
 const HOUR_PX = 60;
 const START_H = 7;
@@ -66,8 +67,11 @@ function getMonthGrid(year: number, month: number) {
 }
 function getWeekDays(anchor: Date): Date[] {
   const s = new Date(anchor);
-  s.setDate(anchor.getDate() - anchor.getDay()); // back to Sunday
+  s.setDate(anchor.getDate() - anchor.getDay());
   return Array.from({ length: 7 }, (_, i) => { const d = new Date(s); d.setDate(s.getDate() + i); return d; });
+}
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d); r.setDate(d.getDate() + n); return r;
 }
 
 const DOW_SUN = ["Do","Lu","Ma","Mi","Ju","Vi","Sá"];
@@ -75,11 +79,12 @@ const MONTHS  = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agost
 const DNAMES  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 
 // ── DayEventList ─────────────────────────────────────────────────────────────
-function DayEventList({ events, linksByGid, dateStr, onEventClick }: {
+function DayEventList({ events, linksByGid, dateStr, onEventClick, compact = false }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
   dateStr: string;
   onEventClick: (e: AsanaEvent) => void;
+  compact?: boolean;
 }) {
   const today   = todayStr();
   const isToday = dateStr === today;
@@ -96,36 +101,38 @@ function DayEventList({ events, linksByGid, dateStr, onEventClick }: {
   });
 
   return (
-    <div style={{ opacity: isPast ? 0.72 : 1 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 0 6px" }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: isToday ? "var(--color-accent)" : "var(--color-ink)" }}>{label}</span>
-        {events.length > 0 && (
-          <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 7px", borderRadius: 99, background: "var(--color-surface-2)", color: "var(--color-muted)" }}>
-            {events.length}
-          </span>
-        )}
-      </div>
+    <div style={{ opacity: isPast ? 0.75 : 1 }}>
+      {!compact && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 0 6px" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: isToday ? "var(--color-accent)" : "var(--color-ink)" }}>{label}</span>
+          {events.length > 0 && (
+            <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 7px", borderRadius: 99, background: "var(--color-surface-2)", color: "var(--color-muted)" }}>
+              {events.length}
+            </span>
+          )}
+        </div>
+      )}
       {events.length === 0
-        ? <p style={{ fontSize: 13, color: "var(--color-faint)", textAlign: "center", padding: "14px 0 20px" }}>Sin eventos</p>
+        ? <p style={{ fontSize: 13, color: "var(--color-faint)", textAlign: "center", padding: "20px 0 24px" }}>Sin eventos</p>
         : sorted.map(e => {
             const link = linksByGid[e.gid];
             const { color } = catStyle(e.category);
             return (
               <button key={e.gid} type="button" onClick={() => onEventClick(e)} style={{
                 display: "flex", alignItems: "flex-start", gap: 12, width: "100%", textAlign: "left",
-                padding: "11px 4px 11px 12px", background: "none", cursor: "pointer",
+                padding: "12px 4px 12px 12px", background: "none", cursor: "pointer",
                 borderTop: "1px solid var(--color-line)", borderRight: "none", borderBottom: "none",
                 borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: color,
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</p>
-                  {e.category && <p style={{ margin: "2px 0 0", fontSize: 11.5, color }}>{e.category}</p>}
-                  {link?.space_name && <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-muted)" }}>📍 {link.space_name}</p>}
+                  <p style={{ margin: 0, fontSize: compact ? 15 : 14, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</p>
+                  {!compact && e.category && <p style={{ margin: "2px 0 0", fontSize: 11.5, color }}>{e.category}</p>}
+                  {link?.space_name && <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--color-muted)" }}>📍 {link.space_name}</p>}
                 </div>
                 {link?.starts_at && (
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: "var(--color-muted)" }}>{fmtTime(link.starts_at)}</p>
-                    {link.ends_at && <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--color-faint)" }}>{fmtTime(link.ends_at)}</p>}
+                    <p style={{ margin: 0, fontSize: compact ? 13 : 12.5, fontWeight: 600, color: "var(--color-muted)" }}>{fmtTime(link.starts_at)}</p>
+                    {link.ends_at && <p style={{ margin: "2px 0 0", fontSize: compact ? 12 : 11, color: "var(--color-faint)" }}>{fmtTime(link.ends_at)}</p>}
                   </div>
                 )}
               </button>
@@ -136,12 +143,13 @@ function DayEventList({ events, linksByGid, dateStr, onEventClick }: {
   );
 }
 
-// ── TimeGrid (shared by Día and Semana desktop) ───────────────────────────────
-function TimeGrid({ events, linksByGid, days, onEventClick }: {
+// ── TimeGrid (Día y Semana desktop / 2-días móvil) ────────────────────────────
+function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
   days: Date[];
   onEventClick: (e: AsanaEvent) => void;
+  maxHeight?: string;
 }) {
   const today = todayStr();
   const nCols = days.length;
@@ -152,39 +160,32 @@ function TimeGrid({ events, linksByGid, days, onEventClick }: {
 
   return (
     <div>
-      {/* All-day row */}
       {hasAnyAllDay && (
         <div style={{ display: "grid", gridTemplateColumns: `52px repeat(${nCols}, 1fr)`, borderBottom: "1px solid var(--color-line)" }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "flex-end", paddingRight: 8, paddingBottom: 4 }}>
             <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--color-faint)" }}>todo el día</span>
           </div>
-          {days.map((date, i) => {
-            const ds = toDateStr(date);
-            return (
-              <div key={i} style={{ borderLeft: "1px solid var(--color-line)", padding: "3px 2px", display: "flex", flexDirection: "column", gap: 2 }}>
-                {allDayEvs(ds).map(e => {
-                  const { color, bg } = catStyle(e.category);
-                  return (
-                    <button key={e.gid} type="button" onClick={() => onEventClick(e)} style={{
-                      display: "block", width: "100%", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      fontSize: 10.5, fontWeight: 600, color: "var(--color-ink)", background: bg, borderRadius: 4, padding: "2px 5px", cursor: "pointer",
-                      borderTop: "none", borderRight: "none", borderBottom: "none",
-                      borderLeftWidth: 2, borderLeftStyle: "solid", borderLeftColor: color,
-                    }}>
-                      {e.name}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
+          {days.map((date, i) => (
+            <div key={i} style={{ borderLeft: "1px solid var(--color-line)", padding: "3px 2px", display: "flex", flexDirection: "column", gap: 2 }}>
+              {allDayEvs(toDateStr(date)).map(e => {
+                const { color, bg } = catStyle(e.category);
+                return (
+                  <button key={e.gid} type="button" onClick={() => onEventClick(e)} style={{
+                    display: "block", width: "100%", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    fontSize: 10.5, fontWeight: 600, color: "var(--color-ink)", background: bg, borderRadius: 4, padding: "2px 5px", cursor: "pointer",
+                    borderTop: "none", borderRight: "none", borderBottom: "none",
+                    borderLeftWidth: 2, borderLeftStyle: "solid", borderLeftColor: color,
+                  }}>
+                    {e.name}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
-
-      {/* Scrollable hour body */}
-      <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 340px)" }}>
+      <div style={{ overflowY: "auto", maxHeight: maxHeight ?? "calc(100vh - 340px)" }}>
         <div style={{ display: "grid", gridTemplateColumns: `52px repeat(${nCols}, 1fr)` }}>
-          {/* Time labels */}
           <div>
             {HOURS.map(h => (
               <div key={h} style={{ height: HOUR_PX, position: "relative" }}>
@@ -194,7 +195,6 @@ function TimeGrid({ events, linksByGid, days, onEventClick }: {
               </div>
             ))}
           </div>
-          {/* Day columns */}
           {days.map((date, ci) => {
             const ds      = toDateStr(date);
             const isToday = ds === today;
@@ -204,11 +204,9 @@ function TimeGrid({ events, linksByGid, days, onEventClick }: {
                 borderLeft: "1px solid var(--color-line)",
                 background: isToday ? "rgba(0,160,112,0.025)" : "transparent",
               }}>
-                {/* Hour lines */}
                 {HOURS.map((_, hi) => (
                   <div key={hi} style={{ position: "absolute", left: 0, right: 0, top: hi * HOUR_PX, height: 0, borderTop: "1px solid var(--color-line)", pointerEvents: "none" }} />
                 ))}
-                {/* Timed events */}
                 {timedEvs(ds).map(e => {
                   const link = linksByGid[e.gid]!;
                   const { h: sh, m: sm } = toBogoHM(link.starts_at!);
@@ -241,7 +239,211 @@ function TimeGrid({ events, linksByGid, days, onEventClick }: {
   );
 }
 
-// ── DiaView ───────────────────────────────────────────────────────────────────
+// ── MobileMesView ─────────────────────────────────────────────────────────────
+function MobileMesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
+  events: AsanaEvent[];
+  linksByGid: Record<string, LinkInfo>;
+  anchor: Date;
+  selDay: string;
+  setSelDay: (d: string) => void;
+  onEventClick: (e: AsanaEvent) => void;
+}) {
+  const year  = anchor.getFullYear();
+  const month = anchor.getMonth();
+  const today = todayStr();
+  const cells    = useMemo(() => getMonthGrid(year, month), [year, month]);
+  const selDayEvs = useMemo(() => eventsForDate(events, selDay), [events, selDay]);
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 2 }}>
+        {DOW_SUN.map(l => (
+          <div key={l} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", padding: "0 0 4px" }}>
+            {l}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+        {cells.map(({ date, current }, idx) => {
+          const ds      = toDateStr(date);
+          const dayEvs  = eventsForDate(events, ds);
+          const isToday = ds === today;
+          const isSel   = ds === selDay;
+          const isPast  = ds < today;
+          // Deduplicate by category for color segments
+          const catColors: string[] = [];
+          const seen = new Set<string>();
+          for (const e of dayEvs) {
+            const k = e.category ?? "__";
+            if (!seen.has(k)) { seen.add(k); catColors.push(catStyle(e.category).color); }
+            if (catColors.length >= 3) break;
+          }
+          return (
+            <div key={idx} onClick={() => setSelDay(ds)}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "2px 0 6px", cursor: "pointer" }}>
+              <span style={{
+                width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: "50%", fontSize: 17, fontWeight: isToday || isSel ? 700 : 400,
+                background: isToday ? "var(--color-accent)" : isSel ? "var(--color-surface-2)" : "transparent",
+                color: isToday ? "var(--color-accent-ink)" : !current ? "var(--color-faint)" : isPast ? "var(--color-muted)" : "var(--color-ink)",
+              }}>
+                {date.getDate()}
+              </span>
+              <div style={{ display: "flex", gap: 2, height: 4, marginTop: 2 }}>
+                {catColors.map((c, i) => (
+                  <div key={i} style={{ width: 14, height: 4, borderRadius: 2, background: c, opacity: isPast ? 0.35 : 0.85 }} />
+                ))}
+                {/* dot placeholder when no events to keep row height stable */}
+                {catColors.length === 0 && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "transparent" }} />}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ borderTop: "1px solid var(--color-line)", marginTop: 4 }}>
+        <DayEventList events={selDayEvs} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} compact />
+      </div>
+    </div>
+  );
+}
+
+// ── Mobile2DiasView ───────────────────────────────────────────────────────────
+function Mobile2DiasView({ events, linksByGid, initialDay, onEventClick }: {
+  events: AsanaEvent[];
+  linksByGid: Record<string, LinkInfo>;
+  initialDay: string;
+  onEventClick: (e: AsanaEvent) => void;
+}) {
+  const [pairStart, setPairStart] = useState(() => new Date(initialDay + "T12:00:00"));
+  const touchStartX = useRef<number | null>(null);
+  const today    = todayStr();
+  const weekDays = useMemo(() => getWeekDays(pairStart), [pairStart]);
+  const day2     = useMemo(() => addDays(pairStart, 1), [pairStart]);
+
+  const ds1 = toDateStr(pairStart);
+  const ds2 = toDateStr(day2);
+
+  function colHeader(date: Date): string {
+    const d  = new Date(toDateStr(date) + "T12:00:00");
+    const dn = DNAMES[d.getDay()];
+    return `${dn[0].toUpperCase() + dn.slice(1, 3)} – ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
+  }
+
+  return (
+    <div
+      onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
+      onTouchEnd={e => {
+        if (touchStartX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchStartX.current;
+        if (Math.abs(dx) > 48) setPairStart(p => addDays(p, dx < 0 ? 1 : -1));
+        touchStartX.current = null;
+      }}
+    >
+      {/* Week strip with 2-day pill */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 2 }}>
+        {weekDays.map((date, i) => {
+          const ds      = toDateStr(date);
+          const isToday = ds === today;
+          const isPair1 = ds === ds1;
+          const isPair2 = ds === ds2;
+          const inPair  = isPair1 || isPair2;
+          return (
+            <button key={i} type="button" onClick={() => setPairStart(new Date(toDateStr(date) + "T12:00:00"))} style={{
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "4px 0",
+              background: inPair ? "var(--color-surface-2)" : "transparent",
+              borderRadius: isPair1 ? "20px 0 0 20px" : isPair2 ? "0 20px 20px 0" : 0,
+              border: "none", cursor: "pointer",
+            }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, textTransform: "uppercase", color: isToday ? "var(--color-accent)" : "var(--color-muted)" }}>
+                {DOW_SUN[i]}
+              </span>
+              <span style={{
+                width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: "50%", fontSize: 13, fontWeight: 700,
+                background: isToday ? "var(--color-accent)" : "transparent",
+                color: isToday ? "var(--color-accent-ink)" : "var(--color-ink)",
+              }}>
+                {date.getDate()}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Column headers */}
+      <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr", borderBottom: "1px solid var(--color-line)" }}>
+        <div />
+        {[pairStart, day2].map((date, i) => (
+          <div key={i} style={{ textAlign: "center", fontSize: 11.5, fontWeight: 600, color: "var(--color-muted)", padding: "5px 0 4px", borderLeft: "1px solid var(--color-line)" }}>
+            {colHeader(date)}
+          </div>
+        ))}
+      </div>
+
+      <TimeGrid events={events} linksByGid={linksByGid} days={[pairStart, day2]} onEventClick={onEventClick} maxHeight="calc(100vh - 300px)" />
+    </div>
+  );
+}
+
+// ── MobileCalendario ──────────────────────────────────────────────────────────
+function MobileCalendario({ events, linksByGid, onEventClick }: {
+  events: AsanaEvent[];
+  linksByGid: Record<string, LinkInfo>;
+  onEventClick: (e: AsanaEvent) => void;
+}) {
+  const [view,   setView]   = useState<MobileView>("mes");
+  const [anchor, setAnchor] = useState(() => new Date());
+  const [selDay, setSelDay] = useState(() => todayStr());
+
+  const year  = anchor.getFullYear();
+  const month = anchor.getMonth();
+
+  function prevMonth() { setAnchor(a => { const d = new Date(a); d.setMonth(d.getMonth() - 1); return d; }); }
+  function nextMonth() { setAnchor(a => { const d = new Date(a); d.setMonth(d.getMonth() + 1); return d; }); }
+  function goToday()   { setAnchor(new Date()); setSelDay(todayStr()); }
+
+  const MOBILE_VIEWS: { key: MobileView; label: string }[] = [
+    { key: "mes",   label: "Mes"    },
+    { key: "2dias", label: "2 días" },
+  ];
+
+  return (
+    <div>
+      {/* Period nav (month) — only for mes */}
+      {view === "mes" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <button onClick={prevMonth} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", border: "none", cursor: "pointer", fontSize: 18, color: "var(--color-ink)" }}>‹</button>
+          <span style={{ flex: 1, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>
+            {MONTHS[month]}
+          </span>
+          <button onClick={goToday} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 8, background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "none", cursor: "pointer" }}>
+            Hoy
+          </button>
+          <button onClick={nextMonth} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", border: "none", cursor: "pointer", fontSize: 18, color: "var(--color-ink)" }}>›</button>
+        </div>
+      )}
+
+      {/* Toggle */}
+      <div style={{ display: "flex", borderRadius: 10, padding: 3, gap: 2, background: "var(--color-surface-2)", marginBottom: 12 }}>
+        {MOBILE_VIEWS.map(({ key, label }) => (
+          <button key={key} onClick={() => setView(key)} style={{
+            flex: 1, fontSize: 13, fontWeight: 600, padding: "6px 0", borderRadius: 8, border: "none", cursor: "pointer",
+            background: view === key ? "var(--color-surface)" : "transparent",
+            color:      view === key ? "var(--color-accent)"  : "var(--color-muted)",
+            boxShadow:  view === key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+          }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "mes"   && <MobileMesView   events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={onEventClick} />}
+      {view === "2dias" && <Mobile2DiasView events={events} linksByGid={linksByGid} initialDay={selDay} onEventClick={onEventClick} />}
+    </div>
+  );
+}
+
+// ── Desktop views ─────────────────────────────────────────────────────────────
 function DiaView({ events, linksByGid, anchor, onEventClick }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
@@ -251,7 +453,6 @@ function DiaView({ events, linksByGid, anchor, onEventClick }: {
   return <TimeGrid events={events} linksByGid={linksByGid} days={[anchor]} onEventClick={onEventClick} />;
 }
 
-// ── SemanaView ────────────────────────────────────────────────────────────────
 function SemanaView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
@@ -260,13 +461,11 @@ function SemanaView({ events, linksByGid, anchor, selDay, setSelDay, onEventClic
   setSelDay: (d: string) => void;
   onEventClick: (e: AsanaEvent) => void;
 }) {
-  const weekDays  = useMemo(() => getWeekDays(anchor), [anchor]);
-  const today     = todayStr();
-  const selDayEvs = useMemo(() => eventsForDate(events, selDay), [events, selDay]);
+  const weekDays = useMemo(() => getWeekDays(anchor), [anchor]);
+  const today    = todayStr();
 
   return (
     <div>
-      {/* Column headers aligned with 52px time-label column */}
       <div style={{ display: "grid", gridTemplateColumns: "52px repeat(7, 1fr)", borderBottom: "1px solid var(--color-line)" }}>
         <div />
         {weekDays.map((date, i) => {
@@ -295,21 +494,11 @@ function SemanaView({ events, linksByGid, anchor, selDay, setSelDay, onEventClic
           );
         })}
       </div>
-
-      {/* Mobile: event list for selected day */}
-      <div className="sm:hidden">
-        <DayEventList events={selDayEvs} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} />
-      </div>
-
-      {/* Desktop: time grid */}
-      <div className="hidden sm:block">
-        <TimeGrid events={events} linksByGid={linksByGid} days={weekDays} onEventClick={onEventClick} />
-      </div>
+      <TimeGrid events={events} linksByGid={linksByGid} days={weekDays} onEventClick={onEventClick} />
     </div>
   );
 }
 
-// ── MesView ───────────────────────────────────────────────────────────────────
 const MAX_EVS_DAY = 4;
 
 function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
@@ -323,7 +512,7 @@ function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }
   const year  = anchor.getFullYear();
   const month = anchor.getMonth();
   const today = todayStr();
-  const cells = useMemo(() => getMonthGrid(year, month), [year, month]);
+  const cells     = useMemo(() => getMonthGrid(year, month), [year, month]);
   const selDayEvs = useMemo(() => eventsForDate(events, selDay), [events, selDay]);
 
   return (
@@ -337,8 +526,8 @@ function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderTop: "1px solid var(--color-line)", borderLeft: "1px solid var(--color-line)" }}>
         {cells.map(({ date, current }, idx) => {
-          const ds      = toDateStr(date);
-          const dayEvs  = eventsForDate(events, ds);
+          const ds     = toDateStr(date);
+          const dayEvs = eventsForDate(events, ds);
           const isToday = ds === today;
           const isSel   = ds === selDay;
           const isPast  = ds < today;
@@ -398,7 +587,6 @@ function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }
   );
 }
 
-// ── ListaView ─────────────────────────────────────────────────────────────────
 function ListaView({ events, linksByGid, onEventClick }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
@@ -426,8 +614,8 @@ function ListaView({ events, linksByGid, onEventClick }: {
   const futureGroups = grouped.filter(([k]) => k >= curMonthKey);
 
   function renderMonth([mk, evs]: [string, AsanaEvent[]]) {
-    const [y, m]    = mk.split("-").map(Number);
-    const isPast    = mk < curMonthKey;
+    const [y, m]      = mk.split("-").map(Number);
+    const isPast      = mk < curMonthKey;
     const isCollapsed = collapsed.has(mk);
     const byDay = new Map<string, AsanaEvent[]>();
     for (const e of evs) {
@@ -448,7 +636,7 @@ function ListaView({ events, linksByGid, onEventClick }: {
         {!isCollapsed && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 4 }}>
             {days.map(([ds, dayEvs]) => {
-              const d       = new Date(ds + "T12:00:00");
+              const d         = new Date(ds + "T12:00:00");
               const isDayPast = ds < today;
               const isToday   = ds === today;
               return (
@@ -534,7 +722,7 @@ export function CalendarioShell({
   linkAction: (fd: FormData) => Promise<void>;
   unlinkAction: (fd: FormData) => Promise<void>;
 }) {
-  const [view,          setView]          = useState<View>("mes");
+  const [view,          setView]          = useState<DesktopView>("mes");
   const [anchor,        setAnchor]        = useState(() => new Date());
   const [selDay,        setSelDay]        = useState(() => todayStr());
   const [selectedEvent, setSelectedEvent] = useState<AsanaEvent | null>(null);
@@ -544,43 +732,24 @@ export function CalendarioShell({
 
   function prev() {
     const d = new Date(anchor);
-    if (view === "mes") {
-      d.setMonth(month - 1);
-      setSelDay(toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)));
-    } else if (view === "dia") {
-      d.setDate(d.getDate() - 1);
-      setSelDay(toDateStr(d));
-    } else {
-      d.setDate(d.getDate() - 7);
-      setSelDay(toDateStr(d));
-    }
+    if (view === "mes") { d.setMonth(month - 1); setSelDay(toDateStr(new Date(d.getFullYear(), d.getMonth(), 1))); }
+    else if (view === "dia") { d.setDate(d.getDate() - 1); setSelDay(toDateStr(d)); }
+    else { d.setDate(d.getDate() - 7); setSelDay(toDateStr(d)); }
     setAnchor(d);
   }
-
   function next() {
     const d = new Date(anchor);
-    if (view === "mes") {
-      d.setMonth(month + 1);
-      setSelDay(toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)));
-    } else if (view === "dia") {
-      d.setDate(d.getDate() + 1);
-      setSelDay(toDateStr(d));
-    } else {
-      d.setDate(d.getDate() + 7);
-      setSelDay(toDateStr(d));
-    }
+    if (view === "mes") { d.setMonth(month + 1); setSelDay(toDateStr(new Date(d.getFullYear(), d.getMonth(), 1))); }
+    else if (view === "dia") { d.setDate(d.getDate() + 1); setSelDay(toDateStr(d)); }
+    else { d.setDate(d.getDate() + 7); setSelDay(toDateStr(d)); }
     setAnchor(d);
   }
-
-  function goToday() {
-    setAnchor(new Date());
-    setSelDay(todayStr());
-  }
+  function goToday() { setAnchor(new Date()); setSelDay(todayStr()); }
 
   function periodLabel() {
     if (view === "mes") return `${MONTHS[month]} ${year}`;
     if (view === "dia") {
-      const d = new Date(toDateStr(anchor) + "T12:00:00");
+      const d  = new Date(toDateStr(anchor) + "T12:00:00");
       const dn = DNAMES[d.getDay()];
       return `${dn[0].toUpperCase() + dn.slice(1)}, ${d.getDate()} de ${MONTHS[d.getMonth()].toLowerCase()} ${year}`;
     }
@@ -588,10 +757,10 @@ export function CalendarioShell({
     const f = days[0]; const l = days[6];
     if (f.getMonth() === l.getMonth())
       return `${f.getDate()}–${l.getDate()} de ${MONTHS[f.getMonth()].toLowerCase()} ${year}`;
-    return `${f.getDate()} ${MONTHS[f.getMonth()].slice(0, 3).toLowerCase()} – ${l.getDate()} ${MONTHS[l.getMonth()].slice(0, 3).toLowerCase()} ${year}`;
+    return `${f.getDate()} ${MONTHS[f.getMonth()].slice(0,3).toLowerCase()} – ${l.getDate()} ${MONTHS[l.getMonth()].slice(0,3).toLowerCase()} ${year}`;
   }
 
-  const VIEWS: { key: View; label: string }[] = [
+  const DESKTOP_VIEWS: { key: DesktopView; label: string }[] = [
     { key: "lista",  label: "Lista"  },
     { key: "dia",    label: "Día"    },
     { key: "semana", label: "Semana" },
@@ -602,50 +771,55 @@ export function CalendarioShell({
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px clamp(12px, 3vw, 40px) 80px" }}>
-      {/* Page header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "12px 24px", marginBottom: 20, flexWrap: "wrap" }}>
-        <div>
-          <span className="eyebrow">Portal RSG</span>
-          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>
-            Calendario
-          </h1>
-        </div>
-        {/* View toggle */}
-        <div style={{ display: "flex", borderRadius: 10, padding: 3, gap: 2, background: "var(--color-surface-2)" }}>
-          {VIEWS.map(({ key, label }) => (
-            <button key={key} onClick={() => setView(key)} style={{
-              fontSize: 13, fontWeight: 600, padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer",
-              background: view === key ? "var(--color-surface)" : "transparent",
-              color:      view === key ? "var(--color-accent)"  : "var(--color-muted)",
-              boxShadow:  view === key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-            }}>
-              {label}
-            </button>
-          ))}
-        </div>
+      {/* Page title */}
+      <div style={{ marginBottom: 20 }}>
+        <span className="eyebrow">Portal RSG</span>
+        <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>
+          Calendario
+        </h1>
       </div>
 
-      {/* Period nav */}
-      {view !== "lista" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          <button onClick={prev} aria-label="Anterior" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>‹</button>
-          <span style={{ flex: 1, fontSize: 20, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--color-ink)", textTransform: "capitalize" }}>
-            {periodLabel()}
-          </span>
-          <button onClick={goToday} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 8, background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "none", cursor: "pointer" }}>
-            Hoy
-          </button>
-          <button onClick={next} aria-label="Siguiente" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>›</button>
+      {/* ── Mobile ── */}
+      <div className="block sm:hidden">
+        <MobileCalendario events={events} linksByGid={linksByGid} onEventClick={setSelectedEvent} />
+      </div>
+
+      {/* ── Desktop ── */}
+      <div className="hidden sm:block">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px 24px", marginBottom: 20, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", borderRadius: 10, padding: 3, gap: 2, background: "var(--color-surface-2)" }}>
+            {DESKTOP_VIEWS.map(({ key, label }) => (
+              <button key={key} onClick={() => setView(key)} style={{
+                fontSize: 13, fontWeight: 600, padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer",
+                background: view === key ? "var(--color-surface)" : "transparent",
+                color:      view === key ? "var(--color-accent)"  : "var(--color-muted)",
+                boxShadow:  view === key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              }}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
 
-      {/* Views */}
-      {view === "lista"  && <ListaView  events={events} linksByGid={linksByGid} onEventClick={setSelectedEvent} />}
-      {view === "dia"    && <DiaView    events={events} linksByGid={linksByGid} anchor={anchor} onEventClick={setSelectedEvent} />}
-      {view === "semana" && <SemanaView events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={setSelectedEvent} />}
-      {view === "mes"    && <MesView    events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={setSelectedEvent} />}
+        {view !== "lista" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+            <button onClick={prev} aria-label="Anterior" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>‹</button>
+            <span style={{ flex: 1, fontSize: 20, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--color-ink)", textTransform: "capitalize" }}>
+              {periodLabel()}
+            </span>
+            <button onClick={goToday} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 8, background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "none", cursor: "pointer" }}>
+              Hoy
+            </button>
+            <button onClick={next} aria-label="Siguiente" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>›</button>
+          </div>
+        )}
 
-      {/* Event panel */}
+        {view === "lista"  && <ListaView  events={events} linksByGid={linksByGid} onEventClick={setSelectedEvent} />}
+        {view === "dia"    && <DiaView    events={events} linksByGid={linksByGid} anchor={anchor} onEventClick={setSelectedEvent} />}
+        {view === "semana" && <SemanaView events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={setSelectedEvent} />}
+        {view === "mes"    && <MesView    events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={setSelectedEvent} />}
+      </div>
+
       {selectedEvent && (
         <EventPanel
           event={selectedEvent}
