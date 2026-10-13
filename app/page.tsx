@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth";
-import { dayKey } from "@/lib/datetime";
+import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
 import { ThemeToggle } from "./_components/ThemeToggle";
 import { getCalendarEvents } from "@/lib/asana";
 import { svReadData } from "@/app/servicio/actions";
@@ -105,7 +105,10 @@ export default async function HomePage() {
   }
   const now = new Date();
 
-  const [{ count: pendingCount }, { data: upcomingBookings }, svData, donaciones] = await Promise.all([
+  const todayStart = startOfDayBogota(now);
+  const todayEnd   = endOfDayBogota(now);
+
+  const [{ count: pendingCount }, { data: upcomingBookings }, { count: bookingsTodayCount }, svData, donaciones] = await Promise.all([
     canApprove
       ? supabase
           .from("bookings_staff")
@@ -120,6 +123,12 @@ export default async function HomePage() {
       .gte("starts_at", now.toISOString())
       .order("starts_at")
       .limit(3),
+    supabase
+      .from("bookings_calendar")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["approved", "requested"])
+      .gte("starts_at", todayStart.toISOString())
+      .lt("starts_at", todayEnd.toISOString()),
     svReadData(),
     donReadData(),
   ]);
@@ -335,11 +344,18 @@ export default async function HomePage() {
                   fontWeight: 700,
                   lineHeight: 1.05,
                   letterSpacing: "-.02em",
-                  opacity: reunionesToday > 0 ? 1 : 0.4,
+                  opacity: reunionesToday > 0 ? 1 : 0.55,
                 }}
               >
-                {reunionesToday > 0 ? reunionesToday : "—"} {reunionesToday === 1 ? "reunión" : "reuniones"}
+                {reunionesToday > 0
+                  ? `${reunionesToday} ${reunionesToday === 1 ? "reunión" : "reuniones"}`
+                  : "Sin reuniones"}
               </span>
+              {(bookingsTodayCount ?? 0) > 0 && (
+                <span style={{ fontSize: 15, fontWeight: 500, opacity: 0.8, marginTop: 2 }}>
+                  {bookingsTodayCount === 1 ? "1 reserva" : `${bookingsTodayCount} reservas`} en la casa
+                </span>
+              )}
             </div>
           </div>
 

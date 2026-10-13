@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { formatTime } from "@/lib/datetime";
 
 const HOUR_START = 8;
@@ -83,6 +83,24 @@ export function ReservasDayView({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = selectedId ? (bookings.find((b) => b.id === selectedId) ?? null) : null;
+  const [sheetH, setSheetH] = useState(62);
+  const dragStartY = useRef<number | null>(null);
+  const dragStartH = useRef(62);
+
+  function onHandleTouchStart(e: React.TouchEvent) {
+    dragStartY.current = e.touches[0].clientY;
+    dragStartH.current = sheetH;
+  }
+  function onHandleTouchMove(e: React.TouchEvent) {
+    if (dragStartY.current === null) return;
+    const dy = dragStartY.current - e.touches[0].clientY;
+    const pct = (dy / window.innerHeight) * 100;
+    setSheetH(Math.min(92, Math.max(28, dragStartH.current + pct)));
+  }
+  function onHandleTouchEnd() {
+    if (sheetH < 32) setSelectedId(null);
+    dragStartY.current = null;
+  }
 
   const bySpace = new Map<string, BookingBlock[]>();
   for (const b of bookings) {
@@ -293,14 +311,19 @@ export function ReservasDayView({
             style={{
               background: "var(--color-surface)",
               boxShadow: "0 -4px 32px rgba(0,0,0,0.18)",
-              maxHeight: "70dvh",
+              height: `${sheetH}dvh`,
               maxWidth: 640,
               margin: "0 auto",
             }}
           >
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1 flex-none">
-              <div className="w-10 h-1 rounded-full" style={{ background: "var(--color-line)" }} />
+            {/* Drag handle */}
+            <div
+              className="flex justify-center pt-3 pb-1 flex-none cursor-row-resize touch-none"
+              onTouchStart={onHandleTouchStart}
+              onTouchMove={onHandleTouchMove}
+              onTouchEnd={onHandleTouchEnd}
+            >
+              <div className="w-10 h-[5px] rounded-full" style={{ background: "var(--color-line)" }} />
             </div>
 
             {/* Header */}
@@ -328,11 +351,7 @@ export function ReservasDayView({
                 <button
                   onClick={() => setSelectedId(null)}
                   className="w-8 h-8 flex items-center justify-center rounded-full flex-none"
-                  style={{
-                    background: "var(--color-surface-2)",
-                    color: "var(--color-muted)",
-                    fontSize: 20,
-                  }}
+                  style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }}
                   aria-label="Cerrar"
                 >
                   ×
@@ -340,42 +359,28 @@ export function ReservasDayView({
               </div>
             </div>
 
-            {/* Body */}
-            <div className="px-5 py-4 flex flex-col gap-4">
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4">
               <dl className="flex flex-col gap-2 text-sm">
                 <div className="flex gap-3">
-                  <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>
-                    Horario
-                  </dt>
-                  <dd className="font-medium">
-                    {formatTime(selected.starts_at)} – {formatTime(selected.ends_at)}
-                  </dd>
+                  <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>Horario</dt>
+                  <dd className="font-medium">{formatTime(selected.starts_at)} – {formatTime(selected.ends_at)}</dd>
                 </div>
                 {selected.use_type && (
                   <div className="flex gap-3">
-                    <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>
-                      Tipo
-                    </dt>
+                    <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>Tipo</dt>
                     <dd>{USE_TYPE_LABELS[selected.use_type] ?? selected.use_type}</dd>
                   </div>
                 )}
                 <div className="flex gap-3">
-                  <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>
-                    Estado
-                  </dt>
+                  <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>Estado</dt>
                   <dd>
                     <span
                       className="font-semibold text-xs px-2 py-0.5 rounded-full"
                       style={
                         selected.status === "approved"
-                          ? {
-                              background: "var(--color-accent-soft)",
-                              color: "var(--color-accent)",
-                            }
-                          : {
-                              background: "var(--color-gold-soft)",
-                              color: "var(--color-gold-text)",
-                            }
+                          ? { background: "var(--color-accent-soft)", color: "var(--color-accent)" }
+                          : { background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }
                       }
                     >
                       {STATUS_LABELS[selected.status] ?? selected.status}
@@ -383,10 +388,13 @@ export function ReservasDayView({
                   </dd>
                 </div>
               </dl>
+            </div>
 
+            {/* Button — always visible at bottom */}
+            <div className="flex-none px-5 pb-6 pt-3 border-t" style={{ borderColor: "var(--color-line)" }}>
               <Link
                 href={`/reservas/${selected.id}`}
-                className="btn-primary w-full text-center"
+                className="btn-primary w-full text-center block"
                 onClick={() => setSelectedId(null)}
               >
                 Ver detalle completo
