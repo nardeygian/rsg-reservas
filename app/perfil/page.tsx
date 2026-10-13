@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   autoLinkSlackByEmailAction,
   regenerateFeedTokenAction,
+  signOutAction,
   updateSlackUserIdAction,
 } from "./actions";
 
@@ -62,12 +63,23 @@ export default async function ProfilePage({
         </Link>
       </header>
 
-      <section className="card space-y-1">
-        <p className="eyebrow">Sesión</p>
-        <p className="font-serif text-2xl mt-1">{profile.full_name}</p>
-        <p className="text-sm text-fg2">
-          {ROLE_LABELS[profile.role] ?? profile.role}
-        </p>
+      <section className="card space-y-3">
+        <div className="space-y-1">
+          <p className="eyebrow">Sesión</p>
+          <p className="font-serif text-2xl mt-1">{profile.full_name}</p>
+          <p className="text-sm text-fg2">
+            {ROLE_LABELS[profile.role] ?? profile.role}
+          </p>
+        </div>
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="text-sm font-semibold px-4 py-2 rounded-[10px]"
+            style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
+          >
+            Cerrar sesión
+          </button>
+        </form>
       </section>
 
       <section className="space-y-3">

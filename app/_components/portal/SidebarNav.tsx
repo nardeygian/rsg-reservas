@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOutAction } from "../../perfil/actions";
 
 type NavItem = {
   href: string | null;
@@ -166,6 +167,22 @@ export function SidebarNav() {
         {ADMIN_ITEMS.map((item) => (
           <NavLink key={item.label} item={item} pathname={pathname} />
         ))}
+      </div>
+
+      {/* Logout */}
+      <div className="mt-auto pt-[14px]" style={{ borderTop: "1px solid var(--color-line)" }}>
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[8px] w-full text-sm font-medium transition"
+            style={{ color: "var(--color-down)" }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Cerrar sesión
+          </button>
+        </form>
       </div>
     </nav>
   );

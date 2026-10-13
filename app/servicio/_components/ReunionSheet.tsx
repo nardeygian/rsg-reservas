@@ -18,6 +18,8 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
   const r   = svData.reuniones[rid];
   const reg = r ? svData.registros[rid] : undefined;
 
+  const [collapsedDeptos, setCollapsedDeptos] = useState<Set<string>>(new Set());
+
   const [filas, setFilas] = useState<EditFila[]>(() => {
     const porId = new Map(Object.values(svData.servidores).map(s => [s.id, s]));
     return (reg?.filas ?? [])
@@ -177,10 +179,17 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                   Sube el PDF de servidores de esta reunión. El panel lo lee aquí mismo, en tu navegador: el archivo no se guarda en ningún lado. Después revisa la lista y guarda.
                 </p>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <label className="text-xs font-semibold" style={{ color: "var(--color-muted)" }} htmlFor="svPdf">PDF del listado</label>
-                    <input id="svPdf" type="file" accept="application/pdf,.pdf" className="input text-sm" onChange={handlePdf} />
-                  </div>
+                  <label
+                    htmlFor="svPdf"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] cursor-pointer font-semibold text-sm transition active:scale-[0.97]"
+                    style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Subir archivo PDF
+                  </label>
+                  <input id="svPdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={handlePdf} />
                   <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={() => setShowPegar(v => !v)}>
                     Pegar una lista
                   </button>
@@ -220,16 +229,18 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                 </datalist>
 
                 {filas.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    {filas.map((f, i) => (
-                      <FilaRow
-                        key={i} f={f}
-                        estado={svEstado(f.nombre)}
-                        onChange={upd => setFilas(prev => prev.map((x, j) => j === i ? { ...x, ...upd } : x))}
-                        onRemove={() => setFilas(prev => prev.filter((_, j) => j !== i))}
-                      />
-                    ))}
-                  </div>
+                  <FilasAgrupadas
+                    filas={filas}
+                    collapsedDeptos={collapsedDeptos}
+                    onToggleDepto={(d) => setCollapsedDeptos(prev => {
+                      const s = new Set(prev);
+                      if (s.has(d)) s.delete(d); else s.add(d);
+                      return s;
+                    })}
+                    svEstado={svEstado}
+                    onChange={(i, upd) => setFilas(prev => prev.map((x, j) => j === i ? { ...x, ...upd } : x))}
+                    onRemove={(i) => setFilas(prev => prev.filter((_, j) => j !== i))}
+                  />
                 ) : (
                   <p className="text-xs" style={{ color: "var(--color-muted)" }}>Todavía no hay nadie. Sube el PDF, pega una lista o agrega personas a mano.</p>
                 )}
@@ -310,6 +321,73 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
         </div>
       </div>
     </>
+  );
+}
+
+function extractDepto(roles: string): string {
+  const first = roles.split(",")[0].trim();
+  const sep = first.indexOf(" · ");
+  return sep > 0 ? first.substring(0, sep).trim() : "";
+}
+
+function FilasAgrupadas({ filas, collapsedDeptos, onToggleDepto, svEstado, onChange, onRemove }: {
+  filas: EditFila[];
+  collapsedDeptos: Set<string>;
+  onToggleDepto: (d: string) => void;
+  svEstado: (nombre: string) => { text: string; color: string } | null;
+  onChange: (i: number, upd: Partial<EditFila>) => void;
+  onRemove: (i: number) => void;
+}) {
+  const groups = new Map<string, { f: EditFila; idx: number }[]>();
+  filas.forEach((f, idx) => {
+    const d = extractDepto(f.roles) || "";
+    if (!groups.has(d)) groups.set(d, []);
+    groups.get(d)!.push({ f, idx });
+  });
+
+  const hasDepts = [...groups.keys()].some(k => k !== "");
+  if (!hasDepts) {
+    return (
+      <div className="flex flex-col gap-2">
+        {filas.map((f, i) => (
+          <FilaRow key={i} f={f} estado={svEstado(f.nombre)} onChange={upd => onChange(i, upd)} onRemove={() => onRemove(i)} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {[...groups.entries()].map(([depto, items]) => {
+        const label = depto || "General";
+        const collapsed = collapsedDeptos.has(label);
+        const ausentes = items.filter(x => x.f.aus).length;
+        return (
+          <div key={label}>
+            <button
+              type="button"
+              className="flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-[8px] mb-2"
+              style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
+              onClick={() => onToggleDepto(label)}
+            >
+              <span className="text-[10px]" style={{ color: "var(--color-muted)" }}>{collapsed ? "▶" : "▼"}</span>
+              <span className="font-bold text-xs flex-1">{label}</span>
+              <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
+                {items.length - ausentes} sirven
+                {ausentes > 0 && <span style={{ color: "var(--color-down)" }}> · {ausentes} aus.</span>}
+              </span>
+            </button>
+            {!collapsed && (
+              <div className="flex flex-col gap-2 pl-1">
+                {items.map(({ f, idx }) => (
+                  <FilaRow key={idx} f={f} estado={svEstado(f.nombre)} onChange={upd => onChange(idx, upd)} onRemove={() => onRemove(idx)} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

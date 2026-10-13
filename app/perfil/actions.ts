@@ -67,6 +67,12 @@ export async function updateSlackUserIdAction(formData: FormData) {
   back({ ok: `Slack vinculado a ${raw}.` });
 }
 
+export async function signOutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
 export async function autoLinkSlackByEmailAction() {
   const supabase = await createClient();
   const {
