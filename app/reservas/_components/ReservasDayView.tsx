@@ -83,22 +83,32 @@ export function ReservasDayView({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = selectedId ? (bookings.find((b) => b.id === selectedId) ?? null) : null;
-  const [sheetH, setSheetH] = useState(62);
+  // null = auto height (fits content naturally); number = dvh% during/after drag
+  const [sheetH, setSheetH] = useState<number | null>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const maxH = useRef(88);
   const dragStartY = useRef<number | null>(null);
-  const dragStartH = useRef(62);
+  const dragStartH = useRef(0);
 
   function onHandleTouchStart(e: React.TouchEvent) {
+    if (!sheetRef.current) return;
+    // Measure natural height at drag start and use it as ceiling
+    const px = sheetRef.current.getBoundingClientRect().height;
+    const pct = (px / window.innerHeight) * 100;
+    maxH.current = Math.min(88, pct); // can't go higher than natural content height
     dragStartY.current = e.touches[0].clientY;
-    dragStartH.current = sheetH;
+    dragStartH.current = pct;
+    setSheetH(pct);
   }
   function onHandleTouchMove(e: React.TouchEvent) {
     if (dragStartY.current === null) return;
     const dy = dragStartY.current - e.touches[0].clientY;
     const pct = (dy / window.innerHeight) * 100;
-    setSheetH(Math.min(92, Math.max(28, dragStartH.current + pct)));
+    setSheetH(Math.min(maxH.current, Math.max(20, dragStartH.current + pct)));
   }
   function onHandleTouchEnd() {
-    if (sheetH < 32) setSelectedId(null);
+    if ((sheetH ?? 100) < 28) setSelectedId(null);
+    else setSheetH(null); // snap back to auto height
     dragStartY.current = null;
   }
 
@@ -307,11 +317,12 @@ export function ReservasDayView({
             aria-hidden
           />
           <div
+            ref={sheetRef}
             className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[20px] flex flex-col"
             style={{
               background: "var(--color-surface)",
               boxShadow: "0 -4px 32px rgba(0,0,0,0.18)",
-              height: `${sheetH}dvh`,
+              height: sheetH !== null ? `${sheetH}dvh` : "auto",
               maxWidth: 640,
               margin: "0 auto",
             }}
