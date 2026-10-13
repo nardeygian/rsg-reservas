@@ -72,6 +72,7 @@ export function DonacionesShell({
   const [sheetT, setSheetT]   = useState("");
   const [sheetG, setSheetG]   = useState("");
   const [toast, setToast]     = useState<string | null>(null);
+  const [activeBar, setActiveBar] = useState<number | null>(null);
   const [, startTransition]   = useTransition();
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 4000); }
@@ -251,27 +252,37 @@ export function DonacionesShell({
                     <span style={{ color: "var(--color-faint)" }}>{moneyShort(chartMax)}</span>
                     <span style={{ color: "var(--color-faint)" }}>{moneyShort(chartMax / 2)}</span>
                   </div>
-                  {bars.map((b, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col justify-end h-full relative group" style={{ minWidth: 18 }}>
-                      {b.v > 0 && (
-                        <div
-                          className="rounded-t-[3px]"
-                          style={{
-                            height: `${Math.sqrt(b.v / chartMax) * 100}%`,
-                            background: "var(--color-accent)",
-                            minHeight: 10,
-                          }}
-                        />
-                      )}
-                      {b.v > 0 && (
-                        <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1 rounded-[6px]"
-                          style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
-                        >
-                          {b.t}: {money(b.v)} · {b.n}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {bars.map((b, idx) => {
+                    const isActive = activeBar === idx;
+                    return (
+                      <div
+                        key={idx}
+                        className="flex-1 flex flex-col justify-end h-full relative group"
+                        style={{ minWidth: 18, cursor: b.v > 0 ? "pointer" : "default" }}
+                        onClick={() => b.v > 0 && setActiveBar(isActive ? null : idx)}
+                      >
+                        {b.v > 0 && (
+                          <div
+                            className="rounded-t-[3px] transition-opacity"
+                            style={{
+                              height: `${Math.sqrt(b.v / chartMax) * 100}%`,
+                              background: "var(--color-accent)",
+                              minHeight: 10,
+                              opacity: activeBar !== null && !isActive ? 0.4 : 1,
+                            }}
+                          />
+                        )}
+                        {b.v > 0 && (
+                          <div
+                            className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1.5 rounded-[6px] pointer-events-none transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                            style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
+                          >
+                            {b.t}<br />{money(b.v)} · {b.n} {b.n === 1 ? "aporte" : "aportes"}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="flex gap-[3px] mt-1" style={{ fontSize: 10, color: "var(--color-faint)" }}>
                   {labels.map((l, k) => <span key={k} className="flex-1 text-center truncate" style={{ minWidth: 18 }}>{l}</span>)}
