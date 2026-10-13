@@ -10,6 +10,8 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/auth",
   "/api/feed",
+  "/api/efectivo",
+  "/api/wompi",
   "/alquilar",
 ];
 

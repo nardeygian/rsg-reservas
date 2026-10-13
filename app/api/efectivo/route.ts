@@ -1,45 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import type { Donacion } from "@/app/donaciones/_lib/types";
 
-type FilaEfectivo = {
-  id: string;
-  fecha: string;
-  // Acepta número directo o string con formato colombiano "$20.000,00"
-  monto: number | string;
-  tipo?: string;
-  nombre?: string;
-  documento?: string;
-};
+const KEEP = new Set(["id","f","m","n","k","t","o","met","di","gid","e","doc","ref"]);
 
-function parseMonto(v: number | string): number {
-  if (typeof v === "number") return Math.round(v);
-  // "$20.000,00" → 20000
-  const clean = String(v).replace(/[^0-9,]/g, "").replace(",", ".");
-  return Math.round(parseFloat(clean) || 0);
-}
-
-type Payload = {
-  token: string;
-  filas: FilaEfectivo[];
-};
-
-function concepto(t: string): string {
-  const n = t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const d = n.includes("diezmo");
-  const o = n.includes("ofrenda");
-  if (d && o) return "Diezmo + Ofrenda";
-  if (d) return "Diezmo";
-  if (o) return "Ofrenda";
-  if (n.includes("casa")) return "Pro Casa";
-  return t.trim();
-}
-
-function docReal(d: string): string {
-  const clean = d.replace(/\D+/g, "");
-  if (clean.length < 5) return "";
-  if (/^(\d)\1+$/.test(clean)) return "";
-  if (["123456789", "1234567890", "12345678", "987654321"].includes(clean)) return "";
-  return clean;
+function limpiar(r: Record<string, unknown>): Donacion {
+  const out: Record<string, unknown> = {};
+  KEEP.forEach((k) => { if (r[k] !== undefined) out[k] = r[k]; });
+  return out as Donacion;
 }
 
 export async function POST(req: NextRequest) {
@@ -48,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "EFECTIVO_TOKEN no configurado" }, { status: 500 });
   }
 
-  let body: Payload;
+  let body: { token: string; filas: unknown[] };
   try {
     body = await req.json();
   } catch {
@@ -63,21 +31,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Faltan las filas" }, { status: 400 });
   }
 
-  const nuevas = body.filas
-    .filter((x) => x.id && parseMonto(x.monto) > 0 && x.fecha && !isNaN(Date.parse(x.fecha)))
-    .map((x) => ({
-      id: `EFE-${x.id.replace(/[^A-Za-z0-9_-]/g, "")}`,
-      f: new Date(x.fecha).toISOString().slice(0, 10),
-      m: parseMonto(x.monto),
-      n: (x.nombre ?? "").trim().replace(/\s+/g, " ").slice(0, 120),
-      k: concepto(x.tipo ?? ""),
-      t: "efectivo" as const,
-      met: "Efectivo",
-      di: null as null,
-      gid: null as null,
-    }));
+  const validas = (body.filas as Record<string, unknown>[])
+    .filter((r) => r.id && typeof r.m === "number" && r.m > 0 && r.f && r.n)
+    .map(limpiar);
 
-  if (nuevas.length === 0) {
+  if (validas.length === 0) {
     return NextResponse.json({ ok: true, importadas: 0, omitidas: body.filas.length });
   }
 
@@ -86,18 +44,16 @@ export async function POST(req: NextRequest) {
   const donTable = (service as any).from("donaciones_data");
 
   const { data: existing } = await donTable.select("donaciones").eq("id", "main").maybeSingle();
-  const actuales: { id: string }[] = (existing?.donaciones as { id: string }[] | null) ?? [];
-  const existentesSet = new Set(actuales.map((d) => d.id));
+  const actuales: Donacion[] = (existing?.donaciones as Donacion[] | null) ?? [];
+  const existentesSet = new Set(actuales.map((d: Donacion) => d.id));
 
-  const toInsert = nuevas.filter((d) => !existentesSet.has(d.id));
-  const omitidas = nuevas.length - toInsert.length;
+  const nuevas = validas.filter((d) => !existentesSet.has(d.id));
+  const omitidas = validas.length - nuevas.length;
 
-  if (toInsert.length > 0) {
-    const merged = [...actuales, ...toInsert].sort((a, b) =>
-      ("f" in b ? (b as { f: string }).f : "") > ("f" in a ? (a as { f: string }).f : "") ? 1 : -1
-    );
+  if (nuevas.length > 0) {
+    const merged = [...actuales, ...nuevas].sort((a, b) => b.f.localeCompare(a.f));
     await donTable.upsert({ id: "main", donaciones: merged, updated_at: new Date().toISOString() });
   }
 
-  return NextResponse.json({ ok: true, importadas: toInsert.length, omitidas });
+  return NextResponse.json({ ok: true, importadas: nuevas.length, omitidas });
 }

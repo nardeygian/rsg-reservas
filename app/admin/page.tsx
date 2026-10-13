@@ -23,6 +23,17 @@ export default async function AdminLandingPage() {
 
   const sections = [
     {
+      href: "/admin/discipulados",
+      title: "Discipulados",
+      description: "Grupos de discipulado, líderes y discípulos. Agrega, edita o elimina grupos.",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="9" cy="7" r="3"/><circle cx="17" cy="7" r="3"/>
+          <path d="M3 21v-2a5 5 0 0 1 5-5h8a5 5 0 0 1 5 5v2"/>
+        </svg>
+      ),
+    },
+    {
       href: "/admin/items",
       title: "Items del catálogo",
       description: "Sillas, sonido, mesas, micrófonos. Cantidad disponible y precio.",

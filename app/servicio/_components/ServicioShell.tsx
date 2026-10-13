@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   svConteo, svEnPeriodo, svFmt, svHoyISO, svNombreLimpio, svTipo, svDiaLargo,
   enrichReuniones, etiqueta, etiquetaCorta, shiftPeriodo, periodoActual, esFuturo,
   MESES, MES3,
 } from "../_lib/sv-logic";
 import {
-  svSyncAction, svReunionCrearAction, svGrupoCrearAction, svSeedDiscipuladosAction,
+  svSyncAction, svReunionCrearAction,
 } from "../actions";
 import type { SvData, SvPer, SvReunionUI, SvGrupo, SvMiembro } from "../_lib/types";
 import { ReunionSheet } from "./ReunionSheet";
@@ -23,6 +23,7 @@ type Sheet =
 
 export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: boolean }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
 
   const [per, setPer]         = useState<SvPer>("mes");
@@ -34,8 +35,11 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
   const [syncing, setSyncing] = useState(false);
   const [showNueva, setShowNueva]     = useState(false);
   const [nuevaErr, setNuevaErr]       = useState("");
-  const [showNuevoGrupo, setShowNuevoGrupo] = useState(false);
-  const [nuevoGrupoErr, setNuevoGrupoErr]   = useState("");
+
+  useEffect(() => {
+    const rid = searchParams.get("rid");
+    if (rid) setSheet({ type: "reunion", rid });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function showToast(msg: string) {
     setToast(msg);
@@ -92,28 +96,6 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
     setSyncing(false);
     if (r.ok) refresh(`Calendario actualizado: ${r.reuniones} reuniones`);
     else showToast(`Error: ${r.error}`);
-  }
-
-  async function handleNuevoGrupo(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    setNuevoGrupoErr("");
-    try {
-      await svGrupoCrearAction(fd);
-      setShowNuevoGrupo(false);
-      refresh("Discipulado creado");
-    } catch (err) {
-      setNuevoGrupoErr((err as Error).message);
-    }
-  }
-
-  async function handleSeedDiscipulados() {
-    try {
-      const { count } = await svSeedDiscipuladosAction();
-      refresh(`${count} discípulos importados`);
-    } catch (err) {
-      showToast((err as Error).message);
-    }
   }
 
   async function handleNuevaReunion(e: React.FormEvent<HTMLFormElement>) {
@@ -326,87 +308,6 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
           )}
         </div>
 
-        {/* Discipulados — only visible to editors */}
-        {canEdit && (
-          <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
-            <div className="px-4 pt-4 pb-3 border-b flex items-center gap-3 flex-wrap" style={{ borderColor: "var(--color-line)" }}>
-              <h2 className="font-bold text-base flex-1" style={{ color: "var(--color-ink)" }}>Discipulados</h2>
-              <button
-                type="button"
-                className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
-                style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
-                onClick={() => setShowNuevoGrupo(v => !v)}
-              >
-                Nuevo discipulado
-              </button>
-            </div>
-
-            {showNuevoGrupo && (
-              <form onSubmit={handleNuevoGrupo} className="flex items-end gap-2 flex-wrap px-4 py-3 border-b" style={{ borderColor: "var(--color-line)", background: "var(--color-bg)" }}>
-                <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
-                  <label className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>Nombre del discipulado</label>
-                  <input name="nombre" required placeholder="Ej. Discipulado Jóvenes" className="input text-sm" />
-                </div>
-                <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-                  <label className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>Líder</label>
-                  <input name="lider" placeholder="Nombre del líder" className="input text-sm" />
-                </div>
-                <button type="submit" className="btn-primary text-sm px-4 py-2">Crear</button>
-                {nuevoGrupoErr && <p className="w-full text-xs" style={{ color: "var(--color-down)" }}>{nuevoGrupoErr}</p>}
-              </form>
-            )}
-
-            {Object.keys(svData.grupos ?? {}).length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ background: "var(--color-bg)", color: "var(--color-muted)" }}>
-                      <th className="text-left px-4 py-2 text-xs font-semibold">Discipulado</th>
-                      <th className="text-left px-4 py-2 text-xs font-semibold">Líder</th>
-                      <th className="text-right px-4 py-2 text-xs font-semibold">Discípulos</th>
-                      <th className="px-4 py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.values(svData.grupos ?? {}).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")).map(g => {
-                      const count = Object.values(svData.miembros ?? {}).filter(m => m.grupo_id === g.id).length;
-                      return (
-                        <tr key={g.id} className="border-t" style={{ borderColor: "var(--color-line)" }}>
-                          <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--color-ink)" }}>{g.nombre}</td>
-                          <td className="px-4 py-2.5" style={{ color: "var(--color-muted)" }}>{g.lider || "—"}</td>
-                          <td className="px-4 py-2.5 text-right font-bold" style={{ color: "var(--color-ink)" }}>{count}</td>
-                          <td className="px-4 py-2.5 text-right">
-                            <button
-                              type="button"
-                              className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
-                              style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }}
-                              onClick={() => setSheet({ type: "grupo", gid: g.id })}
-                            >
-                              Gestionar
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="px-4 py-8 flex flex-col items-center gap-3 text-sm" style={{ color: "var(--color-muted)" }}>
-                <span>Aún no hay discipulados. Crea el primero arriba.</span>
-                <button
-                  type="button"
-                  className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
-                  style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)", border: "1px solid var(--color-gold)" }}
-                  onClick={handleSeedDiscipulados}
-                  disabled={pending}
-                >
-                  Importar grupos desde resurgencia-web
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Toast */}

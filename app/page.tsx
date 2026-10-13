@@ -156,9 +156,11 @@ export default async function HomePage() {
     groupStats = { sirvieron, totMin, totServ, total: miembros.length };
   }
 
-  const donTotalMes = isAdmin
-    ? donaciones.filter(d => svEnPeriodo(d.f.slice(0, 10), "mes", perY, perI)).reduce((sum, d) => sum + (d.m ?? 0), 0)
-    : groupDonTotal;
+  const donMes = donaciones.filter(d => svEnPeriodo(d.f.slice(0, 10), "mes", perY, perI));
+  const donTotalMes = isAdmin ? donMes.reduce((sum, d) => sum + (d.m ?? 0), 0) : groupDonTotal;
+  const donCountMes = donMes.length;
+  const donantesCountMes = new Set(donMes.map(d => d.k || d.n)).size;
+  const donPromedioMes = donCountMes > 0 ? Math.round(donTotalMes / donCountMes) : 0;
 
   // Sum donations for all discipulado groups. Uses d.di first (authoritative from PHP panel),
   // then falls back to name matching so the Líderes y pastores group (whose members have no d.di)
@@ -181,6 +183,19 @@ export default async function HomePage() {
     new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n);
 
   const allGruposCount = Object.keys(svData.grupos ?? {}).length;
+
+  // Last reunion for the Módulo de Servicio card
+  const ultimaReunion = Object.values(svData.reuniones ?? {})
+    .filter(r => r.fecha <= todayStr)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))[0] ?? null;
+  const ultimaReg = ultimaReunion ? (svData.registros?.[ultimaReunion.id] ?? null) : null;
+  const ultimaServidores = ultimaReg ? ultimaReg.filas.filter(f => !f.aus).length : null;
+  const ultimaAusencias = ultimaReg ? ultimaReg.filas.filter(f => f.aus).length : null;
+
+  function formatFechaCorta(iso: string): string {
+    const d = new Date(iso + "T12:00:00");
+    return d.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Bogota" });
+  }
 
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 6);
@@ -328,56 +343,38 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Filas internas */}
-          <div
-            style={{
-              borderRadius: 10,
-              overflow: "hidden",
-              background: "rgba(255,255,255,.2)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 1,
-            }}
-          >
-            <Link
-              href="/servicio"
-              style={{
-                background: "var(--color-accent-dark)",
-                padding: "14px 16px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px 16px",
-                flexWrap: "wrap",
-                textDecoration: "none",
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, color: "#fff" }}>
-                  Módulo de Servicio
+          {/* Donaciones en la franja */}
+          {(isAdmin || donTotalMes > 0) && (
+            <div style={{ borderRadius: 10, background: "var(--color-accent-dark)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", fontWeight: 600, opacity: 0.85, color: "#fff" }}>
+                  Recaudado en el mes
                 </span>
-                <span style={{ fontSize: 12.5, opacity: 0.88, color: "#fff" }}>
-                  Listados · asistencia · equipo
-                </span>
+                <Link href="/donaciones" style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", textDecoration: "none", opacity: 0.9 }}>
+                  Ver registro →
+                </Link>
               </div>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: "10px 16px",
-                  border: "1px solid rgba(255,255,255,.4)",
-                  borderRadius: 8,
-                  minHeight: 44,
-                  boxSizing: "border-box",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  color: "#fff",
-                }}
-              >
-                Abrir
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 38, fontWeight: 700, letterSpacing: "-.02em", lineHeight: 1.05, color: "#fff" }}>
+                {donTotalMes > 0 ? fmtCOP(donTotalMes) : "$ —"}
               </span>
-            </Link>
-          </div>
+              {isAdmin && donCountMes > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  {([
+                    [String(donCountMes), "donaciones"],
+                    [String(donantesCountMes), "donantes"],
+                    [donPromedioMes >= 1000000
+                      ? `$${(donPromedioMes / 1000000).toFixed(1).replace(".", ",")} M`
+                      : `$${Math.round(donPromedioMes / 1000)} mil`, "promedio"],
+                  ] as [string, string][]).map(([v, l]) => (
+                    <div key={l} style={{ background: "rgba(255,255,255,.15)", borderRadius: 8, padding: "10px 12px" }}>
+                      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, color: "#fff" }}>{v}</div>
+                      <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.75)", marginTop: 2 }}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* ── Grid de módulos ── */}
@@ -388,6 +385,50 @@ export default async function HomePage() {
             gap: 16,
           }}
         >
+
+          {/* Módulo de Servicio */}
+          <div
+            className="card"
+            style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>Módulo de Servicio</h2>
+                <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>Listados · asistencia · equipo</span>
+              </div>
+              <Link href="/servicio" style={{ fontSize: 12, fontWeight: 700, padding: "10px 16px", border: "1px solid var(--color-line)", borderRadius: 8, flexShrink: 0, color: "var(--color-accent)", textDecoration: "none" }}>
+                Abrir
+              </Link>
+            </div>
+            {ultimaReunion && (
+              <div style={{ borderTop: "1px solid var(--color-line)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, letterSpacing: ".07em", textTransform: "uppercase", fontWeight: 600, color: "var(--color-muted)" }}>
+                    Última reunión
+                  </span>
+                  <Link href={`/servicio?rid=${ultimaReunion.id}`} style={{ fontSize: 12.5, fontWeight: 600, color: "var(--color-accent)", textDecoration: "none" }}>
+                    Ver detalle →
+                  </Link>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{ultimaReunion.nombre}</span>
+                <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>{formatFechaCorta(ultimaReunion.fecha)}</span>
+                {(ultimaServidores !== null || ultimaAusencias !== null) && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {ultimaServidores !== null && (
+                      <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 99, background: "var(--color-accent-soft)", color: "var(--color-accent)" }}>
+                        {ultimaServidores} sirvieron
+                      </span>
+                    )}
+                    {ultimaAusencias !== null && ultimaAusencias > 0 && (
+                      <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 99, background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }}>
+                        {ultimaAusencias} ausencias
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Mi discipulado */}
           <section className="card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -447,33 +488,63 @@ export default async function HomePage() {
             )}
           </section>
 
-          {/* Donaciones */}
-          {(isAdmin || donTotalMes > 0) && (
-          <section className="card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Esta semana en el calendario */}
+          <section
+            className="card"
+            style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>
-                Donaciones · {mesLabel}
+                Esta semana
               </h2>
               <Link
-                href="/donaciones"
+                href="/calendario"
                 style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-accent)" }}
               >
-                Abrir
+                Ver todo
               </Link>
             </div>
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 34,
-                fontWeight: 700,
-                letterSpacing: "-.02em",
-                lineHeight: 1.1,
-              }}
-            >
-              {donTotalMes > 0 ? fmtCOP(donTotalMes) : "$ —"}
-            </span>
+            {weekEvents.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {weekEvents.map((event) => (
+                  <div key={event.gid} style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
+                    <span
+                      style={{
+                        width: 40,
+                        flexShrink: 0,
+                        fontSize: 12.5,
+                        color: "var(--color-muted)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {formatEventDay(event.due_on, todayStr)}
+                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                      <b
+                        style={{
+                          fontSize: 14,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {event.name}
+                      </b>
+                      {event.category && (
+                        <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>
+                          {event.category}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)" }}>
+                Sin eventos esta semana
+              </p>
+            )}
           </section>
-          )}
 
           {/* Mis reservas — activo */}
           <section
@@ -583,64 +654,6 @@ export default async function HomePage() {
                   + Nueva reserva
                 </Link>
               </div>
-            )}
-          </section>
-
-          {/* Esta semana en el calendario */}
-          <section
-            className="card"
-            style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>
-                Esta semana
-              </h2>
-              <Link
-                href="/calendario"
-                style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", color: "var(--color-accent)" }}
-              >
-                Ver todo
-              </Link>
-            </div>
-            {weekEvents.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {weekEvents.map((event) => (
-                  <div key={event.gid} style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
-                    <span
-                      style={{
-                        width: 40,
-                        flexShrink: 0,
-                        fontSize: 12.5,
-                        color: "var(--color-muted)",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {formatEventDay(event.due_on, todayStr)}
-                    </span>
-                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                      <b
-                        style={{
-                          fontSize: 14,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {event.name}
-                      </b>
-                      {event.category && (
-                        <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>
-                          {event.category}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)" }}>
-                Sin eventos esta semana
-              </p>
             )}
           </section>
 

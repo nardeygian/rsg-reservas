@@ -94,7 +94,9 @@ export function DonacionesShell({
   const don = allDon.map((d) => ({ ...d, g: d.gid ? (grupoMap.get(d.gid)?.nombre ?? "") : "" }));
 
   function pasaOrigen(d: Donacion) {
-    return origen === "todo" || (origen === "dar" ? esDar(d) : !esDar(d));
+    if (origen === "todo") return true;
+    if (origen === "dar") return esDar(d) || esEfe(d); // Módulo Dar + efectivo
+    return !esDar(d) && !esEfe(d); // "form": otros (camisetas, eventos…)
   }
   function donDePer(overrideOrigen = false) {
     return donDe(don, per, y, i).filter((d) => overrideOrigen || pasaOrigen(d));
@@ -144,6 +146,7 @@ export function DonacionesShell({
         >
           Importar datos
         </button>
+        <VincularBtn onDone={(msg) => showToast(msg)} />
       </div>
 
       {/* ── Period controls ──────────────────────────────────────────────── */}
@@ -273,14 +276,14 @@ export function DonacionesShell({
         </div>
 
         {/* ── Conceptos ────────────────────────────────────────────────── */}
-        <CardConceptos lista={lista.filter(esDar)} onFilter={(t) => { setSheetQ(""); setSheetO("Módulo Dar"); setSheetT(t); setSheetG(""); setSheet({ type: "listado", filtros: { o: "Módulo Dar", t, titulo: t } }); }} />
+        <CardConceptos lista={lista.filter((d) => esDar(d) || esEfe(d))} onFilter={(t) => { setSheetQ(""); setSheetO(""); setSheetT(t); setSheetG(""); setSheet({ type: "listado", filtros: { t, titulo: t } }); }} />
 
         {/* ── En línea y efectivo ──────────────────────────────────────── */}
-        <CardEfectivo lista={lista.filter(esDar)} etiq={cap(etiq.split(" · ")[0])} />
+        <CardEfectivo lista={lista} etiq={cap(etiq.split(" · ")[0])} />
 
         {/* ── Discipulados ─────────────────────────────────────────────── */}
         <CardGrupos
-          lista={donDePer(true).filter(esDar)}
+          lista={donDePer(true).filter((d) => esDar(d) || esEfe(d))}
           grupos={grupos}
           miembros={miembros}
           etiq={cap(etiq.split(" · ")[0])}
@@ -347,7 +350,7 @@ export function DonacionesShell({
               )}
               {sheet.type === "grupo" && (
                 <GrupoPane
-                  lista={donDePer(true).filter((d) => esDar(d) && d.gid === sheet.gid)}
+                  lista={donDePer(true).filter((d) => (esDar(d) || esEfe(d)) && (d.gid === sheet.gid || !!(d.sg?.[sheet.gid])))}
                   miembros={miembros.filter((m) => m.grupo_id === sheet.gid)}
                 />
               )}
@@ -490,11 +493,15 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
   lista: Donacion[]; grupos: SvGrupo[]; miembros: SvMiembro[]; etiq: string; onGrupo: (gid: string) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const sin = lista.filter((d) => !d.gid);
+  const enGrupo = (d: Donacion, gid: string) => d.gid === gid || !!(d.sg?.[gid]);
+  const sin = lista.filter((d) => !d.gid && !Object.keys(d.sg ?? {}).length);
   const filas = grupos.map((g) => {
-    const l = lista.filter((d) => d.gid === g.id);
-    return { g, total: suma(l), n: l.length, activos: new Set(l.map((d) => d.di)).size, miembros: miembros.filter((m) => m.grupo_id === g.id).length };
+    const l = lista.filter((d) => enGrupo(d, g.id));
+    const activos = new Set(l.map((d) => d.sg?.[g.id] ?? d.di)).size;
+    return { g, total: suma(l), n: l.length, activos, miembros: miembros.filter((m) => m.grupo_id === g.id).length };
   }).sort((a, b) => b.total - a.total);
+  // Total sin duplicar: solo donaciones con gid primario asignado
+  const totalPrimario = suma(lista.filter((d) => d.gid));
 
   return (
     <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
@@ -532,7 +539,7 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
               <tfoot>
                 <tr className="border-t-2" style={{ borderColor: "var(--color-line)", background: "var(--color-surface-2)" }}>
                   <td className="px-3 py-2 font-bold" colSpan={3} style={{ color: "var(--color-ink)" }}>Total en discipulados</td>
-                  <td className="px-3 py-2 text-right font-bold text-xs font-mono">{money(filas.reduce((a, f) => a + f.total, 0))}</td>
+                  <td className="px-3 py-2 text-right font-bold text-xs font-mono">{money(totalPrimario)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -656,7 +663,7 @@ function ListadoPane({ lista, grupos }: { lista: Donacion[]; grupos: Map<string,
                     <span className="font-semibold" style={{ color: "var(--color-ink)" }}>{d.n}</span>
                     {(d.e || d.doc) && <div className="text-xs" style={{ color: "var(--color-muted)" }}>{[d.doc, d.e].filter(Boolean).join(" · ")}</div>}
                   </td>
-                  <td className="px-3 py-2 text-xs">{esDar(d) ? d.t : "Formulario"}</td>
+                  <td className="px-3 py-2 text-xs">{d.t || (esEfe(d) ? "Efectivo" : "Formulario")}</td>
                   <td className="px-3 py-2 text-xs" style={{ color: "var(--color-muted)" }}>{metodo(d.met)}</td>
                   <td className="px-3 py-2 text-xs" style={{ color: "var(--color-muted)" }}>{d.gid ? (grupos.get(d.gid)?.nombre ?? "—") : "—"}</td>
                   <td className="px-3 py-2 text-right font-bold text-xs font-mono">{money(d.m)}</td>
@@ -678,7 +685,8 @@ function ListadoPane({ lista, grupos }: { lista: Donacion[]; grupos: Map<string,
 
 function GrupoPane({ lista, miembros }: { lista: Donacion[]; miembros: SvMiembro[] }) {
   const filas = miembros.map((m) => {
-    const l = lista.filter((d) => d.di === m.id);
+    // d.di: grupo primario  |  d.sg[grupo_id]: membresía secundaria en este grupo
+    const l = lista.filter((d) => d.di === m.id || d.sg?.[m.grupo_id] === m.id);
     const f: Record<string, number> = {};
     CONCEPTOS.forEach((c) => { f[c] = suma(l.filter((d) => d.t === c)); });
     return { m, total: suma(l), veces: l.length, ult: l.reduce((a, d) => d.f > a ? d.f : a, ""), ...f };
@@ -720,6 +728,33 @@ function GrupoPane({ lista, miembros }: { lista: Donacion[]; miembros: SvMiembro
   );
 }
 
+function VincularBtn({ onDone }: { onDone: (msg: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  async function handleClick() {
+    setLoading(true);
+    try {
+      const { donVincularAction } = await import("../actions");
+      const r = await donVincularAction();
+      onDone(`Vinculadas: ${r.vinculadas} · Sin match: ${r.sin_match}`);
+    } catch (e) {
+      onDone("Error al vincular: " + String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <button
+      type="button"
+      disabled={loading}
+      className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+      style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-muted)" }}
+      onClick={handleClick}
+    >
+      {loading ? "Vinculando…" : "Vincular discípulos"}
+    </button>
+  );
+}
+
 function ImportarPane({ onDone }: { onDone: (msg: string) => void }) {
   const [text, setText] = useState("");
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -741,7 +776,7 @@ function ImportarPane({ onDone }: { onDone: (msg: string) => void }) {
   return (
     <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
       <p className="text-sm" style={{ color: "var(--color-muted)" }}>
-        Pega aquí el arreglo JSON de donaciones exportado del panel PHP. Cada objeto debe tener al menos: <code className="text-xs">id, f, m, n, k, t, o, met</code>.
+        En el panel de Hostinger, ve a <strong>Configuración → Exportar al Portal RSG</strong> y descarga el archivo JSON. Abre el archivo, copia todo su contenido y pégalo aquí.
       </p>
       <textarea
         value={text}
