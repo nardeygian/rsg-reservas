@@ -155,7 +155,12 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
         {/* Header */}
         <div className="px-5 pb-3 flex-none border-b" style={{ borderColor: "var(--color-line)" }}>
           <div className="flex items-start gap-3">
-            {/* Editar / Ver listado toggle — left side */}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
+                {svFmt(r.fecha)}{r.seccion ? ` · ${r.seccion}` : ""}
+              </p>
+              <h2 className="font-bold text-lg leading-tight mt-0.5" style={{ color: "var(--color-ink)" }}>{svNombreLimpio(r.nombre)}</h2>
+            </div>
             {canEdit && hasListado && (
               <button
                 type="button"
@@ -166,12 +171,6 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                 {editMode ? "← Ver listado" : "Editar"}
               </button>
             )}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
-                {svFmt(r.fecha)}{r.seccion ? ` · ${r.seccion}` : ""}
-              </p>
-              <h2 className="font-bold text-lg leading-tight mt-0.5" style={{ color: "var(--color-ink)" }}>{svNombreLimpio(r.nombre)}</h2>
-            </div>
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }} aria-label="Cerrar">×</button>
           </div>
           {/* Sum bar */}
