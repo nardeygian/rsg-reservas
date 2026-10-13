@@ -341,6 +341,12 @@ function ViewDeptos({ reg, svData }: { reg: SvRegistro; svData: SvData }) {
       if (!byDepto.has(key)) byDepto.set(key, []);
       byDepto.get(key)!.push(role);
     }
+    // If multiple deptos and one is Escenario, drop Escenario (secondary space role)
+    if (byDepto.size > 1) {
+      for (const key of byDepto.keys()) {
+        if (key.toLowerCase().includes("escenario")) { byDepto.delete(key); break; }
+      }
+    }
     for (const [key, deptoRoles] of byDepto) {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push({ ...f, nombre, roles: deptoRoles });
