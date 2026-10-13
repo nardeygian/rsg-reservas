@@ -6,7 +6,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-dvh flex items-center justify-center px-4 relative">
+    <main className="fixed inset-0 flex items-center justify-center px-4 overflow-y-auto" style={{ background: "var(--color-bg)" }}>
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
