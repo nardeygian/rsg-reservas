@@ -192,7 +192,7 @@ export function DonacionesShell({
 
       <div className="px-4 pb-24 flex flex-col gap-4">
         {/* ── Hero ────────────────────────────────────────────────────────── */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1.4fr)" }}>
+        <div className="flex flex-col gap-4 sm:grid" style={{ gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1.4fr)" }}>
           {/* Total card */}
           <button
             type="button"

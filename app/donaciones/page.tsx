@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { donReadData } from "./actions";
 import { svReadData } from "@/app/servicio/actions";
 import { DonacionesShell } from "./_components/DonacionesShell";
+import { DonacionesRealtime } from "./_components/DonacionesRealtime";
 import type { Donacion } from "./_lib/types";
 import type { SvGrupo, SvMiembro } from "@/app/servicio/_lib/types";
 
@@ -51,7 +52,10 @@ export default async function DonacionesPage() {
           </p>
         </div>
       ) : (
-        <DonacionesShell donaciones={donaciones} grupos={grupos} miembros={miembros} />
+        <>
+          <DonacionesRealtime />
+          <DonacionesShell donaciones={donaciones} grupos={grupos} miembros={miembros} />
+        </>
       )}
     </main>
   );
