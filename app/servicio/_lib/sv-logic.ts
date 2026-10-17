@@ -127,6 +127,13 @@ export function svDiOf(s: { id: string; nombre: string; di?: string | null }, mi
 
 export function svServiciosGrupo(data: SvData, grupoId: string): SvServicioItem[] {
   const out: SvServicioItem[] = [];
+  const allMiembros = data.miembros ?? {};
+  // Scope member lookup to THIS group so that a person who appears in multiple
+  // groups (e.g. "Líderes y pastores" AND Gian's group) is resolved correctly
+  // for each group rather than always matching the first result globally.
+  const grupoMiembros = Object.fromEntries(
+    Object.entries(allMiembros).filter(([, m]) => m.grupo_id === grupoId)
+  );
   Object.values(data.reuniones).forEach(r => {
     const reg = data.registros[r.id];
     if (!reg) return;
@@ -135,10 +142,15 @@ export function svServiciosGrupo(data: SvData, grupoId: string): SvServicioItem[
     reg.filas.forEach(f => {
       const s = data.servidores[f.sid];
       if (!s) return;
-      const di = svDiOf(s, data.miembros ?? {});
+      // Prefer s.di if it points to a member of THIS group; otherwise name-match
+      // within this group (ignoring s.di which may point to a different group).
+      let di: string | null = null;
+      if (s.di && grupoMiembros[s.di]) {
+        di = s.di;
+      } else {
+        di = svDiOf({ id: s.id, nombre: s.nombre }, grupoMiembros);
+      }
       if (!di) return;
-      const m = (data.miembros ?? {})[di];
-      if (!m || m.grupo_id !== grupoId) return;
       out.push({ di, f: r.fecha, r: r.nombre, u, t, aus: !!f.aus, rid: r.id, roles: f.roles ?? [] });
     });
   });
