@@ -127,7 +127,7 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
     : "Calendario RSG de Asana · aún sin sincronizar";
 
   return (
-    <div className="flex flex-col" style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div className="flex flex-col" style={{ maxWidth: 1180, margin: "0 auto" }}>
       {/* Period bar */}
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 flex-wrap">
         {/* Per selector */}

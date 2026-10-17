@@ -82,7 +82,7 @@ export function DiscipulosAdminShell({
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 pt-4 pb-24" style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div className="flex flex-col gap-5 px-4 pt-4 pb-24" style={{ maxWidth: 1180, margin: "0 auto" }}>
 
       {/* Header */}
       <header className="flex flex-col gap-0.5">

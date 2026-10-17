@@ -113,7 +113,7 @@ export function DiscipulosShell({
   const nextShift = shiftPeriodo(per, y, i, 1);
 
   return (
-    <div className="flex flex-col" style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div className="flex flex-col" style={{ maxWidth: 1180, margin: "0 auto" }}>
       {/* Period bar */}
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 flex-wrap">
         <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
