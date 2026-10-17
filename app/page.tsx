@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionProfile } from "@/lib/auth";
+import { getSessionProfile, getUserCaps } from "@/lib/auth";
 import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
 import { ThemeToggle } from "./_components/ThemeToggle";
 import { getCalendarEvents } from "@/lib/asana";
@@ -93,7 +93,7 @@ function formatShortTime(iso: string): string {
 }
 
 export default async function HomePage() {
-  const session = await getSessionProfile();
+  const [session, caps] = await Promise.all([getSessionProfile(), getUserCaps()]);
   if (!session) redirect("/login");
   const { userId, email, profile } = session;
 
@@ -108,7 +108,7 @@ export default async function HomePage() {
   const todayStart = startOfDayBogota(now);
   const todayEnd   = endOfDayBogota(now);
 
-  const [{ count: pendingCount }, { data: upcomingBookings }, { count: bookingsTodayCount }, svData, donaciones] = await Promise.all([
+  const [{ count: pendingCount }, { data: upcomingBookings }, { count: bookingsTodayCount }, svData, donaciones, calendarEvents] = await Promise.all([
     canApprove
       ? supabase
           .from("bookings_staff")
@@ -131,9 +131,8 @@ export default async function HomePage() {
       .lt("starts_at", todayEnd.toISOString()),
     svReadData(),
     donReadData(),
+    getCalendarEvents().catch(() => [] as Awaited<ReturnType<typeof getCalendarEvents>>),
   ]);
-
-  const calendarEvents = await getCalendarEvents().catch(() => [] as Awaited<ReturnType<typeof getCalendarEvents>>);
 
   const displayName = profile?.full_name ?? email ?? userId;
   const firstName = profile?.full_name?.split(" ")[0] ?? null;
@@ -147,7 +146,7 @@ export default async function HomePage() {
   const mesLabel = MESES[perI].charAt(0).toUpperCase() + MESES[perI].slice(1);
   const reunionesToday = Object.values(svData.reuniones ?? {}).filter(r => r.fecha === todayStr).length;
 
-  const myGroup = Object.values(svData.grupos ?? {}).find(g => g.lider_user_id === userId) ?? null;
+  const myGroup = Object.values(svData.grupos ?? {}).find(g => g.lider_user_ids.includes(userId)) ?? null;
   let groupStats: { sirvieron: number; totMin: number; totServ: number; total: number } | null = null;
   let groupDonTotal = 0;
   if (myGroup) {
@@ -360,7 +359,7 @@ export default async function HomePage() {
           </div>
 
           {/* Donaciones en la franja */}
-          {(isAdmin || donTotalMes > 0) && (
+          {(isAdmin || donTotalMes > 0) && caps?.donaciones !== "none" && (
             <div style={{ borderRadius: 10, background: "var(--color-accent-dark)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", fontWeight: 600, opacity: 0.85, color: "#fff" }}>

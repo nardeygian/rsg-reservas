@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getUserCaps } from "@/lib/auth";
 import { svReadData } from "./actions";
 import { ServicioShell } from "./_components/ServicioShell";
 import type { SvData } from "./_lib/types";
@@ -9,33 +9,15 @@ export default async function ServicioPage({
 }: {
   searchParams: Promise<{ preview?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const caps = await getUserCaps();
+  if (!caps) redirect("/login");
+  if (caps.servicio === "none") redirect("/?error=Sin+acceso+al+módulo+de+Servicio");
 
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  const role = profile?.role ?? "";
   const { preview } = await searchParams;
+  let canEdit = caps.servicio === "edit";
 
-  let canEdit = ["super_admin", "pastor_sede"].includes(role);
-  if (!canEdit) {
-    const { data: extraRoles } = await supabase
-      .from("user_roles").select("role, ministries(name)").eq("user_id", user.id);
-    canEdit = (extraRoles ?? []).some(
-      (r) => r.role === "lider_departamento" &&
-        (r.ministries as { name: string } | null)?.name === "Planeación"
-    );
-  }
-
-  if (!canEdit && !["pastor_ministerio", "lider_discipulado", "lider_departamento"].includes(role)) {
-    redirect("/?error=Sin+acceso+al+módulo+de+Servicio");
-  }
-
-  // Super-admin previewing read-only pastor view
-  if (preview === "pastor" && ["super_admin", "pastor_sede"].includes(role)) {
-    canEdit = false;
-  }
+  // Admin previewing read-only view
+  if (preview === "pastor" && canEdit) canEdit = false;
 
   let svData: SvData | null = null;
   let needsMigration = false;
@@ -43,6 +25,19 @@ export default async function ServicioPage({
     svData = await svReadData();
   } catch {
     needsMigration = true;
+  }
+
+  // Pastores de ministerio: filtrar reuniones a su ministerio
+  if (svData && caps.ministerioNombre && caps.servicio === "read") {
+    const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    const mn = norm(caps.ministerioNombre);
+    const filteredReus: SvData["reuniones"] = {};
+    for (const [id, r] of Object.entries(svData.reuniones)) {
+      if (norm(r.seccion).includes(mn) || norm(r.nombre).includes(mn)) {
+        filteredReus[id] = r;
+      }
+    }
+    svData = { ...svData, reuniones: filteredReus };
   }
 
   return (

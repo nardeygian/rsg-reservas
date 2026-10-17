@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import type { Donacion } from "../_lib/types";
 import type { SvGrupo, SvMiembro } from "@/app/servicio/_lib/types";
 import {
@@ -46,10 +47,12 @@ export function DonacionesShell({
   donaciones: allDon,
   grupos,
   miembros,
+  readOnly = false,
 }: {
   donaciones: Donacion[];
   grupos: SvGrupo[];
   miembros: SvMiembro[];
+  readOnly?: boolean;
 }) {
   const [per, setPer]         = useState<DonPer>("mes");
   const [{ y, i }, setPeriod] = useState<{ y: number; i: number }>(() => {
@@ -139,15 +142,19 @@ export function DonacionesShell({
             Módulo Dar
           </h1>
         </div>
-        <button
-          type="button"
-          className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
-          style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-muted)" }}
-          onClick={() => setSheet({ type: "importar" })}
-        >
-          Importar datos
-        </button>
-        <VincularBtn onDone={(msg) => showToast(msg)} />
+        {!readOnly && (
+          <>
+            <button
+              type="button"
+              className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-muted)" }}
+              onClick={() => setSheet({ type: "importar" })}
+            >
+              Importar datos
+            </button>
+            <VincularBtn onDone={(msg) => showToast(msg)} />
+          </>
+        )}
       </div>
 
       {/* ── Period controls ──────────────────────────────────────────────── */}
@@ -246,7 +253,7 @@ export function DonacionesShell({
             </div>
             <div className="overflow-x-auto">
               <div style={{ minWidth: bars.length * 22 }}>
-                <div className="relative flex items-end gap-[3px] border-b" style={{ height: 200, borderColor: "var(--color-line)", paddingTop: 24 }}>
+                <div className="relative flex items-end gap-[3px] border-b" style={{ height: 200, borderColor: "var(--color-line)", paddingTop: 48 }}>
                   {/* guide lines */}
                   <div className="absolute left-0 right-0 top-0 text-[10px] flex flex-col justify-between h-full pointer-events-none">
                     <span style={{ color: "var(--color-faint)" }}>{moneyShort(chartMax)}</span>
@@ -274,7 +281,7 @@ export function DonacionesShell({
                         )}
                         {b.v > 0 && (
                           <div
-                            className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1.5 rounded-[6px] pointer-events-none transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                            className={`absolute top-1 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1.5 rounded-[6px] pointer-events-none transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                             style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
                           >
                             {b.t}<br />{money(b.v)} · {b.n} {b.n === 1 ? "aporte" : "aportes"}
@@ -291,6 +298,9 @@ export function DonacionesShell({
             </div>
           </div>
         </div>
+
+        {/* ── Por vincular ─────────────────────────────────────────────── */}
+        {!readOnly && <CardPorVincular donaciones={allDon} miembros={miembros} grupos={grupos} />}
 
         {/* ── Conceptos ────────────────────────────────────────────────── */}
         <CardConceptos lista={lista.filter((d) => esDar(d) || esEfe(d))} onFilter={(t) => { setSheetQ(""); setSheetO(""); setSheetT(t); setSheetG(""); setSheet({ type: "listado", filtros: { t, titulo: t } }); }} />
@@ -784,7 +794,11 @@ function ImportarPane({ onDone }: { onDone: (msg: string) => void }) {
       const { donImportarAction } = await import("../actions");
       const fd = new FormData(); fd.set("datos", text);
       const r = await donImportarAction(fd);
-      onDone(`${r.importadas} donaciones importadas · ${r.repetidas} repetidas`);
+      const parts = [`${r.importadas} importadas`];
+      if (r.repetidas) parts.push(`${r.repetidas} repetidas`);
+      if (r.autovinculadas) parts.push(`${r.autovinculadas} vinculadas automáticamente`);
+      if (r.sin_match) parts.push(`${r.sin_match} por vincular`);
+      onDone(parts.join(" · "));
     } catch (err) {
       setStatus({ ok: false, msg: (err as Error).message });
     } finally { setLoading(false); }
@@ -812,5 +826,221 @@ function ImportarPane({ onDone }: { onDone: (msg: string) => void }) {
         {loading ? "Importando…" : "Importar"}
       </button>
     </form>
+  );
+}
+
+// ── CardPorVincular ─────────────────────────────────────────────────────────
+
+function normTok(s: string): string[] {
+  const STOP = new Set(["de","del","la","las","los","y","da","do"]);
+  return (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim()
+    .split(" ").filter(t => t.length >= 2 && !STOP.has(t));
+}
+
+function computeSugs(nombre: string, miembros: SvMiembro[]): Array<{ m: SvMiembro; score: number }> {
+  const dt = normTok(nombre);
+  if (dt.length < 2) return [];
+  const hits: Array<{ m: SvMiembro; score: number }> = [];
+  for (const m of miembros) {
+    const xt = normTok(m.nombre);
+    if (!xt.length) continue;
+    let matched = 0; let hasPri = false;
+    for (let i = 0; i < xt.length; i++) {
+      const t = xt[i];
+      let best = 0;
+      for (const d of dt) {
+        if (t === d) best = 1;
+        else if (Math.min(t.length, d.length) >= 3 && (t.startsWith(d) || d.startsWith(t))) best = Math.max(best, 0.85);
+      }
+      if (best >= 0.75) { matched++; if (i === 0) hasPri = true; }
+    }
+    if (!hasPri || matched < Math.min(2, xt.length)) continue;
+    hits.push({ m, score: matched / xt.length });
+  }
+  // Deduplicate by member id
+  const seen = new Map<string, typeof hits[0]>();
+  for (const h of hits.sort((a, b) => b.score - a.score))
+    if (!seen.has(h.m.id)) seen.set(h.m.id, h);
+  return [...seen.values()].slice(0, 3);
+}
+
+function FilaPorVincular({
+  d,
+  miembros,
+  grupoMap,
+  onVincular,
+  onExterno,
+}: {
+  d: Donacion;
+  miembros: SvMiembro[];
+  grupoMap: Map<string, SvGrupo>;
+  onVincular: (di: string, gid: string) => void;
+  onExterno: () => void;
+}) {
+  const [busq, setBusq] = useState("");
+  const [pending, setPending] = useState(false);
+  const sugs = useMemo(() => computeSugs(d.n, miembros), [d.n, miembros]);
+  const resultados = useMemo(() =>
+    busq.trim().length >= 2
+      ? miembros.filter(m => m.nombre.toLowerCase().includes(busq.toLowerCase())).slice(0, 8)
+      : [],
+    [busq, miembros]);
+
+  const esDoc = /^\d{6,}$/.test(d.n.trim());
+
+  return (
+    <div className="flex flex-col gap-2 py-3 border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
+      {/* Row header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col min-w-0">
+          <span className="font-semibold text-sm truncate" style={{ color: esDoc ? "var(--color-muted)" : "var(--color-ink)" }}>
+            {d.n}
+            {esDoc && <span className="ml-1 text-[11px] font-normal" style={{ color: "var(--color-faint)" }}>(doc)</span>}
+          </span>
+          <span className="text-xs" style={{ color: "var(--color-muted)" }}>
+            {money(d.m)} · {metodo(d.met)} · {fmtFecha(d.f).split(" · ")[0]}
+          </span>
+        </div>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => { setPending(true); onExterno(); }}
+          className="flex-none text-[11px] font-semibold px-2 py-1 rounded-[6px]"
+          style={{ background: "var(--color-surface-2)", color: "var(--color-faint)", border: "1px solid var(--color-line)" }}
+        >
+          Externo
+        </button>
+      </div>
+
+      {/* Auto-suggestions */}
+      {sugs.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {sugs.map(({ m }) => {
+            const g = grupoMap.get(m.grupo_id);
+            return (
+              <button
+                key={m.id}
+                type="button"
+                disabled={pending}
+                onClick={() => { setPending(true); onVincular(m.id, m.grupo_id); }}
+                className="text-[12px] font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "1px solid var(--color-accent)" }}
+              >
+                {m.nombre}
+                {g && <span className="font-normal opacity-70"> · {g.nombre}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Manual search */}
+      <div className="relative">
+        <input
+          value={busq}
+          onChange={e => setBusq(e.target.value)}
+          placeholder="Buscar miembro para vincular…"
+          className="input text-sm w-full"
+          style={{ paddingRight: 8 }}
+        />
+        {resultados.length > 0 && (
+          <div
+            className="absolute left-0 right-0 top-full mt-1 rounded-[10px] overflow-hidden z-20 flex flex-col"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }}
+          >
+            {resultados.map(m => {
+              const g = grupoMap.get(m.grupo_id);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => { setBusq(""); setPending(true); onVincular(m.id, m.grupo_id); }}
+                  className="flex items-center gap-2 px-3 py-2.5 text-left hover:opacity-75"
+                  style={{ borderBottom: "1px solid var(--color-line)" }}
+                >
+                  <span className="font-semibold text-sm flex-1" style={{ color: "var(--color-ink)" }}>{m.nombre}</span>
+                  {g && <span className="text-xs flex-none" style={{ color: "var(--color-muted)" }}>{g.nombre}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CardPorVincular({
+  donaciones,
+  miembros,
+  grupos,
+}: {
+  donaciones: Donacion[];
+  miembros: SvMiembro[];
+  grupos: SvGrupo[];
+}) {
+  const pendientes = donaciones.filter(d => !d.di && !d.ext);
+  const [done, setDone] = useState<Set<string>>(() => new Set());
+  const visibles = pendientes.filter(d => !done.has(d.id));
+  const router = useRouter();
+  const [open, setOpen] = useState(true);
+  const grupoMap = useMemo(() => new Map(grupos.map(g => [g.id, g])), [grupos]);
+
+  if (pendientes.length === 0) return null;
+
+  async function vincular(donId: string, di: string, gid: string) {
+    setDone(prev => new Set([...prev, donId]));
+    const { donVincularManualAction } = await import("../actions");
+    await donVincularManualAction(donId, di, gid);
+    router.refresh();
+  }
+
+  async function marcarExterno(donId: string) {
+    setDone(prev => new Set([...prev, donId]));
+    const { donMarcarExternoAction } = await import("../actions");
+    await donMarcarExternoAction(donId);
+    router.refresh();
+  }
+
+  return (
+    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-gold)" }}>
+      <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full" onClick={() => setOpen(o => !o)}>
+        <div className="flex items-center gap-2">
+          <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Por vincular</h2>
+          <span
+            className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }}
+          >
+            {visibles.length} de {pendientes.length}
+          </span>
+        </div>
+        <Chevron open={open} />
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5">
+          {visibles.length === 0 ? (
+            <p className="text-sm text-center py-4" style={{ color: "var(--color-muted)" }}>
+              Todas vinculadas en esta sesión. Se actualizarán al recargar.
+            </p>
+          ) : (
+            <div className="flex flex-col">
+              {visibles.map(d => (
+                <FilaPorVincular
+                  key={d.id}
+                  d={d}
+                  miembros={miembros}
+                  grupoMap={grupoMap}
+                  onVincular={(di, gid) => vincular(d.id, di, gid)}
+                  onExterno={() => marcarExterno(d.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

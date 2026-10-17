@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { donReadData } from "./actions";
+import { getUserCaps } from "@/lib/auth";
+import { donReadData, donVincularAction } from "./actions";
 import { svReadData } from "@/app/servicio/actions";
 import { DonacionesShell } from "./_components/DonacionesShell";
 import { DonacionesRealtime } from "./_components/DonacionesRealtime";
@@ -8,17 +8,10 @@ import type { Donacion } from "./_lib/types";
 import type { SvGrupo, SvMiembro } from "@/app/servicio/_lib/types";
 
 export default async function DonacionesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  const role = profile?.role ?? "";
-
-  if (!["super_admin", "pastor_sede"].includes(role)) {
-    redirect("/?error=Sin+acceso+al+módulo+de+Donaciones");
-  }
+  const caps = await getUserCaps();
+  if (!caps) redirect("/login");
+  if (caps.donaciones === "none") redirect("/?error=Sin+acceso+al+módulo+de+Donaciones");
+  const readOnly = caps.donaciones === "filtered";
 
   let donaciones: Donacion[] = [];
   let grupos: SvGrupo[] = [];
@@ -39,6 +32,30 @@ export default async function DonacionesPage() {
     } catch {
       // grupos not available yet — donaciones still works without them
     }
+
+    // Auto-link obvious matches silently (only for full-access users)
+    if (!readOnly && donaciones.some(d => !d.di && !d.ext) && miembros.length > 0) {
+      const { vinculadas } = await donVincularAction();
+      if (vinculadas > 0) donaciones = await donReadData();
+    }
+
+    // Filter to group for líderes de discipulado
+    if (readOnly) {
+      if (!caps.disciGrupoId) {
+        // No group assigned yet — show nothing (avoid leaking all data)
+        donaciones = [];
+        grupos = [];
+        miembros = [];
+      } else {
+        donaciones = donaciones.filter(d =>
+          d.gid === caps.disciGrupoId || (d.sg && caps.disciGrupoId! in d.sg)
+        );
+        // Scope grupos and miembros to only the lider's group so the shell
+        // doesn't expose other groups' member names
+        grupos = grupos.filter(g => g.id === caps.disciGrupoId);
+        miembros = miembros.filter(m => m.grupo_id === caps.disciGrupoId);
+      }
+    }
   }
 
   return (
@@ -54,7 +71,7 @@ export default async function DonacionesPage() {
       ) : (
         <>
           <DonacionesRealtime />
-          <DonacionesShell donaciones={donaciones} grupos={grupos} miembros={miembros} />
+          <DonacionesShell donaciones={donaciones} grupos={grupos} miembros={miembros} readOnly={readOnly} />
         </>
       )}
     </main>

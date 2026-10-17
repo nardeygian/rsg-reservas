@@ -311,14 +311,14 @@ export function ReservasDayView({
       {selected && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[55]"
             style={{ background: "rgba(0,0,0,0.4)" }}
             onClick={() => setSelectedId(null)}
             aria-hidden
           />
           <div
             ref={sheetRef}
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[20px] flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[20px] flex flex-col"
             style={{
               background: "var(--color-surface)",
               boxShadow: "0 -4px 32px rgba(0,0,0,0.18)",
@@ -402,7 +402,13 @@ export function ReservasDayView({
             </div>
 
             {/* Button — always visible at bottom */}
-            <div className="flex-none px-5 pb-6 pt-3 border-t" style={{ borderColor: "var(--color-line)" }}>
+            <div
+              className="flex-none px-5 pt-3 border-t"
+              style={{
+                borderColor: "var(--color-line)",
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
+              }}
+            >
               <Link
                 href={`/reservas/${selected.id}`}
                 className="btn-primary w-full text-center block"

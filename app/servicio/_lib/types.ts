@@ -24,7 +24,7 @@ export type SvGrupo = {
   id: string;
   nombre: string;
   lider: string;
-  lider_user_id: string | null;
+  lider_user_ids: string[];
 };
 
 export type SvMiembro = {

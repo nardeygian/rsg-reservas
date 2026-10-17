@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOutAction } from "../../perfil/actions";
+import type { NavCaps } from "@/lib/auth";
 
 type NavItem = {
-  href: string | null;
+  href: string;
   label: string;
-  icon: React.ReactNode;
   matchExact?: boolean;
+  icon: React.ReactNode;
 };
 
-const MAIN_ITEMS: NavItem[] = [
+const ALL_ITEMS: NavItem[] = [
   {
     href: "/",
     label: "Inicio",
@@ -69,114 +70,83 @@ const MAIN_ITEMS: NavItem[] = [
   },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [
-  {
-    href: "/admin",
-    label: "Administración",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
-      </svg>
-    ),
-  },
-];
+const ADMIN_ITEM: NavItem = {
+  href: "/admin",
+  label: "Administración",
+  icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
+    </svg>
+  ),
+};
+
+function visibleItems(caps: NavCaps): NavItem[] {
+  return ALL_ITEMS.filter(item => {
+    if (item.href === "/")           return caps.inicio;
+    if (item.href === "/calendario") return caps.calendario;
+    if (item.href === "/reservas")   return caps.reservas;
+    if (item.href === "/servicio")   return caps.servicio !== "none";
+    if (item.href === "/discipulos") return caps.discipulos;
+    if (item.href === "/donaciones") return caps.donaciones !== "none";
+    return false;
+  });
+}
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const active = item.href
-    ? item.matchExact
-      ? pathname === item.href
-      : pathname.startsWith(item.href)
-    : false;
-  const disabled = !item.href;
-
+  const active = item.matchExact ? pathname === item.href : pathname.startsWith(item.href);
   const style = active
     ? { background: "var(--color-accent-soft)", color: "var(--color-accent)" }
-    : disabled
-      ? { color: "var(--color-line)", cursor: "default" }
-      : { color: "var(--color-ink)" };
-
-  const inner = (
-    <span
-      className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[8px] w-full text-sm font-medium transition"
-      style={style}
-    >
-      {item.icon}
-      {item.label}
-    </span>
-  );
-
-  if (!item.href) {
-    return <span aria-disabled="true">{inner}</span>;
-  }
-
+    : { color: "var(--color-ink)" };
   return (
-    <Link href={item.href} aria-current={active ? "page" : undefined}>
-      {inner}
+    <Link href={item.href} prefetch={true} aria-current={active ? "page" : undefined}>
+      <span className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[8px] w-full text-sm font-medium transition" style={style}>
+        {item.icon}
+        {item.label}
+      </span>
     </Link>
   );
 }
 
-export function SidebarNav() {
+export function SidebarNav({ caps }: { caps: NavCaps }) {
   const pathname = usePathname();
+  const items = visibleItems(caps);
 
   return (
     <nav
       aria-label="Módulos"
       className="hidden md:flex flex-col gap-[22px] fixed top-0 left-0 bottom-0 w-[220px] z-50 overflow-y-auto"
-      style={{
-        background: "var(--color-surface)",
-        borderRight: "1px solid var(--color-line)",
-        padding: "22px 14px",
-      }}
+      style={{ background: "var(--color-surface)", borderRight: "1px solid var(--color-line)", padding: "22px 14px" }}
     >
       {/* Logo */}
       <div className="flex items-center gap-[10px] px-2">
-        <div
-          className="w-9 h-9 rounded-[9px] flex items-center justify-center text-[13px] font-bold flex-none"
-          style={{
-            background: "var(--color-accent)",
-            color: "var(--color-accent-ink)",
-            fontFamily: "var(--font-display)",
-          }}
-        >
+        <div className="w-9 h-9 rounded-[9px] flex items-center justify-center text-[13px] font-bold flex-none"
+          style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)", fontFamily: "var(--font-display)" }}>
           RSG
         </div>
         <div className="flex flex-col">
-          <span className="font-semibold text-[15px]" style={{ fontFamily: "var(--font-display)" }}>
-            Portal RSG
-          </span>
-          <span className="text-xs" style={{ color: "var(--color-muted)" }}>
-            Resurgencia
-          </span>
+          <span className="font-semibold text-[15px]" style={{ fontFamily: "var(--font-display)" }}>Portal RSG</span>
+          <span className="text-xs" style={{ color: "var(--color-muted)" }}>Resurgencia</span>
         </div>
       </div>
 
       {/* Módulos */}
       <div className="flex flex-col gap-[2px]">
-        {MAIN_ITEMS.map((item) => (
-          <NavLink key={item.label} item={item} pathname={pathname} />
-        ))}
+        {items.map(item => <NavLink key={item.href} item={item} pathname={pathname} />)}
       </div>
 
-      {/* Sección admin */}
-      <div
-        className="flex flex-col gap-[2px] pt-[14px]"
-        style={{ borderTop: "1px solid var(--color-line)" }}
-      >
-        <span className="eyebrow px-[10px] pb-[6px]">Administración</span>
-        {ADMIN_ITEMS.map((item) => (
-          <NavLink key={item.label} item={item} pathname={pathname} />
-        ))}
-      </div>
+      {/* Admin */}
+      {caps.admin && (
+        <div className="flex flex-col gap-[2px] pt-[14px]" style={{ borderTop: "1px solid var(--color-line)" }}>
+          <span className="eyebrow px-[10px] pb-[6px]">Administración</span>
+          <NavLink item={ADMIN_ITEM} pathname={pathname} />
+        </div>
+      )}
 
       {/* Logout */}
       <div className="mt-auto pt-[14px]" style={{ borderTop: "1px solid var(--color-line)" }}>
         <form action={signOutAction}>
-          <button
-            type="submit"
-            className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[8px] w-full text-sm font-medium transition"
-            style={{ color: "var(--color-down)" }}
-          >
+          <button type="submit" className="flex items-center gap-[10px] px-[10px] py-[10px] rounded-[8px] w-full text-sm font-medium transition"
+            style={{ color: "var(--color-down)" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
             </svg>

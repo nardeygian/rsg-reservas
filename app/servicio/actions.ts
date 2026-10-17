@@ -38,16 +38,27 @@ async function assertAccess(): Promise<void> {
 // eslint-disable-next-line
 const svTable = (svc: ReturnType<typeof createServiceClient>) => (svc as any).from("servicio_data");
 
+// Migrates old single lider_user_id → lider_user_ids array on first read.
+function normalizeSvData(d: SvData): SvData {
+  for (const g of Object.values(d.grupos ?? {})) {
+    const raw = g as Record<string, unknown>;
+    if (!Array.isArray(g.lider_user_ids)) {
+      g.lider_user_ids = raw["lider_user_id"] ? [raw["lider_user_id"] as string] : [];
+    }
+  }
+  return d;
+}
+
 export async function svReadData(): Promise<SvData> {
   const service = createServiceClient();
   const { data } = await svTable(service).select("data").eq("id", "main").maybeSingle();
-  return (data?.data as SvData | null) ?? { ...DEFAULT_DATA };
+  return normalizeSvData((data?.data as SvData | null) ?? { ...DEFAULT_DATA });
 }
 
 async function mutate<T>(fn: (d: SvData) => T): Promise<T> {
   const service = createServiceClient();
   const { data } = await svTable(service).select("data").eq("id", "main").maybeSingle();
-  const d: SvData = (data?.data as SvData | null) ?? { ...DEFAULT_DATA };
+  const d: SvData = normalizeSvData((data?.data as SvData | null) ?? { ...DEFAULT_DATA });
   const result = fn(d);
   await svTable(service).upsert({ id: "main", data: d, updated_at: new Date().toISOString() });
   revalidatePath("/servicio");
@@ -234,7 +245,7 @@ export async function svSeedDiscipuladosAction(): Promise<{ count: number }> {
     if (Object.keys(d.grupos).length > 0) throw new Error("Ya hay discipulados registrados.");
     let total = 0;
     for (const g of SEED_GRUPOS) {
-      d.grupos[g.id] = { id: g.id, nombre: g.nombre, lider: g.nombre, lider_user_id: null };
+      d.grupos[g.id] = { id: g.id, nombre: g.nombre, lider: g.nombre, lider_user_ids: [] };
       g.miembros.forEach((nombre, i) => {
         const mid = `${g.id}-${i + 1}`;
         d.miembros![mid] = { id: mid, nombre, grupo_id: g.id };
@@ -251,7 +262,7 @@ export async function svReadGrupoForUser(): Promise<{ grupo: SvGrupo; miembros: 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const data = await svReadData();
-  const grupo = Object.values(data.grupos ?? {}).find(g => g.lider_user_id === user.id);
+  const grupo = Object.values(data.grupos ?? {}).find(g => g.lider_user_ids.includes(user.id));
   if (!grupo) return null;
   const miembros = Object.values(data.miembros ?? {}).filter(m => m.grupo_id === grupo.id);
   return { grupo, miembros };
@@ -269,7 +280,7 @@ export async function svGrupoCrearAction(fd: FormData): Promise<{ id: string }> 
     let newId = base;
     let n = 1;
     while (d.grupos[newId]) { newId = `${base}-${n++}`; }
-    d.grupos[newId] = { id: newId, nombre, lider, lider_user_id: null };
+    d.grupos[newId] = { id: newId, nombre, lider, lider_user_ids: [] };
     return newId;
   });
   return { id };
@@ -334,7 +345,67 @@ export async function svMiembroQuitarAction(fd: FormData): Promise<void> {
   const id = String(fd.get("id") ?? "").slice(0, 40);
   await mutate((d) => {
     if (!d.miembros) d.miembros = {};
-    delete d.miembros[id];
+    if (d.miembros[id]) d.miembros[id].grupo_id = "";
+  });
+}
+
+// ── Acciones para líderes de discipulado (sin requerir super_admin) ──────────
+
+async function assertLiderDeGrupo(grupoId: string): Promise<string> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: extraRoles } = await supabase
+    .from("user_roles").select("role").eq("user_id", user.id);
+  const isLider = (extraRoles ?? []).some((r) => r.role === "lider_discipulado");
+  if (!isLider) throw new Error("Sin acceso: no eres líder de discipulado");
+
+  const data = await svReadData();
+  const grupo = data.grupos?.[grupoId];
+  if (!grupo || !grupo.lider_user_ids.includes(user.id)) {
+    throw new Error("Sin acceso: no eres líder de este grupo");
+  }
+  return user.id;
+}
+
+export async function svMiembroAgregarLiderAction(fd: FormData): Promise<{ count: number }> {
+  const grupoId = String(fd.get("grupo_id") ?? "").slice(0, 80);
+  await assertLiderDeGrupo(grupoId);
+  const nombres = String(fd.get("nombres") ?? "");
+
+  const count = await mutate((d) => {
+    if (!d.grupos) d.grupos = {};
+    if (!d.miembros) d.miembros = {};
+    if (!d.grupos[grupoId]) throw new Error("Discipulado no encontrado");
+
+    const existentes = new Set(Object.values(d.miembros).map((m) => svNorm(m.nombre)));
+    let added = 0;
+    for (const raw of nombres.split("\n")) {
+      const nombre = raw.trim().slice(0, 120);
+      if (!nombre) continue;
+      if (existentes.has(svNorm(nombre))) continue;
+      const mid = "di" + Math.random().toString(36).slice(2, 10);
+      d.miembros[mid] = { id: mid, nombre, grupo_id: grupoId };
+      existentes.add(svNorm(nombre));
+      added++;
+    }
+    return added;
+  });
+  return { count };
+}
+
+export async function svMiembroQuitarLiderAction(fd: FormData): Promise<void> {
+  const grupoId = String(fd.get("grupo_id") ?? "").slice(0, 80);
+  const miembroId = String(fd.get("id") ?? "").slice(0, 40);
+  await assertLiderDeGrupo(grupoId);
+
+  await mutate((d) => {
+    if (!d.miembros) d.miembros = {};
+    // Only remove from group if the miembro actually belongs to this group
+    if (d.miembros[miembroId]?.grupo_id === grupoId) {
+      d.miembros[miembroId].grupo_id = "";
+    }
   });
 }
 
@@ -345,6 +416,10 @@ export async function svLiderAsignarAction(fd: FormData): Promise<void> {
   await mutate((d) => {
     if (!d.grupos) d.grupos = {};
     if (!d.grupos[grupoId]) throw new Error("Discipulado no encontrado");
-    d.grupos[grupoId].lider_user_id = userId || null;
+    if (!userId) {
+      d.grupos[grupoId].lider_user_ids = [];
+    } else if (!d.grupos[grupoId].lider_user_ids.includes(userId)) {
+      d.grupos[grupoId].lider_user_ids.push(userId);
+    }
   });
 }

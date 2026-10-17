@@ -148,6 +148,46 @@ export function InviteSection({
   );
 }
 
+/* ── Botón de eliminar usuario (con confirm) ── */
+export function DeleteUserButton({
+  userId,
+  fullName,
+  deleteAction,
+}: {
+  userId: string;
+  fullName: string;
+  deleteAction: (formData: FormData) => Promise<void>;
+}) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!confirm(`¿Eliminar a ${fullName}? Esta acción no se puede deshacer.`)) {
+      e.preventDefault();
+    }
+  }
+
+  return (
+    <form
+      action={deleteAction}
+      onSubmit={handleSubmit}
+      className="flex justify-end"
+      style={{ borderTop: "1px solid var(--color-line)", paddingTop: 10 }}
+    >
+      <input type="hidden" name="user_id" value={userId} />
+      <button
+        type="submit"
+        className="text-sm font-semibold flex-none px-3 rounded-[8px] transition"
+        style={{
+          height: 32,
+          background: "var(--color-down-soft)",
+          color: "var(--color-down)",
+          border: "1px solid var(--color-down)",
+        }}
+      >
+        Eliminar usuario
+      </button>
+    </form>
+  );
+}
+
 /* ── Formulario de agregar rol adicional (reactivo por rol) ── */
 export function AddRoleForm({
   userId,

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Public_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "./_components/ServiceWorkerRegister";
-import { PortalNav } from "./_components/portal/PortalNav";
+import { PortalNavServer } from "./_components/portal/PortalNavServer";
 
 const publicSans = Public_Sans({
   subsets: ["latin"],
@@ -61,7 +61,7 @@ export default function RootLayout({
         <div className="md:pl-[220px]">
           {children}
         </div>
-        <PortalNav />
+        <PortalNavServer />
         <ServiceWorkerRegister />
       </body>
     </html>

@@ -7,10 +7,11 @@ import {
   addUserRoleAction,
   removeUserRoleAction,
   asignarGrupoAction,
+  deleteUserAction,
 } from "./actions";
 import { svReadData } from "@/app/servicio/actions";
 import type { SvGrupo } from "@/app/servicio/_lib/types";
-import { UserSearch, InviteSection, AddRoleForm } from "./_components";
+import { UserSearch, InviteSection, AddRoleForm, DeleteUserButton } from "./_components";
 
 const ROLES = [
   { value: "leader", label: "Líder" },
@@ -19,6 +20,7 @@ const ROLES = [
   { value: "pastor_sede", label: "Pastor de sede" },
   { value: "admin_casa", label: "Admin de casa" },
   { value: "studio_admin", label: "Admin del Estudio" },
+  { value: "planeacion", label: "Planeación" },
   { value: "super_admin", label: "Super admin" },
 ] as const;
 
@@ -114,7 +116,9 @@ export default async function UsuariosPage({
   // Mapa userId → grupo que lidera
   const grupoByLeader = new Map<string, SvGrupo>();
   for (const g of grupos) {
-    if (g.lider_user_id) grupoByLeader.set(g.lider_user_id, g);
+    for (const uid of g.lider_user_ids ?? []) {
+      grupoByLeader.set(uid, g);
+    }
   }
 
   const emailById = new Map<string, string>();
@@ -320,6 +324,10 @@ function UserCard({
         <p className="text-xs pl-0" style={{ color: "var(--color-faint)" }}>
           No puedes cambiar tu propio rol. Pide a otro super admin o usa SQL.
         </p>
+      )}
+
+      {!isSelf && (
+        <DeleteUserButton userId={u.id} fullName={u.full_name} deleteAction={deleteUserAction} />
       )}
 
       {/* Grupo de discipulado — solo para líderes de discipulado */}

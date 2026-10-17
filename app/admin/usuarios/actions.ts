@@ -12,6 +12,7 @@ const VALID_ROLES = [
   "pastor_sede",
   "admin_casa",
   "studio_admin",
+  "planeacion",
   "super_admin",
 ] as const;
 
@@ -69,9 +70,12 @@ export async function inviteUserAction(formData: FormData) {
   );
 
   if (error) {
-    redirect(
-      `/admin/usuarios?error=${encodeURIComponent(error.message)}`
-    );
+    const msg = error.message.includes("already been registered")
+      ? "Este email ya está registrado en el sistema."
+      : error.message.includes("valid email")
+        ? "El email no es válido."
+        : `Error al invitar: ${error.message}`;
+    redirect(`/admin/usuarios?error=${encodeURIComponent(msg)}`);
   }
 
   // El trigger crea el profile con role='leader'. Si pedimos otro rol, lo
@@ -82,11 +86,10 @@ export async function inviteUserAction(formData: FormData) {
       .update({ role })
       .eq("id", data.user.id);
     if (roleError) {
-      redirect(
-        `/admin/usuarios?error=${encodeURIComponent(
-          `Usuario invitado pero el rol no se actualizó: ${roleError.message}`
-        )}`
-      );
+      const msg = roleError.message.includes("check constraint")
+        ? `Rol inválido: "${role}" no está permitido en la base de datos.`
+        : `Usuario invitado pero el rol no se actualizó: ${roleError.message}`;
+      redirect(`/admin/usuarios?error=${encodeURIComponent(msg)}`);
     }
   }
 
@@ -121,7 +124,12 @@ export async function addUserRoleAction(formData: FormData) {
     ministry_id: role === "lider_discipulado" ? null : ministryId,
   });
 
-  if (error) redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+  if (error) {
+    const msg = error.message.includes("check constraint")
+      ? `Rol extra inválido: "${role}".`
+      : error.message;
+    redirect(`/admin/usuarios?error=${encodeURIComponent(msg)}`);
+  }
 
   // For discipulado: also assign the group leader in svData
   if (role === "lider_discipulado" && grupoId) {
@@ -132,16 +140,25 @@ export async function addUserRoleAction(formData: FormData) {
     const d: any = data?.data ?? { grupos: {} };
     if (!d.grupos) d.grupos = {};
     if (d.grupos[grupoId]) {
-      for (const g of Object.values(d.grupos) as Array<{ lider_user_id: string | null }>) {
-        if (g.lider_user_id === userId) g.lider_user_id = null;
+      // Remove user from any group they previously led
+      for (const g of Object.values(d.grupos)) {
+        const ids: string[] = (g as Record<string, unknown>)["lider_user_ids"] as string[] ?? [];
+        const idx = ids.indexOf(userId);
+        if (idx !== -1) ids.splice(idx, 1);
+        (g as Record<string, unknown>)["lider_user_ids"] = ids;
       }
-      d.grupos[grupoId].lider_user_id = userId;
+      // Add to new group (without displacing existing leaders)
+      const ids: string[] = (d.grupos[grupoId] as Record<string, unknown>)["lider_user_ids"] as string[] ?? [];
+      if (!ids.includes(userId)) ids.push(userId);
+      (d.grupos[grupoId] as Record<string, unknown>)["lider_user_ids"] = ids;
       await svTable.upsert({ id: "main", data: d, updated_at: new Date().toISOString() });
       revalidatePath("/servicio");
       revalidatePath("/discipulos");
     }
   }
 
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/");
   redirect("/admin/usuarios?ok=Rol%20agregado");
 }
 
@@ -153,6 +170,8 @@ export async function removeUserRoleAction(formData: FormData) {
   const service = createServiceClient();
   const { error } = await service.from("user_roles").delete().eq("id", roleId);
   if (error) redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/");
   redirect("/admin/usuarios?ok=Rol%20eliminado");
 }
 
@@ -178,13 +197,24 @@ export async function asignarGrupoAction(formData: FormData) {
   }
 
   // Liberar al usuario de cualquier grupo previo
-  for (const g of Object.values(d.grupos) as Array<{ lider_user_id: string | null }>) {
-    if (g.lider_user_id === userId) g.lider_user_id = null;
+  for (const g of Object.values(d.grupos)) {
+    const raw = g as Record<string, unknown>;
+    const ids: string[] = Array.isArray(raw["lider_user_ids"])
+      ? (raw["lider_user_ids"] as string[])
+      : raw["lider_user_id"] ? [raw["lider_user_id"] as string] : [];
+    const idx = ids.indexOf(userId);
+    if (idx !== -1) ids.splice(idx, 1);
+    raw["lider_user_ids"] = ids;
   }
 
-  // Asignar al nuevo grupo (o dejar sin grupo si grupoId está vacío)
+  // Asignar al nuevo grupo (sin desplazar a los líderes existentes)
   if (grupoId) {
-    d.grupos[grupoId].lider_user_id = userId;
+    const raw = d.grupos[grupoId] as Record<string, unknown>;
+    const ids: string[] = Array.isArray(raw["lider_user_ids"])
+      ? (raw["lider_user_ids"] as string[])
+      : raw["lider_user_id"] ? [raw["lider_user_id"] as string] : [];
+    if (!ids.includes(userId)) ids.push(userId);
+    raw["lider_user_ids"] = ids;
   }
 
   await svTable.upsert({ id: "main", data: d, updated_at: new Date().toISOString() });
@@ -193,6 +223,25 @@ export async function asignarGrupoAction(formData: FormData) {
   redirect(
     `/admin/usuarios?ok=${encodeURIComponent(grupoId ? "Líder asignado al grupo" : "Líder desvinculado del grupo")}`
   );
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const user = await ensureSuperAdmin();
+
+  const userId = String(formData.get("user_id") ?? "");
+  if (!userId) redirect("/admin/usuarios?error=Datos%20inv%C3%A1lidos");
+  if (userId === user.id) {
+    redirect("/admin/usuarios?error=No%20puedes%20eliminar%20tu%20propia%20cuenta");
+  }
+
+  const service = createServiceClient();
+  const { error } = await service.auth.admin.deleteUser(userId);
+  if (error) {
+    redirect(`/admin/usuarios?error=${encodeURIComponent(`Error al eliminar: ${error.message}`)}`);
+  }
+
+  revalidatePath("/admin/usuarios");
+  redirect("/admin/usuarios?ok=Usuario%20eliminado");
 }
 
 export async function updateUserRoleAction(formData: FormData) {
@@ -219,8 +268,13 @@ export async function updateUserRoleAction(formData: FormData) {
     .eq("id", userId);
 
   if (error) {
-    redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+    const msg = error.message.includes("check constraint")
+      ? `Rol inválido: "${role}" no está registrado en la base de datos.`
+      : error.message;
+    redirect(`/admin/usuarios?error=${encodeURIComponent(msg)}`);
   }
 
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/");
   redirect("/admin/usuarios?ok=Rol%20actualizado");
 }

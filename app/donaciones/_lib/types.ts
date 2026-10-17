@@ -14,4 +14,6 @@ export type Donacion = {
   e?: string;            // email (solo admin)
   doc?: string;          // documento (solo admin)
   ref?: string;          // referencia Wompi (solo admin)
+  mv?: boolean;          // manually verified — el auto-vincular no sobreescribe
+  ext?: boolean;         // donante externo/no miembro — nunca intentar vincular
 };

@@ -30,7 +30,7 @@ export default async function DiscipulosPage({
     ? (grupos[previewGrupoId] ?? null)
     : null;
 
-  const myGroup = previewGroup ?? Object.values(grupos).find((g) => g.lider_user_id === user.id) ?? null;
+  const myGroup = previewGroup ?? Object.values(grupos).find((g) => g.lider_user_ids.includes(user.id)) ?? null;
 
   const miembrosPorGrupo: Record<string, typeof miembros[string][]> = {};
   for (const m of Object.values(miembros)) {
@@ -57,6 +57,7 @@ export default async function DiscipulosPage({
           miembros={Object.values(miembros).filter((m) => m.grupo_id === myGroup.id)}
           svData={svData}
           donaciones={donaciones}
+          canEdit={!previewGroup}
         />
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6 text-center gap-3">

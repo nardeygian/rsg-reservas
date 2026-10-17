@@ -20,7 +20,7 @@ export function GrupoSheet({
 }) {
   const [nombre, setNombre]         = useState(grupo.nombre);
   const [lider, setLider]           = useState(grupo.lider);
-  const [userId, setUserId]         = useState(grupo.lider_user_id ?? "");
+  const [userId, setUserId]         = useState("");
   const [nuevosNombres, setNuevos]  = useState("");
   const [err, setErr]               = useState("");
   const [saving, setSaving]         = useState(false);
@@ -110,9 +110,19 @@ export function GrupoSheet({
 
           {/* Leader user assignment */}
           <div className="flex flex-col gap-3">
-            <h3 className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>Asignar líder (acceso)</h3>
+            <h3 className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>Líderes (acceso)</h3>
+            {grupo.lider_user_ids.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {grupo.lider_user_ids.map(uid => (
+                  <span key={uid} className="text-[11px] font-mono px-2 py-1 rounded-[6px]"
+                    style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", border: "1px solid var(--color-line)" }}>
+                    {uid}
+                  </span>
+                ))}
+              </div>
+            )}
             <p className="text-xs" style={{ color: "var(--color-muted)" }}>
-              UUID del usuario en Supabase. El líder verá este grupo en &ldquo;Mis discípulos&rdquo;.
+              Pega el UUID del usuario. Se agrega sin quitar los actuales. Usa el panel Admin para gestionar líderes.
             </p>
             <div className="flex gap-2">
               <input
@@ -121,7 +131,7 @@ export function GrupoSheet({
                 value={userId}
                 onChange={e => setUserId(e.target.value)}
               />
-              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleAsignarLider} disabled={saving}>Asignar</button>
+              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleAsignarLider} disabled={saving}>+ Agregar</button>
             </div>
           </div>
 
