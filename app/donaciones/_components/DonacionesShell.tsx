@@ -74,13 +74,20 @@ export function DonacionesShell({
   const [sheetO, setSheetO]   = useState("");
   const [sheetT, setSheetT]   = useState("");
   const [sheetG, setSheetG]   = useState("");
-  const [sheetAllDon, setSheetAllDon] = useState(false);
-  const [toast, setToast]     = useState<string | null>(null);
+  const [sheetAllDon, setSheetAllDon]         = useState(false);
+  const [sheetCustomLista, setSheetCustomLista] = useState<Donacion[] | null>(null);
+  const [toast, setToast]       = useState<string | null>(null);
   const [activeBar, setActiveBar] = useState<number | null>(null);
-  const [, startTransition]   = useTransition();
+  const [, startTransition]     = useTransition();
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 4000); }
-  function closeSheet() { setSheet(null); setSheetAllDon(false); }
+  function closeSheet() { setSheet(null); setSheetAllDon(false); setSheetCustomLista(null); }
+  function openCustomSheet(customLista: Donacion[], titulo: string) {
+    setSheetQ(""); setSheetO(""); setSheetT(""); setSheetG("");
+    setSheetAllDon(false);
+    setSheetCustomLista(customLista);
+    setSheet({ type: "listado", filtros: { titulo } });
+  }
   function changePer(p: DonPer) {
     setPer(p);
     const actual = periodoActualDon(p);
@@ -119,10 +126,11 @@ export function DonacionesShell({
   // ── Filtered list for sheet ──────────────────────────────────────────────
   function listadoFiltrado(f?: Sheet & { type: "listado" }) {
     const filtros = f?.filtros ?? {};
-    // sheetAllDon: bypass period filter (global donor registry opens all-time history)
-    const base = sheetAllDon ? don : donDePer(!!filtros.o);
+    // sheetCustomLista: pre-filtered list (En línea card, Efectivo card, registry donor)
+    // sheetAllDon: bypass period filter (legacy, kept for future use)
+    const base = sheetCustomLista ?? (sheetAllDon ? don : donDePer(!!filtros.o));
     return base.filter((d) =>
-      (!filtros.k   || d.k  === filtros.k) &&
+      (sheetCustomLista ? true : (!filtros.k || d.k === filtros.k)) &&
       (!filtros.o   || d.o  === filtros.o) &&
       (!filtros.t   || d.t  === filtros.t) &&
       (!filtros.gid || d.gid === filtros.gid) &&
@@ -310,7 +318,11 @@ export function DonacionesShell({
         <CardConceptos lista={lista.filter((d) => esDar(d) || esEfe(d))} onFilter={(t) => { setSheetQ(""); setSheetO(""); setSheetT(t); setSheetG(""); setSheet({ type: "listado", filtros: { t, titulo: t } }); }} />
 
         {/* ── En línea y efectivo ──────────────────────────────────────── */}
-        <CardEfectivo lista={lista} etiq={cap(etiq.split(" · ")[0])} />
+        <CardEfectivo
+          lista={lista}
+          etiq={cap(etiq.split(" · ")[0])}
+          onOpen={(subLista, titulo) => openCustomSheet(subLista.slice().sort((a, b) => b.f.localeCompare(a.f)), titulo)}
+        />
 
         {/* ── Discipulados ─────────────────────────────────────────────── */}
         <CardGrupos
@@ -332,8 +344,8 @@ export function DonacionesShell({
 
         {/* ── Registro global de donantes ──────────────────────────────── */}
         <CardRegistroDonantes
-          donaciones={don}
-          onDonante={(k, n) => { setSheetQ(""); setSheetO(""); setSheetT(""); setSheetG(""); setSheetAllDon(true); setSheet({ type: "listado", filtros: { k, titulo: n } }); }}
+          lista={lista}
+          onDonante={(subLista, nombre) => openCustomSheet(subLista.slice().sort((a, b) => b.f.localeCompare(a.f)), nombre)}
         />
       </div>
 
@@ -451,9 +463,12 @@ function CardConceptos({ lista, onFilter }: { lista: Donacion[]; onFilter: (t: s
   );
 }
 
-function CardEfectivo({ lista, etiq }: { lista: Donacion[]; etiq: string }) {
+function CardEfectivo({ lista, etiq, onOpen }: {
+  lista: Donacion[];
+  etiq: string;
+  onOpen: (subLista: Donacion[], titulo: string) => void;
+}) {
   const [open, setOpen] = useState(true);
-  const [expanded, setExpanded] = useState<null | "lin" | "efe">(null);
   const lin = lista.filter((d) => !esEfe(d));
   const efe = lista.filter(esEfe);
   const T = suma(lista), a = suma(lin), b = suma(efe);
@@ -461,8 +476,8 @@ function CardEfectivo({ lista, etiq }: { lista: Donacion[]; etiq: string }) {
   const conceptos = CONCEPTOS.filter((c) => lista.some((d) => d.t === c));
 
   const subCards = [
-    { key: "lin" as const, label: "En línea (Wompi)", v: a, p: pa, list: lin },
-    { key: "efe" as const, label: "Efectivo",         v: b, p: pb, list: efe },
+    { label: "En línea (Wompi)", v: a, p: pa, list: lin },
+    { label: "Efectivo",         v: b, p: pb, list: efe },
   ];
 
   return (
@@ -478,52 +493,26 @@ function CardEfectivo({ lista, etiq }: { lista: Donacion[]; etiq: string }) {
         <p className="text-sm text-center px-5 pb-5" style={{ color: "var(--color-muted)" }}>Sin diezmos ni ofrendas en este periodo</p>
       ) : (
         <div className="flex flex-col gap-4 px-5 pb-5">
-          {/* Mini-cards — clickables para ver el listado */}
+          {/* Mini-cards — tocar abre el popup/sheet con el listado */}
           <div className="grid grid-cols-2 gap-3">
-            {subCards.map(({ key, label, v, p, list }) => (
-              <div key={key} className="rounded-[12px] flex flex-col overflow-hidden" style={{ border: `1px solid ${expanded === key ? "var(--color-accent)" : "var(--color-line)"}` }}>
-                <button
-                  type="button"
-                  onClick={() => setExpanded(e => e === key ? null : key)}
-                  className="p-4 flex flex-col gap-1.5 text-left w-full"
-                  style={{ background: expanded === key ? "var(--color-accent-soft)" : "transparent" }}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>{label}</span>
-                    <Chevron open={expanded === key} />
-                  </div>
-                  <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(v)}</span>
-                  <span className="text-xs" style={{ color: "var(--color-muted)" }}>{pct(p)} · {donantes(list)} donantes</span>
-                </button>
-                {expanded === key && (
-                  <div style={{ borderTop: "1px solid var(--color-line)", maxHeight: 340, overflowY: "auto" }}>
-                    {list.length === 0 ? (
-                      <p className="text-xs px-4 py-3 text-center" style={{ color: "var(--color-muted)" }}>Sin registros</p>
-                    ) : (
-                      list
-                        .slice()
-                        .sort((a, b) => b.f.localeCompare(a.f))
-                        .map((d, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 px-4 py-2 border-b text-sm"
-                            style={{ borderColor: "var(--color-line)" }}
-                          >
-                            <span className="text-xs font-mono whitespace-nowrap flex-none" style={{ color: "var(--color-muted)", minWidth: 76 }}>
-                              {d.f.slice(0, 10)}
-                            </span>
-                            <span className="flex-1 min-w-0 font-semibold truncate" style={{ color: "var(--color-ink)" }}>{d.n}</span>
-                            <span className="text-xs flex-none" style={{ color: "var(--color-muted)" }}>{d.t}</span>
-                            <span className="text-xs font-semibold font-mono flex-none" style={{ color: "var(--color-ink)" }}>{money(d.m)}</span>
-                          </div>
-                        ))
-                    )}
-                    <div className="px-4 py-2 text-xs font-semibold text-right" style={{ color: "var(--color-muted)", background: "var(--color-bg)" }}>
-                      Total · {money(v)}
-                    </div>
-                  </div>
-                )}
-              </div>
+            {subCards.map(({ label, v, p, list }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => onOpen(list, label)}
+                className="rounded-[12px] p-4 flex flex-col gap-1.5 text-left"
+                style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}
+              >
+                <div className="flex items-center justify-between gap-1 w-full">
+                  <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>{label}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    style={{ color: "var(--color-faint)", flexShrink: 0 }}>
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </div>
+                <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(v)}</span>
+                <span className="text-xs" style={{ color: "var(--color-muted)" }}>{pct(p)} · {donantes(list)} donantes</span>
+              </button>
             ))}
           </div>
 
@@ -639,31 +628,82 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
   );
 }
 
-function CardRegistroDonantes({ donaciones, onDonante }: {
-  donaciones: Donacion[];
-  onDonante: (k: string, n: string) => void;
-}) {
-  const [open, setOpen]   = useState(false);
-  const [q, setQ]         = useState("");
+// Normalize name for matching (same logic as svNorm / svNombreClave in sv-logic)
+function normDon(s: string) {
+  return (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+}
+function claveDon(n: string): string | null {
+  const p = normDon(n).split(" ").filter(Boolean);
+  if (p.length < 2) return null;
+  return p[0] + " " + p[Math.min(2, p.length - 1)];
+}
 
-  const registry = useMemo(() => {
-    const map = new Map<string, { k: string; n: string; total: number; count: number; lastDate: string; conceptos: string[] }>();
-    for (const d of donaciones) {
-      const key = d.k || d.n;
-      if (!map.has(key)) map.set(key, { k: key, n: d.n, total: 0, count: 0, lastDate: "", conceptos: [] });
-      const e = map.get(key)!;
-      e.total += d.m ?? 0;
-      e.count++;
-      if (d.f > e.lastDate) e.lastDate = d.f;
-      if (d.t && !e.conceptos.includes(d.t)) e.conceptos.push(d.t);
+type DonCluster = { nombre: string; total: number; count: number; conceptos: string[]; list: Donacion[] };
+
+function clusterDonantes(lista: Donacion[]): DonCluster[] {
+  const clusters: { names: string[]; list: Donacion[] }[] = [];
+  const keyToIdx = new Map<string, number>(); // d.k → cluster index
+
+  for (const d of lista) {
+    // 1. If this donor key already maps to a cluster, use it
+    if (d.k && keyToIdx.has(d.k)) {
+      const c = clusters[keyToIdx.get(d.k)!];
+      c.list.push(d);
+      if (!c.names.includes(d.n)) c.names.push(d.n);
+      continue;
     }
-    return [...map.values()].sort((a, b) => b.total - a.total);
-  }, [donaciones]);
 
-  const qNorm = q.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    // 2. Try to find a matching cluster by name
+    const kD = normDon(d.n);
+    const claveD = claveDon(d.n);
+    let found = -1;
+
+    for (let i = 0; i < clusters.length; i++) {
+      const c = clusters[i];
+      for (const cn of c.names) {
+        const kC = normDon(cn);
+        if (
+          kD === kC ||
+          (kD.length >= 8 && (kD.startsWith(kC + " ") || kC.startsWith(kD + " "))) ||
+          (claveD !== null && claveDon(cn) === claveD)
+        ) { found = i; break; }
+      }
+      if (found !== -1) break;
+    }
+
+    if (found !== -1) {
+      const c = clusters[found];
+      c.list.push(d);
+      if (!c.names.includes(d.n)) c.names.push(d.n);
+      if (d.k) keyToIdx.set(d.k, found);
+    } else {
+      const idx = clusters.length;
+      clusters.push({ names: [d.n], list: [d] });
+      if (d.k) keyToIdx.set(d.k, idx);
+    }
+  }
+
+  return clusters.map((c) => {
+    const nombre = c.names.reduce((b, n) => n.length > b.length ? n : b, "");
+    const total = c.list.reduce((s, d) => s + (d.m ?? 0), 0);
+    const conceptos = [...new Set(c.list.map((d) => d.t).filter(Boolean))];
+    return { nombre, total, count: c.list.length, conceptos, list: c.list };
+  }).sort((a, b) => b.total - a.total);
+}
+
+function CardRegistroDonantes({ lista, onDonante }: {
+  lista: Donacion[];
+  onDonante: (subLista: Donacion[], nombre: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ]       = useState("");
+
+  const clusters = useMemo(() => clusterDonantes(lista), [lista]);
+
+  const qNorm = normDon(q);
   const filtered = q
-    ? registry.filter((r) => r.n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").includes(qNorm))
-    : registry;
+    ? clusters.filter((r) => normDon(r.nombre).includes(qNorm))
+    : clusters;
   const shown = filtered.slice(0, 100);
 
   return (
@@ -671,7 +711,7 @@ function CardRegistroDonantes({ donaciones, onDonante }: {
       <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full flex-wrap" onClick={() => setOpen(o => !o)}>
         <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Registro de donantes</h2>
         <div className="flex items-center gap-2 flex-none">
-          <span className="text-xs" style={{ color: "var(--color-muted)" }}>{registry.length} donantes · historial completo</span>
+          <span className="text-xs" style={{ color: "var(--color-muted)" }}>{clusters.length} donantes en el periodo</span>
           <Chevron open={open} />
         </div>
       </button>
@@ -689,22 +729,20 @@ function CardRegistroDonantes({ donaciones, onDonante }: {
             <div className="rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
               {shown.map((r, idx) => (
                 <button
-                  key={r.k}
+                  key={idx}
                   type="button"
-                  onClick={() => onDonante(r.k, r.n)}
+                  onClick={() => onDonante(r.list, r.nombre)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-b hover:opacity-80"
                   style={{ borderColor: "var(--color-line)" }}
                 >
-                  <span
-                    className="text-xs font-semibold w-6 text-right flex-none"
-                    style={{ color: idx < 3 ? "var(--color-accent)" : "var(--color-faint)" }}
-                  >
+                  <span className="text-xs font-semibold w-6 text-right flex-none"
+                    style={{ color: idx < 3 ? "var(--color-accent)" : "var(--color-faint)" }}>
                     {idx + 1}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="font-semibold text-sm block truncate" style={{ color: "var(--color-ink)" }}>{r.n}</span>
+                    <span className="font-semibold text-sm block truncate" style={{ color: "var(--color-ink)" }}>{r.nombre}</span>
                     <span className="text-xs" style={{ color: "var(--color-muted)" }}>
-                      {r.count} donación{r.count !== 1 ? "es" : ""} · {r.conceptos.join(", ")} · última {r.lastDate.slice(0, 10)}
+                      {r.count} donación{r.count !== 1 ? "es" : ""} · {r.conceptos.join(", ")}
                     </span>
                   </span>
                   <span className="text-sm font-semibold font-mono flex-none" style={{ color: "var(--color-ink)" }}>
