@@ -324,6 +324,12 @@ export function DonacionesShell({
           onOpen={(subLista, titulo) => openCustomSheet(subLista.slice().sort((a, b) => b.f.localeCompare(a.f)), titulo)}
         />
 
+        {/* ── Discípulos vs. resto de la iglesia ───────────────────────── */}
+        <CardDiscipulosVsIglesia
+          lista={donDePer(true).filter((d) => esDar(d) || esEfe(d))}
+          etiq={cap(etiq.split(" · ")[0])}
+        />
+
         {/* ── Discipulados ─────────────────────────────────────────────── */}
         <CardGrupos
           lista={donDePer(true).filter((d) => esDar(d) || esEfe(d))}
@@ -591,38 +597,6 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
         <p className="text-sm text-center px-5 pb-5" style={{ color: "var(--color-muted)" }}>Sin datos de discipulados</p>
       ) : (
         <div className="flex flex-col gap-4 px-5 pb-5">
-
-          {/* ── Discípulos vs Resto de la iglesia ── */}
-          {(() => {
-            const T = suma(lista);
-            const pDi = T ? (totalPrimario / T) * 100 : 0;
-            const pRe = T ? 100 - pDi : 0;
-            const donDi = new Set(lista.filter((d) => d.gid).map((d) => d.k || d.n)).size;
-            const donRe = new Set(sin.map((d) => d.k || d.n)).size;
-            return (
-              <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: "Discípulos",           v: totalPrimario, p: pDi, nd: donDi, color: "var(--color-accent)" },
-                    { label: "Resto de la iglesia",  v: suma(sin),     p: pRe, nd: donRe, color: "var(--color-gold-text)" },
-                  ].map(({ label, v, p, nd, color }) => (
-                    <div key={label} className="rounded-[12px] p-4 flex flex-col gap-1" style={{ border: "1px solid var(--color-line)" }}>
-                      <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>{label}</span>
-                      <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(v)}</span>
-                      <span className="text-xs font-semibold" style={{ color }}>{pct(p)}</span>
-                      <span className="text-xs" style={{ color: "var(--color-muted)" }}>{nd} donantes</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="h-[10px] rounded-full overflow-hidden flex" style={{ background: "var(--color-surface-2)" }}>
-                  <div style={{ width: cssPct(pDi), background: "var(--color-accent)", transition: "width 0.3s" }} />
-                  <div style={{ width: cssPct(pRe), background: "var(--color-gold)", transition: "width 0.3s" }} />
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ── Tabla por grupo ── */}
           <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: "var(--color-line)" }}>
             <table className="w-full text-sm">
               <thead>
@@ -653,6 +627,49 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function CardDiscipulosVsIglesia({ lista, etiq }: { lista: Donacion[]; etiq: string }) {
+  const T = suma(lista);
+  const diLista = lista.filter((d) => d.gid);
+  const reLista = lista.filter((d) => !d.gid && !Object.keys(d.sg ?? {}).length);
+  const totalDi = suma(diLista);
+  const totalRe = suma(reLista);
+  const pDi = T ? (totalDi / T) * 100 : 0;
+  const pRe = T ? (totalRe / T) * 100 : 0;
+  const donDi = donantes(diLista);
+  const donRe = donantes(reLista);
+
+  if (T === 0) return null;
+
+  return (
+    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+      <div className="p-5 flex flex-col gap-4">
+        <div className="flex flex-wrap justify-between items-baseline gap-2">
+          <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Discípulos vs. resto de la iglesia</h2>
+          <span className="text-xs" style={{ color: "var(--color-muted)" }}>Diezmos y ofrendas · {etiq}</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-[12px] p-4 flex flex-col gap-1.5" style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}>
+            <span className="text-xs font-semibold" style={{ color: "var(--color-up)" }}>Discípulos</span>
+            <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(totalDi)}</span>
+            <span className="text-xs" style={{ color: "var(--color-muted)" }}>{pct(pDi)} · {donDi} donantes</span>
+          </div>
+          <div className="rounded-[12px] p-4 flex flex-col gap-1.5" style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}>
+            <span className="text-xs font-semibold" style={{ color: "var(--color-gold-text)" }}>Resto de la iglesia</span>
+            <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(totalRe)}</span>
+            <span className="text-xs" style={{ color: "var(--color-muted)" }}>{pct(pRe)} · {donRe} donantes</span>
+          </div>
+        </div>
+
+        <div className="h-[10px] rounded-full overflow-hidden flex" style={{ background: "var(--color-surface-2)" }}>
+          <div style={{ width: cssPct(pDi), background: "var(--color-up)" }} />
+          <div style={{ width: cssPct(pRe), background: "var(--color-gold)" }} />
+        </div>
+      </div>
     </div>
   );
 }
