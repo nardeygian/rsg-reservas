@@ -591,6 +591,38 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
         <p className="text-sm text-center px-5 pb-5" style={{ color: "var(--color-muted)" }}>Sin datos de discipulados</p>
       ) : (
         <div className="flex flex-col gap-4 px-5 pb-5">
+
+          {/* ── Discípulos vs Resto de la iglesia ── */}
+          {(() => {
+            const T = suma(lista);
+            const pDi = T ? (totalPrimario / T) * 100 : 0;
+            const pRe = T ? 100 - pDi : 0;
+            const donDi = new Set(lista.filter((d) => d.gid).map((d) => d.k || d.n)).size;
+            const donRe = new Set(sin.map((d) => d.k || d.n)).size;
+            return (
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Discípulos",           v: totalPrimario, p: pDi, nd: donDi, color: "var(--color-accent)" },
+                    { label: "Resto de la iglesia",  v: suma(sin),     p: pRe, nd: donRe, color: "var(--color-gold-text)" },
+                  ].map(({ label, v, p, nd, color }) => (
+                    <div key={label} className="rounded-[12px] p-4 flex flex-col gap-1" style={{ border: "1px solid var(--color-line)" }}>
+                      <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>{label}</span>
+                      <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(v)}</span>
+                      <span className="text-xs font-semibold" style={{ color }}>{pct(p)}</span>
+                      <span className="text-xs" style={{ color: "var(--color-muted)" }}>{nd} donantes</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-[10px] rounded-full overflow-hidden flex" style={{ background: "var(--color-surface-2)" }}>
+                  <div style={{ width: cssPct(pDi), background: "var(--color-accent)", transition: "width 0.3s" }} />
+                  <div style={{ width: cssPct(pRe), background: "var(--color-gold)", transition: "width 0.3s" }} />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Tabla por grupo ── */}
           <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: "var(--color-line)" }}>
             <table className="w-full text-sm">
               <thead>
@@ -619,9 +651,6 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
               </tfoot>
             </table>
           </div>
-          <p className="text-xs" style={{ color: "var(--color-faint)" }}>
-            Fuera de los discipulados: {money(suma(sin))} en {sin.length} aportes.
-          </p>
         </div>
       ))}
     </div>
