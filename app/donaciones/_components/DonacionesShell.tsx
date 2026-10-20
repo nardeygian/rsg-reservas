@@ -328,6 +328,7 @@ export function DonacionesShell({
         <CardDiscipulosVsIglesia
           lista={donDePer(true).filter((d) => esDar(d) || esEfe(d))}
           etiq={cap(etiq.split(" · ")[0])}
+          onOpen={(subLista, titulo) => openCustomSheet(subLista.slice().sort((a, b) => b.f.localeCompare(a.f)), titulo)}
         />
 
         {/* ── Discipulados ─────────────────────────────────────────────── */}
@@ -631,7 +632,11 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
   );
 }
 
-function CardDiscipulosVsIglesia({ lista, etiq }: { lista: Donacion[]; etiq: string }) {
+function CardDiscipulosVsIglesia({ lista, etiq, onOpen }: {
+  lista: Donacion[];
+  etiq: string;
+  onOpen: (subLista: Donacion[], titulo: string) => void;
+}) {
   const T = suma(lista);
   const diLista = lista.filter((d) => d.gid);
   const reLista = lista.filter((d) => !d.gid && !Object.keys(d.sg ?? {}).length);
@@ -644,6 +649,11 @@ function CardDiscipulosVsIglesia({ lista, etiq }: { lista: Donacion[]; etiq: str
 
   if (T === 0) return null;
 
+  const subCards = [
+    { label: "Discípulos",         v: totalDi, p: pDi, list: diLista, color: "var(--color-up)" },
+    { label: "Resto de la iglesia", v: totalRe, p: pRe, list: reLista, color: "var(--color-gold-text)" },
+  ];
+
   return (
     <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
       <div className="p-5 flex flex-col gap-4">
@@ -653,16 +663,25 @@ function CardDiscipulosVsIglesia({ lista, etiq }: { lista: Donacion[]; etiq: str
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-[12px] p-4 flex flex-col gap-1.5" style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}>
-            <span className="text-xs font-semibold" style={{ color: "var(--color-up)" }}>Discípulos</span>
-            <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(totalDi)}</span>
-            <span className="text-xs" style={{ color: "var(--color-muted)" }}>{pct(pDi)} · {donDi} donantes</span>
-          </div>
-          <div className="rounded-[12px] p-4 flex flex-col gap-1.5" style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}>
-            <span className="text-xs font-semibold" style={{ color: "var(--color-gold-text)" }}>Resto de la iglesia</span>
-            <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(totalRe)}</span>
-            <span className="text-xs" style={{ color: "var(--color-muted)" }}>{pct(pRe)} · {donRe} donantes</span>
-          </div>
+          {subCards.map(({ label, v, p, list, color }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onOpen(list, label)}
+              className="rounded-[12px] p-4 flex flex-col gap-1.5 text-left"
+              style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}
+            >
+              <div className="flex items-center justify-between gap-1 w-full">
+                <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  style={{ color: "var(--color-faint)", flexShrink: 0 }}>
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+              <span className="font-bold text-[20px] leading-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{money(v)}</span>
+              <span className="text-xs" style={{ color: "var(--color-muted)" }}>{pct(p)} · {donantes(list)} donantes</span>
+            </button>
+          ))}
         </div>
 
         <div className="h-[10px] rounded-full overflow-hidden flex" style={{ background: "var(--color-surface-2)" }}>
