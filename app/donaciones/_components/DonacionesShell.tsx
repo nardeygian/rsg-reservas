@@ -17,7 +17,8 @@ type Sheet =
   | null
   | { type: "listado"; filtros?: Partial<{ o: string; t: string; gid: string; k: string; titulo: string }> }
   | { type: "grupo"; gid: string }
-  | { type: "importar" };
+  | { type: "importar" }
+  | { type: "donantes"; lista: Donacion[]; titulo: string };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,11 @@ export function DonacionesShell({
     setSheetAllDon(false);
     setSheetCustomLista(customLista);
     setSheet({ type: "listado", filtros: { titulo } });
+  }
+  function openDonantesSheet(lista: Donacion[], titulo: string) {
+    setSheetQ(""); setSheetO(""); setSheetT(""); setSheetG("");
+    setSheetAllDon(false); setSheetCustomLista(null);
+    setSheet({ type: "donantes", lista, titulo });
   }
   function changePer(p: DonPer) {
     setPer(p);
@@ -328,7 +334,7 @@ export function DonacionesShell({
         <CardDiscipulosVsIglesia
           lista={donDePer(true).filter((d) => esDar(d) || esEfe(d))}
           etiq={cap(etiq.split(" · ")[0])}
-          onOpen={(subLista, titulo) => openCustomSheet(subLista.slice().sort((a, b) => b.f.localeCompare(a.f)), titulo)}
+          onOpen={(subLista, titulo) => openDonantesSheet(subLista, titulo)}
         />
 
         {/* ── Discipulados ─────────────────────────────────────────────── */}
@@ -368,7 +374,13 @@ export function DonacionesShell({
                 <div>
                   <p className="eyebrow mb-0.5">{sheet.type === "importar" ? "Administración" : sheetAllDon ? "Historial completo" : "Registro · " + etiq}</p>
                   <h2 className="font-bold text-lg" style={{ color: "var(--color-ink)" }}>
-                    {sheet.type === "importar" ? "Importar donaciones" : sheet.type === "grupo" ? (grupoMap.get(sheet.gid)?.nombre ?? "Grupo") : ((sheet as { type: "listado"; filtros?: { titulo?: string } }).filtros?.titulo ?? "Donaciones")}
+                    {sheet.type === "importar"
+                      ? "Importar donaciones"
+                      : sheet.type === "grupo"
+                      ? (grupoMap.get(sheet.gid)?.nombre ?? "Grupo")
+                      : sheet.type === "donantes"
+                      ? sheet.titulo
+                      : ((sheet as { type: "listado"; filtros?: { titulo?: string } }).filtros?.titulo ?? "Donaciones")}
                   </h2>
                 </div>
                 <button onClick={closeSheet} className="w-8 h-8 flex items-center justify-center rounded-full text-xl flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>×</button>
@@ -408,6 +420,12 @@ export function DonacionesShell({
                 <GrupoPane
                   lista={donDePer(true).filter((d) => (esDar(d) || esEfe(d)) && (d.gid === sheet.gid || !!(d.sg?.[sheet.gid])))}
                   miembros={miembros.filter((m) => m.grupo_id === sheet.gid)}
+                />
+              )}
+              {sheet.type === "donantes" && (
+                <DonantesAgrupadosPane
+                  lista={sheet.lista}
+                  onDonante={(subLista, nombre) => openCustomSheet(subLista, nombre)}
                 />
               )}
             </div>
@@ -706,26 +724,38 @@ function claveDon(n: string): string | null {
 type DonCluster = { nombre: string; total: number; count: number; conceptos: string[]; list: Donacion[] };
 
 function clusterDonantes(lista: Donacion[]): DonCluster[] {
-  const clusters: { names: string[]; list: Donacion[] }[] = [];
-  const keyToIdx = new Map<string, number>(); // d.k → cluster index
+  const clusters: { names: string[]; docs: string[]; list: Donacion[] }[] = [];
+  const keyToIdx = new Map<string, number>();
+  const docToIdx = new Map<string, number>();
 
   for (const d of lista) {
-    // 1. If this donor key already maps to a cluster, use it
+    // 1. Donor key match
     if (d.k && keyToIdx.has(d.k)) {
-      const c = clusters[keyToIdx.get(d.k)!];
+      const idx = keyToIdx.get(d.k)!;
+      const c = clusters[idx];
       c.list.push(d);
       if (!c.names.includes(d.n)) c.names.push(d.n);
+      if (d.doc && !c.docs.includes(d.doc)) { c.docs.push(d.doc); docToIdx.set(d.doc, idx); }
       continue;
     }
 
-    // 2. Try to find a matching cluster by name
+    // 2. Document number match (más confiable que el nombre)
+    if (d.doc && docToIdx.has(d.doc)) {
+      const idx = docToIdx.get(d.doc)!;
+      const c = clusters[idx];
+      c.list.push(d);
+      if (!c.names.includes(d.n)) c.names.push(d.n);
+      if (d.k) keyToIdx.set(d.k, idx);
+      continue;
+    }
+
+    // 3. Name matching (exact → prefix → primer nombre + primer apellido)
     const kD = normDon(d.n);
     const claveD = claveDon(d.n);
     let found = -1;
 
     for (let i = 0; i < clusters.length; i++) {
-      const c = clusters[i];
-      for (const cn of c.names) {
+      for (const cn of clusters[i].names) {
         const kC = normDon(cn);
         if (
           kD === kC ||
@@ -741,10 +771,12 @@ function clusterDonantes(lista: Donacion[]): DonCluster[] {
       c.list.push(d);
       if (!c.names.includes(d.n)) c.names.push(d.n);
       if (d.k) keyToIdx.set(d.k, found);
+      if (d.doc && !c.docs.includes(d.doc)) { c.docs.push(d.doc); docToIdx.set(d.doc, found); }
     } else {
       const idx = clusters.length;
-      clusters.push({ names: [d.n], list: [d] });
+      clusters.push({ names: [d.n], docs: d.doc ? [d.doc] : [], list: [d] });
       if (d.k) keyToIdx.set(d.k, idx);
+      if (d.doc) docToIdx.set(d.doc, idx);
     }
   }
 
@@ -1074,6 +1106,60 @@ function ImportarPane({ onDone }: { onDone: (msg: string) => void }) {
         {loading ? "Importando…" : "Importar"}
       </button>
     </form>
+  );
+}
+
+function DonantesAgrupadosPane({ lista, onDonante }: {
+  lista: Donacion[];
+  onDonante: (subLista: Donacion[], nombre: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const clusters = useMemo(() => clusterDonantes(lista), [lista]);
+  const qNorm = normDon(q);
+  const filtered = q ? clusters.filter((r) => normDon(r.nombre).includes(qNorm)) : clusters;
+
+  return (
+    <div className="p-4 flex flex-col gap-3">
+      <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
+        {clusters.length} donantes · Total {money(suma(lista))}
+      </p>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar donante…" className="input text-sm" />
+      {filtered.length === 0 ? (
+        <p className="text-sm text-center py-8" style={{ color: "var(--color-muted)" }}>Sin resultados</p>
+      ) : (
+        <div className="rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+          {filtered.map((r, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => onDonante(r.list.slice().sort((a, b) => b.f.localeCompare(a.f)), r.nombre)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left border-b last:border-b-0 hover:opacity-80"
+              style={{ borderColor: "var(--color-line)" }}
+            >
+              <span
+                className="text-xs font-semibold w-6 text-right flex-none"
+                style={{ color: idx < 3 ? "var(--color-accent)" : "var(--color-faint)" }}
+              >
+                {idx + 1}
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="font-semibold text-sm block truncate" style={{ color: "var(--color-ink)" }}>{r.nombre}</span>
+                <span className="text-xs" style={{ color: "var(--color-muted)" }}>
+                  {r.count} donación{r.count !== 1 ? "es" : ""} · {r.conceptos.join(", ")}
+                </span>
+              </span>
+              <span className="text-sm font-semibold font-mono flex-none" style={{ color: "var(--color-ink)" }}>
+                {money(r.total)}
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                style={{ color: "var(--color-faint)", flexShrink: 0 }}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
