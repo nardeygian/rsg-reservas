@@ -1,10 +1,13 @@
 "use client";
 
+import { cloneElement } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactElement, SVGProps } from "react";
 import type { NavCaps } from "@/lib/auth";
 
-type Tab = { href: string; label: string; matchExact?: boolean; icon: React.ReactNode };
+type SvgIcon = ReactElement<SVGProps<SVGSVGElement>>;
+type Tab = { href: string; label: string; matchExact?: boolean; icon: SvgIcon };
 
 const ALL_TABS: Tab[] = [
   {
@@ -46,7 +49,7 @@ const ALL_TABS: Tab[] = [
   },
   {
     href: "/donaciones",
-    label: "Donaciones",
+    label: "Dar",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/>
@@ -55,7 +58,7 @@ const ALL_TABS: Tab[] = [
   },
   {
     href: "/discipulos",
-    label: "Discípulos",
+    label: "Grupos",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>
@@ -109,10 +112,13 @@ export function BottomTabNav({ caps }: { caps: NavCaps }) {
           {tabs.map(tab => {
             const active = isActive(tab);
             const color = active ? "var(--color-accent)" : "var(--color-faint)";
+            const compact = tabs.length >= 6;
             return (
               <Link key={tab.href} href={tab.href} prefetch={true} className="flex justify-center min-h-[44px]" aria-current={active ? "page" : undefined}>
-                <span className="flex flex-col items-center gap-[3px] py-[6px] text-[11px] font-semibold" style={{ color }}>
-                  {tab.icon}
+                <span className="flex flex-col items-center gap-[2px] py-[6px] font-semibold" style={{ color, fontSize: compact ? 10 : 11 }}>
+                  {compact
+                    ? cloneElement(tab.icon, { width: "20", height: "20" })
+                    : tab.icon}
                   {tab.label}
                 </span>
               </Link>
