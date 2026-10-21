@@ -402,7 +402,7 @@ export default async function HomePage() {
         >
 
           {/* Módulo de Servicio */}
-          <div
+          {caps?.servicio !== "none" && <div
             className="card"
             style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}
           >
@@ -443,10 +443,10 @@ export default async function HomePage() {
                 )}
               </div>
             )}
-          </div>
+          </div>}
 
           {/* Mi discipulado */}
-          <section className="card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+          {caps?.discipulos && <section className="card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>
                 {myGroup ? myGroup.nombre : isAdmin ? "Discípulos" : "Mis discípulos"} · {mesLabel}
@@ -501,10 +501,10 @@ export default async function HomePage() {
                 Sin grupo asignado
               </p>
             )}
-          </section>
+          </section>}
 
           {/* Esta semana en el calendario */}
-          <section
+          {caps?.calendario && <section
             className="card"
             style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}
           >
@@ -559,10 +559,10 @@ export default async function HomePage() {
                 Sin eventos esta semana
               </p>
             )}
-          </section>
+          </section>}
 
           {/* Mis reservas — activo */}
-          <section
+          {caps?.reservas && <section
             className="card"
             style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}
           >
@@ -670,7 +670,7 @@ export default async function HomePage() {
                 </Link>
               </div>
             )}
-          </section>
+          </section>}
 
         </div>
       </div>

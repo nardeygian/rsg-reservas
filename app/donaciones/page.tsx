@@ -47,13 +47,15 @@ export default async function DonacionesPage() {
         grupos = [];
         miembros = [];
       } else {
-        donaciones = donaciones.filter(d =>
-          d.gid === caps.disciGrupoId || (d.sg && caps.disciGrupoId! in d.sg)
-        );
-        // Scope grupos and miembros to only the lider's group so the shell
-        // doesn't expose other groups' member names
-        grupos = grupos.filter(g => g.id === caps.disciGrupoId);
+        // Scope grupos and miembros first so we can build the member ID set
+        grupos   = grupos.filter(g => g.id === caps.disciGrupoId);
         miembros = miembros.filter(m => m.grupo_id === caps.disciGrupoId);
+        const groupMemberIds = new Set(miembros.map(m => m.id));
+        donaciones = donaciones.filter(d =>
+          d.gid === caps.disciGrupoId ||
+          !!(d.sg && caps.disciGrupoId! in d.sg) ||
+          !!(d.di && groupMemberIds.has(d.di))
+        );
       }
     }
   }
