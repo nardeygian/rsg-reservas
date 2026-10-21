@@ -45,11 +45,29 @@ const ALL_TABS: Tab[] = [
     ),
   },
   {
-    href: "/perfil",
-    label: "Más",
+    href: "/donaciones",
+    label: "Donaciones",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+        <path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/discipulos",
+    label: "Discípulos",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/perfil",
+    label: "Perfil",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
       </svg>
     ),
   },
@@ -57,11 +75,13 @@ const ALL_TABS: Tab[] = [
 
 function visibleTabs(caps: NavCaps): Tab[] {
   return ALL_TABS.filter(tab => {
-    if (tab.href === "/")           return caps.inicio;
-    if (tab.href === "/calendario") return caps.calendario;
-    if (tab.href === "/reservas")   return caps.reservas;
-    if (tab.href === "/servicio")   return caps.servicio !== "none";
-    if (tab.href === "/perfil")     return true; // always
+    if (tab.href === "/")            return caps.inicio;
+    if (tab.href === "/calendario")  return caps.calendario;
+    if (tab.href === "/reservas")    return caps.reservas;
+    if (tab.href === "/servicio")    return caps.servicio !== "none";
+    if (tab.href === "/donaciones")  return caps.donaciones !== "none";
+    if (tab.href === "/discipulos")  return caps.discipulos;
+    if (tab.href === "/perfil")      return true;
     return false;
   });
 }

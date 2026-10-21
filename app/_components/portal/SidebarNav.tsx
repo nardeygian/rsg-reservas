@@ -109,7 +109,11 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
 
 export function SidebarNav({ caps }: { caps: NavCaps }) {
   const pathname = usePathname();
-  const items = visibleItems(caps);
+  const items = visibleItems(caps).map(item =>
+    item.href === "/discipulos"
+      ? { ...item, label: caps.disciGrupoId ? "Mis discípulos" : "Discípulos" }
+      : item
+  );
 
   return (
     <nav

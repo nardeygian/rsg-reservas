@@ -25,8 +25,9 @@ export function DiscipulosAdminShell({
 }) {
   const [per, setPer]           = useState<SvPer>("mes");
   const [{ y, i }, setPeriod]   = useState(() => periodoActual("mes"));
-  const [openIds, setOpenIds]   = useState<Set<string>>(new Set(grupos.map((g) => g.id)));
+  const [openIds, setOpenIds]   = useState<Set<string>>(new Set());
   const [openDiscipuloIds, setOpenDiscipuloIds] = useState<Set<string>>(new Set());
+  const [q, setQ] = useState("");
 
   const donPorDi = useMemo(() => {
     const nameToId = new Map<string, string>();
@@ -70,6 +71,14 @@ export function DiscipulosAdminShell({
     setPeriod({ y: ny, i: ni });
   }
   const nextShift = shiftPeriodo(per, y, i, 1);
+
+  const qLow = q.toLowerCase().trim();
+  const filteredGrupos = qLow
+    ? grupos.filter((g) =>
+        g.nombre.toLowerCase().includes(qLow) ||
+        (miembrosPorGrupo[g.id] ?? []).some((m) => m.nombre.toLowerCase().includes(qLow))
+      )
+    : grupos;
 
   if (grupos.length === 0) {
     return (
@@ -136,11 +145,23 @@ export function DiscipulosAdminShell({
         </div>
       </div>
 
+      {/* Search */}
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Buscar grupo o discípulo…"
+        className="input text-sm"
+      />
+
       {/* Groups */}
-      {grupos.map((grupo) => {
+      {filteredGrupos.length === 0 && qLow ? (
+        <p className="text-sm text-center py-8" style={{ color: "var(--color-muted)" }}>Sin resultados para "{q}"</p>
+      ) : filteredGrupos.map((grupo) => {
         const miembros = miembrosPorGrupo[grupo.id] ?? [];
         const servicios = svServiciosGrupo(svData, grupo.id);
-        const { filas, sirvieron, totMin, totServ } = svTablaDiscipulos(miembros, servicios, per, y, i);
+        const { filas: rawFilas, sirvieron, totMin, totServ } = svTablaDiscipulos(miembros, servicios, per, y, i);
+        const grupoMatches = !qLow || grupo.nombre.toLowerCase().includes(qLow);
+        const filas = grupoMatches ? rawFilas : rawFilas.filter((f) => f.n.toLowerCase().includes(qLow));
 
         return (
           <section
@@ -326,7 +347,7 @@ function MeetingEntryAdmin({ item }: { item: SvServicioItem }) {
 
   return (
     <div className="flex items-start gap-2 py-1.5 border-t first:border-t-0 text-sm" style={{ borderColor: "var(--color-line)" }}>
-      <span className="text-xs font-mono whitespace-nowrap pt-0.5" style={{ color: "var(--color-muted)", minWidth: 96 }}>
+      <span className="text-xs font-mono whitespace-nowrap pt-0.5" style={{ color: "var(--color-muted)", minWidth: 72 }}>
         {svFmt(item.f).slice(0, 10)}
       </span>
       <span className="flex-1 min-w-0">
@@ -348,7 +369,7 @@ function MeetingEntryAdmin({ item }: { item: SvServicioItem }) {
 function DonacionEntry({ don }: { don: Donacion }) {
   return (
     <div className="flex items-center gap-2 py-1.5 border-t first:border-t-0 text-sm" style={{ borderColor: "var(--color-line)" }}>
-      <span className="text-xs font-mono whitespace-nowrap pt-0.5" style={{ color: "var(--color-muted)", minWidth: 96 }}>
+      <span className="text-xs font-mono whitespace-nowrap pt-0.5" style={{ color: "var(--color-muted)", minWidth: 72 }}>
         {don.f.slice(0, 10)}
       </span>
       <span className="flex-1 min-w-0 font-semibold" style={{ color: "var(--color-ink)" }}>

@@ -43,6 +43,16 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
     if (rid) setSheet({ type: "reunion", rid });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (sheet) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [sheet]);
+
+
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
@@ -185,7 +195,10 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
           <div className={`px-4 pt-4 pb-3 flex flex-col gap-2 ${openReuniones ? "border-b" : ""}`} style={{ borderColor: "var(--color-line)" }}>
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <button type="button" className="flex items-center gap-2 font-bold text-base" style={{ color: "var(--color-ink)", background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setOpenReuniones(v => !v)}>
-                <span className="text-xs" style={{ color: "var(--color-muted)" }}>{openReuniones ? "▼" : "▶"}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                  style={{ color: "var(--color-muted)", transform: openReuniones ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
                 Reuniones y actividades
               </button>
               <div className="flex items-center gap-2 flex-wrap">
@@ -201,7 +214,13 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
                 </div>
                 {canEdit && (
                   <>
-                    <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleSync} disabled={syncing}>
+                    <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)", display: "flex", alignItems: "center", gap: 6 }} onClick={handleSync} disabled={syncing}>
+                      {syncing && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                          style={{ animation: "spin 1s linear infinite" }} aria-hidden="true">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                        </svg>
+                      )}
                       {syncing ? "Actualizando…" : "Actualizar calendario"}
                     </button>
                     <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px]" style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }} onClick={() => setShowNueva(v => !v)}>
@@ -230,24 +249,52 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
           )}
 
           {openReuniones && (reusV.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ background: "var(--color-bg)", color: "var(--color-muted)" }}>
-                    <th className="text-left px-4 py-2 text-xs font-semibold">Fecha</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold">Reunión</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold">Tipo</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold">Listado</th>
-                    <th className="px-4 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reusV.map(r => (
-                    <ReuniónRow key={r.id} r={r} hoy={hoy} onOpen={() => setSheet({ type: "reunion", rid: r.id })} canEdit={canEdit} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Mobile card list */}
+              <div className="block sm:hidden divide-y" style={{ borderColor: "var(--color-line)" }}>
+                {reusV.map(r => {
+                  const tipo = svTipo(r);
+                  const sirv = r.filas.filter(f => !f.aus).length;
+                  const aus  = r.filas.filter(f => f.aus).length;
+                  return (
+                    <div key={r.id} className="px-4 py-3 flex items-center gap-3 cursor-pointer" style={{ borderColor: "var(--color-line)" }} onClick={() => setSheet({ type: "reunion", rid: r.id })}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--color-ink)" }}>{svNombreLimpio(r.nombre)}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>{svFmt(r.fecha)} · {tipo === "serv" ? "Servolución" : r.seccion || "Ministerio"}</p>
+                      </div>
+                      <div className="flex-none text-right">
+                        {r.cargada ? (
+                          <span className="text-xs font-semibold" style={{ color: "var(--color-up)" }}>{sirv} sirv.{aus > 0 ? <span style={{ color: "var(--color-muted)", fontWeight: "normal" }}> {aus} aus.</span> : ""}</span>
+                        ) : r.fecha <= hoy ? (
+                          <span className="text-xs font-semibold" style={{ color: "var(--color-gold-text)" }}>Sin listado</span>
+                        ) : (
+                          <span className="text-xs" style={{ color: "var(--color-faint)" }}>Por venir</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ background: "var(--color-bg)", color: "var(--color-muted)" }}>
+                      <th className="text-left px-4 py-2 text-xs font-semibold">Fecha</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold">Reunión</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold">Tipo</th>
+                      <th className="text-right px-4 py-2 text-xs font-semibold">Listado</th>
+                      <th className="px-4 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reusV.map(r => (
+                      <ReuniónRow key={r.id} r={r} hoy={hoy} onOpen={() => setSheet({ type: "reunion", rid: r.id })} canEdit={canEdit} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <div className="px-4 py-8 text-center text-sm" style={{ color: "var(--color-muted)" }}>
               No hay actividades{svTipoF ? " de este tipo" : ""} en el periodo.
@@ -258,8 +305,11 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
         {/* Servidores */}
         <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
           <div className={`px-4 pt-4 pb-3 flex items-center gap-3 flex-wrap ${openServidores ? "border-b" : ""}`} style={{ borderColor: "var(--color-line)" }}>
-            <button type="button" className="flex items-center gap-2 font-bold text-base flex-1" style={{ color: "var(--color-ink)", background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setOpenServidores(v => !v)}>
-              <span className="text-xs" style={{ color: "var(--color-muted)" }}>{openServidores ? "▼" : "▶"}</span>
+            <button type="button" className="flex items-center gap-2 font-bold text-base" style={{ color: "var(--color-ink)", background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setOpenServidores(v => !v)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                style={{ color: "var(--color-muted)", transform: openServidores ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
               Servidores
             </button>
             {openServidores && (
@@ -271,47 +321,71 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
             )}
           </div>
           {openServidores && (servidoresFiltrados.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ background: "var(--color-bg)", color: "var(--color-muted)" }}>
-                    <th className="text-left px-4 py-2 text-xs font-semibold">Servidor</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold">Reuniones</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold">Servolución</th>
-                    <th className="text-right px-4 py-2 text-xs font-semibold">Ausencias</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold hidden sm:table-cell">Roles</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold hidden sm:table-cell">Último servicio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {servidoresFiltrados.map(f => (
-                    <tr
-                      key={f.s.id}
-                      className="cursor-pointer hover:bg-[var(--color-bg)] border-t"
-                      style={{ borderColor: "var(--color-line)", opacity: f.min + f.serv === 0 ? 0.5 : 1 }}
-                      onClick={() => setSheet({ type: "servidor", sid: f.s.id })}
-                    >
-                      <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--color-ink)" }}>{f.s.nombre}</td>
-                      <td className="px-4 py-2.5 text-right font-bold" style={{ color: "var(--color-ink)" }}>{f.min}</td>
-                      <td className="px-4 py-2.5 text-right font-bold" style={{ color: "var(--color-gold)" }}>{f.serv}</td>
-                      <td className="px-4 py-2.5 text-right">
-                        {f.aus > 0 ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}>{f.aus}</span> : <span style={{ color: "var(--color-faint)" }}>0</span>}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs hidden sm:table-cell" style={{ color: "var(--color-muted)" }}>{f.roles.join(", ") || "—"}</td>
-                      <td className="px-4 py-2.5 text-xs hidden sm:table-cell" style={{ color: "var(--color-faint)" }}>{f.ult ? svFmt(f.ult) : "No sirvió en el periodo"}</td>
+            <>
+              {/* Mobile card list */}
+              <div className="block sm:hidden divide-y" style={{ borderColor: "var(--color-line)" }}>
+                {servidoresFiltrados.map(f => (
+                  <div key={f.s.id} className="px-4 py-3 flex items-center gap-3 cursor-pointer" style={{ opacity: f.min + f.serv === 0 ? 0.5 : 1, borderColor: "var(--color-line)" }} onClick={() => setSheet({ type: "servidor", sid: f.s.id })}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--color-ink)" }}>{f.s.nombre}</p>
+                      {f.roles.length > 0 && <p className="text-xs mt-0.5 truncate" style={{ color: "var(--color-muted)" }}>{f.roles.join(", ")}</p>}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-none">
+                      {f.min > 0 && <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}>{f.min}</span>}
+                      {f.serv > 0 && <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }}>{f.serv}</span>}
+                      {f.aus > 0 && <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}>{f.aus}</span>}
+                    </div>
+                  </div>
+                ))}
+                <div className="px-4 py-2 flex gap-3 text-xs font-semibold" style={{ background: "var(--color-bg)", color: "var(--color-muted)", borderTop: "2px solid var(--color-line)" }}>
+                  <span>{servidoresFiltrados.filter(f => f.min + f.serv > 0).length} sirvieron</span>
+                  <span style={{ color: "var(--color-ink)" }}>Reun. {servidoresFiltrados.reduce((a, f) => a + f.min, 0)}</span>
+                  <span style={{ color: "var(--color-gold)" }}>Serv. {servidoresFiltrados.reduce((a, f) => a + f.serv, 0)}</span>
+                </div>
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ background: "var(--color-bg)", color: "var(--color-muted)" }}>
+                      <th className="text-left px-4 py-2 text-xs font-semibold">Servidor</th>
+                      <th className="text-right px-4 py-2 text-xs font-semibold">Reuniones</th>
+                      <th className="text-right px-4 py-2 text-xs font-semibold">Servolución</th>
+                      <th className="text-right px-4 py-2 text-xs font-semibold">Ausencias</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold">Roles</th>
+                      <th className="text-left px-4 py-2 text-xs font-semibold">Último servicio</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr style={{ background: "var(--color-bg)", borderTop: "2px solid var(--color-line)" }}>
-                    <td className="px-4 py-2 text-xs font-semibold" style={{ color: "var(--color-muted)" }}>{servidoresFiltrados.filter(f => f.min + f.serv > 0).length} personas sirvieron</td>
-                    <td className="px-4 py-2 text-right font-bold text-xs" style={{ color: "var(--color-ink)" }}>{servidoresFiltrados.reduce((a, f) => a + f.min, 0)}</td>
-                    <td className="px-4 py-2 text-right font-bold text-xs" style={{ color: "var(--color-gold)" }}>{servidoresFiltrados.reduce((a, f) => a + f.serv, 0)}</td>
-                    <td colSpan={3} className="px-4 py-2 text-right font-bold text-xs" style={{ color: "var(--color-down)" }}>{servidoresFiltrados.reduce((a, f) => a + f.aus, 0)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {servidoresFiltrados.map(f => (
+                      <tr
+                        key={f.s.id}
+                        className="cursor-pointer hover:bg-[var(--color-bg)] border-t"
+                        style={{ borderColor: "var(--color-line)", opacity: f.min + f.serv === 0 ? 0.5 : 1 }}
+                        onClick={() => setSheet({ type: "servidor", sid: f.s.id })}
+                      >
+                        <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--color-ink)" }}>{f.s.nombre}</td>
+                        <td className="px-4 py-2.5 text-right font-bold" style={{ color: "var(--color-ink)" }}>{f.min}</td>
+                        <td className="px-4 py-2.5 text-right font-bold" style={{ color: "var(--color-gold)" }}>{f.serv}</td>
+                        <td className="px-4 py-2.5 text-right">
+                          {f.aus > 0 ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}>{f.aus}</span> : <span style={{ color: "var(--color-faint)" }}>0</span>}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs" style={{ color: "var(--color-muted)" }}>{f.roles.join(", ") || "—"}</td>
+                        <td className="px-4 py-2.5 text-xs" style={{ color: "var(--color-faint)" }}>{f.ult ? svFmt(f.ult) : "No sirvió en el periodo"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: "var(--color-bg)", borderTop: "2px solid var(--color-line)" }}>
+                      <td className="px-4 py-2 text-xs font-semibold" style={{ color: "var(--color-muted)" }}>{servidoresFiltrados.filter(f => f.min + f.serv > 0).length} personas sirvieron</td>
+                      <td className="px-4 py-2 text-right font-bold text-xs" style={{ color: "var(--color-ink)" }}>{servidoresFiltrados.reduce((a, f) => a + f.min, 0)}</td>
+                      <td className="px-4 py-2 text-right font-bold text-xs" style={{ color: "var(--color-gold)" }}>{servidoresFiltrados.reduce((a, f) => a + f.serv, 0)}</td>
+                      <td colSpan={3} className="px-4 py-2 text-right font-bold text-xs" style={{ color: "var(--color-down)" }}>{servidoresFiltrados.reduce((a, f) => a + f.aus, 0)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
           ) : (
             <div className="px-4 py-8 text-center text-sm" style={{ color: "var(--color-muted)" }}>
               {Object.keys(svData.servidores).length ? "Ningún servidor con ese nombre." : "Aún no hay servidores. Aparecen al cargar el listado de una reunión."}
@@ -323,8 +397,8 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[12px] shadow-lg pointer-events-none"
-          style={{ background: "var(--color-ink)", color: "var(--color-bg)", maxWidth: 340, textAlign: "center" }}>
+        <div className="fixed left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[12px] shadow-lg pointer-events-none"
+          style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", background: "var(--color-ink)", color: "var(--color-bg)", maxWidth: 340, textAlign: "center" }}>
           {toast}
         </div>
       )}

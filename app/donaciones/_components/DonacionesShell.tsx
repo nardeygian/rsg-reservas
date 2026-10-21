@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Donacion } from "../_lib/types";
 import type { SvGrupo, SvMiembro } from "@/app/servicio/_lib/types";
@@ -77,19 +77,37 @@ export function DonacionesShell({
   const [sheetG, setSheetG]   = useState("");
   const [sheetAllDon, setSheetAllDon]         = useState(false);
   const [sheetCustomLista, setSheetCustomLista] = useState<Donacion[] | null>(null);
+  const [prevSheet, setPrevSheet] = useState<Sheet>(null);
   const [toast, setToast]       = useState<string | null>(null);
+  const scrollPos   = useRef(0);
+  const swipeStartX = useRef(0);
   const [activeBar, setActiveBar] = useState<number | null>(null);
   const [, startTransition]     = useTransition();
 
+  useEffect(() => {
+    if (sheet) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [sheet]);
+
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 4000); }
-  function closeSheet() { setSheet(null); setSheetAllDon(false); setSheetCustomLista(null); }
+  function closeSheet() {
+    setSheet(null); setSheetAllDon(false); setSheetCustomLista(null); setPrevSheet(null);
+    const pos = scrollPos.current;
+    setTimeout(() => window.scrollTo({ top: pos, behavior: "instant" }), 0);
+  }
   function openCustomSheet(customLista: Donacion[], titulo: string) {
+    scrollPos.current = typeof window !== "undefined" ? window.scrollY : 0;
     setSheetQ(""); setSheetO(""); setSheetT(""); setSheetG("");
     setSheetAllDon(false);
     setSheetCustomLista(customLista);
     setSheet({ type: "listado", filtros: { titulo } });
   }
   function openDonantesSheet(lista: Donacion[], titulo: string) {
+    scrollPos.current = typeof window !== "undefined" ? window.scrollY : 0;
     setSheetQ(""); setSheetO(""); setSheetT(""); setSheetG("");
     setSheetAllDon(false); setSheetCustomLista(null);
     setSheet({ type: "donantes", lista, titulo });
@@ -176,20 +194,37 @@ export function DonacionesShell({
       </div>
 
       {/* ── Period controls ──────────────────────────────────────────────── */}
-      <div className="px-4 pb-3 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-2 flex-wrap">
-          <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
-            {(["mes","trimestre","semestre","anio"] as DonPer[]).map((p) => (
-              <button key={p} type="button" onClick={() => changePer(p)}
-                className="px-3 py-1.5 text-xs font-semibold"
-                style={{ background: per === p ? "var(--color-accent)" : "var(--color-surface)", color: per === p ? "var(--color-accent-ink)" : "var(--color-muted)" }}
-              >
-                {p === "mes" ? "Mes" : p === "trimestre" ? "Trim." : p === "semestre" ? "Sem." : "Año"}
-              </button>
-            ))}
-          </div>
-          {/* Origen filter */}
-          <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+      {/* Row 1: period type selector + prev/label/next */}
+      <div className="px-4 pb-2 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+          {(["mes","trimestre","semestre","anio"] as DonPer[]).map((p) => (
+            <button key={p} type="button" onClick={() => changePer(p)}
+              className="px-3 py-1.5 text-xs font-semibold"
+              style={{ background: per === p ? "var(--color-accent)" : "var(--color-surface)", color: per === p ? "var(--color-accent-ink)" : "var(--color-muted)" }}
+            >
+              {p === "mes" ? "Mes" : p === "trimestre" ? "Trim." : p === "semestre" ? "Sem." : "Año"}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => shiftP(-1)}
+            className="w-9 h-9 flex items-center justify-center rounded-[8px] border text-lg"
+            style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
+          >‹</button>
+          <span className="text-sm font-semibold min-w-[140px] text-center" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>
+            {etiq}
+          </span>
+          <button type="button" onClick={() => shiftP(1)}
+            className="w-9 h-9 flex items-center justify-center rounded-[8px] border text-lg"
+            style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
+            disabled={esFuturoDon(per, nextShift[0], nextShift[1])}
+          >›</button>
+        </div>
+      </div>
+      {/* Row 2: origen filter with separator */}
+      {!readOnly && (
+        <div className="px-4 pb-3 border-b" style={{ borderColor: "var(--color-line)" }}>
+          <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)", width: "fit-content" }}>
             {(["todo","dar","form"] as const).map((o) => (
               <button key={o} type="button" onClick={() => setOrigen(o)}
                 className="px-3 py-1.5 text-xs font-semibold"
@@ -200,21 +235,7 @@ export function DonacionesShell({
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => shiftP(-1)}
-            className="w-9 h-9 flex items-center justify-center rounded-[8px] border text-lg"
-            style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
-          >‹</button>
-          <span className="text-sm font-semibold min-w-[160px] text-center" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>
-            {etiq}
-          </span>
-          <button type="button" onClick={() => shiftP(1)}
-            className="w-9 h-9 flex items-center justify-center rounded-[8px] border text-lg"
-            style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
-            disabled={esFuturoDon(per, nextShift[0], nextShift[1])}
-          >›</button>
-        </div>
-      </div>
+      )}
 
       <div className="px-4 pb-24 flex flex-col gap-4">
         {/* ── Hero ────────────────────────────────────────────────────────── */}
@@ -366,22 +387,40 @@ export function DonacionesShell({
       {sheet && (
         <>
           <div className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.45)" }} onClick={closeSheet} />
-          <div className="fixed top-0 right-0 bottom-0 z-50 flex flex-col" style={{ width: "min(640px, 100vw)", background: "var(--color-bg)", boxShadow: "-8px 0 30px rgba(0,0,0,0.2)" }}>
+          <div
+            className="fixed top-0 right-0 bottom-0 z-50 flex flex-col"
+            style={{ width: "min(640px, 100vw)", background: "var(--color-bg)", boxShadow: "-8px 0 30px rgba(0,0,0,0.2)" }}
+            onTouchStart={(e) => { swipeStartX.current = e.touches[0].clientX; }}
+            onTouchEnd={(e) => { if (e.changedTouches[0].clientX - swipeStartX.current > 80) closeSheet(); }}
+          >
 
             {/* Sheet header */}
             <div className="flex-none px-5 pt-5 pb-4 border-b flex flex-col gap-3" style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}>
               <div className="flex justify-between items-start gap-3">
-                <div>
-                  <p className="eyebrow mb-0.5">{sheet.type === "importar" ? "Administración" : sheetAllDon ? "Historial completo" : "Registro · " + etiq}</p>
-                  <h2 className="font-bold text-lg" style={{ color: "var(--color-ink)" }}>
-                    {sheet.type === "importar"
-                      ? "Importar donaciones"
-                      : sheet.type === "grupo"
-                      ? (grupoMap.get(sheet.gid)?.nombre ?? "Grupo")
-                      : sheet.type === "donantes"
-                      ? sheet.titulo
-                      : ((sheet as { type: "listado"; filtros?: { titulo?: string } }).filtros?.titulo ?? "Donaciones")}
-                  </h2>
+                <div className="flex items-center gap-2 min-w-0">
+                  {prevSheet && (
+                    <button
+                      onClick={() => { setSheetCustomLista(null); setSheet(prevSheet); setPrevSheet(null); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-full flex-none"
+                      style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"/>
+                      </svg>
+                    </button>
+                  )}
+                  <div className="min-w-0">
+                    <p className="eyebrow mb-0.5">{sheet.type === "importar" ? "Administración" : sheetAllDon ? "Historial completo" : "Registro · " + etiq}</p>
+                    <h2 className="font-bold text-lg truncate" style={{ color: "var(--color-ink)" }}>
+                      {sheet.type === "importar"
+                        ? "Importar donaciones"
+                        : sheet.type === "grupo"
+                        ? (grupoMap.get(sheet.gid)?.nombre ?? "Grupo")
+                        : sheet.type === "donantes"
+                        ? sheet.titulo
+                        : ((sheet as { type: "listado"; filtros?: { titulo?: string } }).filtros?.titulo ?? "Donaciones")}
+                    </h2>
+                  </div>
                 </div>
                 <button onClick={closeSheet} className="w-8 h-8 flex items-center justify-center rounded-full text-xl flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>×</button>
               </div>
@@ -425,7 +464,10 @@ export function DonacionesShell({
               {sheet.type === "donantes" && (
                 <DonantesAgrupadosPane
                   lista={sheet.lista}
-                  onDonante={(subLista, nombre) => openCustomSheet(subLista, nombre)}
+                  onDonante={(subLista, nombre) => {
+                    setPrevSheet(sheet);
+                    openCustomSheet(subLista, nombre);
+                  }}
                 />
               )}
             </div>
@@ -435,8 +477,8 @@ export function DonacionesShell({
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[12px] shadow-lg pointer-events-none"
-          style={{ background: "var(--color-ink)", color: "var(--color-bg)", maxWidth: 340, textAlign: "center" }}>
+        <div className="fixed left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[12px] shadow-lg pointer-events-none"
+          style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", background: "var(--color-ink)", color: "var(--color-bg)", maxWidth: 340, textAlign: "center" }}>
           {toast}
         </div>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import type { AsanaEvent } from "@/lib/asana";
 import type { LinkInfo, BookingOption } from "../page";
 import { EventPanel } from "./EventPanel";
@@ -127,7 +127,10 @@ function DayEventList({ events, linksByGid, dateStr, onEventClick, compact = fal
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: compact ? 15 : 14, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</p>
                   {!compact && e.category && <p style={{ margin: "2px 0 0", fontSize: 11.5, color }}>{e.category}</p>}
-                  {link?.space_name && <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--color-muted)" }}>📍 {link.space_name}</p>}
+                  {link?.space_name && <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    {link.space_name}
+                  </p>}
                 </div>
                 {link?.starts_at && (
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -153,6 +156,15 @@ function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
 }) {
   const today = todayStr();
   const nCols = days.length;
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { h, m } = toBogoHM(new Date().toISOString());
+    const top = Math.max(0, (h - START_H) * HOUR_PX + m * (HOUR_PX / 60) - 120);
+    el.scrollTop = top;
+  }, []);
 
   const allDayEvs = (ds: string) => eventsForDate(events, ds).filter(e => !linksByGid[e.gid]?.starts_at);
   const timedEvs  = (ds: string) => eventsForDate(events, ds).filter(e => !!linksByGid[e.gid]?.starts_at);
@@ -184,7 +196,7 @@ function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
           ))}
         </div>
       )}
-      <div style={{ overflowY: "auto", maxHeight: maxHeight ?? "calc(100vh - 340px)" }}>
+      <div ref={scrollRef} style={{ overflowY: "auto", maxHeight: maxHeight ?? "calc(100vh - 340px)" }}>
         <div style={{ display: "grid", gridTemplateColumns: `52px repeat(${nCols}, 1fr)` }}>
           <div>
             {HOURS.map(h => (
@@ -225,7 +237,10 @@ function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
                       <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color, lineHeight: 1.3 }}>{fmtTime(link.starts_at!)}</p>
                       <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "var(--color-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.3 }}>{e.name}</p>
                       {height > 44 && link.space_name && (
-                        <p style={{ margin: 0, fontSize: 9.5, color: "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>📍 {link.space_name}</p>
+                        <p style={{ margin: 0, fontSize: 9.5, color: "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 2 }}>
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                          {link.space_name}
+                        </p>
                       )}
                     </button>
                   );
@@ -240,22 +255,33 @@ function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
 }
 
 // ── MobileMesView ─────────────────────────────────────────────────────────────
-function MobileMesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
+function MobileMesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick, onSwipe }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
   anchor: Date;
   selDay: string;
   setSelDay: (d: string) => void;
   onEventClick: (e: AsanaEvent) => void;
+  onSwipe: (dir: -1 | 1) => void;
 }) {
   const year  = anchor.getFullYear();
   const month = anchor.getMonth();
   const today = todayStr();
   const cells    = useMemo(() => getMonthGrid(year, month), [year, month]);
   const selDayEvs = useMemo(() => eventsForDate(events, selDay), [events, selDay]);
+  const touchStartX = useRef<number | null>(null);
 
   return (
-    <div>
+    <div
+      onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+      onTouchEnd={(e) => {
+        if (touchStartX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchStartX.current;
+        touchStartX.current = null;
+        if (Math.abs(dx) < 50) return;
+        onSwipe(dx < 0 ? 1 : -1);
+      }}
+    >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 2 }}>
         {DOW_SUN.map(l => (
           <div key={l} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", padding: "0 0 4px" }}>
@@ -437,7 +463,7 @@ function MobileCalendario({ events, linksByGid, onEventClick }: {
         ))}
       </div>
 
-      {view === "mes"   && <MobileMesView   events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={onEventClick} />}
+      {view === "mes"   && <MobileMesView   events={events} linksByGid={linksByGid} anchor={anchor} selDay={selDay} setSelDay={setSelDay} onEventClick={onEventClick} onSwipe={(dir) => setAnchor(a => { const d = new Date(a); d.setMonth(d.getMonth() + dir); return d; })} />}
       {view === "2dias" && <Mobile2DiasView events={events} linksByGid={linksByGid} initialDay={selDay} onEventClick={onEventClick} />}
     </div>
   );
@@ -667,7 +693,10 @@ function ListaView({ events, linksByGid, onEventClick }: {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             {e.category && <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color }}>{e.category}</p>}
                             <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</p>
-                            {link?.space_name && <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-muted)" }}>📍 {link.space_name}</p>}
+                            {link?.space_name && <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                              {link.space_name}
+                            </p>}
                           </div>
                           {link?.starts_at && (
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -770,7 +799,7 @@ export function CalendarioShell({
   const selectedLink = selectedEvent ? (linksByGid[selectedEvent.gid] ?? null) : null;
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px clamp(12px, 3vw, 40px) 80px" }}>
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "24px clamp(12px, 3vw, 40px) 80px" }}>
       {/* Page title */}
       <div style={{ marginBottom: 20 }}>
         <span className="eyebrow">Portal RSG</span>
