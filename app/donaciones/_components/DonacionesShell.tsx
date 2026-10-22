@@ -140,6 +140,7 @@ export function DonacionesShell({
   }
 
   const lista = donDePer();
+  const donClusters = useMemo(() => clusterDonantes(lista), [lista]);
   const [py, pi] = shiftDon(per, y, i, -1);
   const listaPrev = donDe(don, per, py, pi).filter(pasaOrigen);
   const total = suma(lista), totalPrev = suma(listaPrev);
@@ -266,7 +267,7 @@ export function DonacionesShell({
             <div className="grid grid-cols-3 gap-px rounded-[10px] overflow-hidden mt-1" style={{ background: "rgba(255,255,255,0.2)" }}>
               {[
                 { label: "donaciones", value: lista.length.toLocaleString("es-CO") },
-                { label: "donantes",   value: donantes(lista).toLocaleString("es-CO") },
+                { label: "donantes",   value: donClusters.length.toLocaleString("es-CO") },
                 { label: "promedio",   value: moneyShort(lista.length ? total / lista.length : 0) },
               ].map(({ label, value }) => (
                 <div key={label} className="px-3 py-2.5 flex flex-col gap-1" style={{ background: "rgba(0,0,0,0.12)" }}>
@@ -369,16 +370,16 @@ export function DonacionesShell({
 
         {/* ── Ranking ──────────────────────────────────────────────────── */}
         <CardRanking
-          lista={lista}
+          clusters={donClusters}
           etiq={cap(etiq.split(" · ")[0])}
           rankTab={rankTab}
           onRankTab={setRankTab}
-          onDonante={(k, n) => { setSheetQ(""); setSheetO(""); setSheetT(""); setSheetG(""); setSheetAllDon(false); setSheet({ type: "listado", filtros: { k, titulo: n } }); }}
+          onDonante={(list, n) => openCustomSheet(list.slice().sort((a, b) => b.f.localeCompare(a.f)), n)}
         />
 
         {/* ── Registro global de donantes ──────────────────────────────── */}
         <CardRegistroDonantes
-          lista={lista}
+          clusters={donClusters}
           onDonante={(subLista, nombre) => openCustomSheet(subLista.slice().sort((a, b) => b.f.localeCompare(a.f)), nombre)}
         />
       </div>
@@ -830,14 +831,12 @@ function clusterDonantes(lista: Donacion[]): DonCluster[] {
   }).sort((a, b) => b.total - a.total);
 }
 
-function CardRegistroDonantes({ lista, onDonante }: {
-  lista: Donacion[];
+function CardRegistroDonantes({ clusters, onDonante }: {
+  clusters: DonCluster[];
   onDonante: (subLista: Donacion[], nombre: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ]       = useState("");
-
-  const clusters = useMemo(() => clusterDonantes(lista), [lista]);
 
   const qNorm = normDon(q);
   const filtered = q
@@ -902,19 +901,16 @@ function CardRegistroDonantes({ lista, onDonante }: {
   );
 }
 
-function CardRanking({ lista, etiq, rankTab, onRankTab, onDonante }: {
-  lista: Donacion[]; etiq: string; rankTab: "monto" | "frecuencia";
+function CardRanking({ clusters, etiq, rankTab, onRankTab, onDonante }: {
+  clusters: DonCluster[]; etiq: string; rankTab: "monto" | "frecuencia";
   onRankTab: (t: "monto" | "frecuencia") => void;
-  onDonante: (k: string, n: string) => void;
+  onDonante: (list: Donacion[], n: string) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const porDonante = [...new Map(lista.map((d) => [d.k, d])).entries()].map(([k, first]) => {
-    const sub = lista.filter((d) => d.k === k);
-    return { k, n: first.n, total: suma(sub), veces: sub.length };
-  });
+  const porDonante = clusters.map((c) => ({ n: c.nombre, total: c.total, veces: c.count, list: c.list }));
   const orden = rankTab === "monto"
-    ? porDonante.sort((a, b) => b.total - a.total || b.veces - a.veces)
-    : porDonante.sort((a, b) => b.veces - a.veces || b.total - a.total);
+    ? porDonante.slice().sort((a, b) => b.total - a.total || b.veces - a.veces)
+    : porDonante.slice().sort((a, b) => b.veces - a.veces || b.total - a.total);
   const top = orden.slice(0, 10);
   const max = top.length ? (rankTab === "monto" ? top[0].total : top[0].veces) : 1;
 
@@ -947,8 +943,8 @@ function CardRanking({ lista, etiq, rankTab, onRankTab, onDonante }: {
               const v = rankTab === "monto" ? d.total : d.veces;
               const w = max ? (v / max) * 100 : 0;
               return (
-                <li key={d.k}>
-                  <button type="button" onClick={() => onDonante(d.k, d.n)}
+                <li key={d.n}>
+                  <button type="button" onClick={() => onDonante(d.list, d.n)}
                     className="w-full grid items-center gap-2.5 px-2 py-2 rounded-[8px] text-left hover:opacity-80"
                     style={{ gridTemplateColumns: "26px minmax(0,1fr) auto" }}
                   >
@@ -965,7 +961,7 @@ function CardRanking({ lista, etiq, rankTab, onRankTab, onDonante }: {
                     <span className="text-right text-sm font-semibold" style={{ color: "var(--color-ink)" }}>
                       {rankTab === "monto" ? money(d.total) : `${d.veces} veces`}
                       <span className="block text-xs font-normal" style={{ color: "var(--color-muted)" }}>
-                        {rankTab === "monto" ? `${d.veces} donaciones` : money(d.total)}
+                        {rankTab === "monto" ? `${d.veces} donación${d.veces !== 1 ? "es" : ""}` : money(d.total)}
                       </span>
                     </span>
                   </button>
@@ -973,7 +969,7 @@ function CardRanking({ lista, etiq, rankTab, onRankTab, onDonante }: {
               );
             })}
           </ol>
-          <p className="text-xs" style={{ color: "var(--color-faint)" }}>{porDonante.length} donantes en {etiq}</p>
+          <p className="text-xs" style={{ color: "var(--color-faint)" }}>{clusters.length} donantes en {etiq}</p>
         </div>
       ))}
     </div>
