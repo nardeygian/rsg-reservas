@@ -24,6 +24,7 @@ Antes de cada etapa, lee:
 | 2 | Donaciones | `etapa-2-donaciones.md` | Al final, con el paso a producción |
 | 3 | Mis discípulos e Inicio personalizado | `etapa-3-mis-discipulos-e-inicio.md` | Sí, es nuevo |
 | 4 | Retiro del panel PHP | `etapa-4-retiro-del-panel.md` | Sí |
+| 5 | Servir: tipos de reunión y plantillas, orden del culto, canciones, equipos, asignaciones, servicio en vivo, notificaciones, estadísticas y salud del servidor; base lista para apps en Google Play y App Store | `etapa-5-servir.md` | Al final, con piloto |
 
 El rediseño visual de Reservas entra con el sistema visual de la etapa 0, sin cambiar su lógica.
 
@@ -48,3 +49,4 @@ Actualiza esta tabla al cerrar cada punto.
 | 2 | Por empezar | |
 | 3 | Por empezar | |
 | 4 | Por empezar | |
+| 5 | En curso · Fase A lista | Fundación en la rama `etapa5/fundacion`: migraciones, RLS (35 pruebas), migración de servicio_data probada en local (conteos iguales), tipos y contratos. Sigue la Fase B. Nada aplicado en producción. |
