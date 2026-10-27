@@ -7,6 +7,7 @@ import { ThemeToggle } from "./_components/ThemeToggle";
 import { getCalendarEvents } from "@/lib/asana";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { donReadData } from "@/app/donaciones/_lib/data";
+import { donantes } from "@/app/donaciones/_lib/don-logic";
 import { svNorm, svServiciosGrupo, svTablaDiscipulos, svEnPeriodo, periodoActual, MESES } from "@/app/servicio/_lib/sv-logic";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -167,7 +168,7 @@ export default async function HomePage() {
   const donMes = donaciones.filter(d => svEnPeriodo(d.f.slice(0, 10), "mes", perY, perI));
   const donTotalMes = isAdmin ? donMes.reduce((sum, d) => sum + (d.m ?? 0), 0) : groupDonTotal;
   const donCountMes = donMes.length;
-  const donantesCountMes = new Set(donMes.map(d => d.k || d.n)).size;
+  const donantesCountMes = donantes(donMes);
   const donPromedioMes = donCountMes > 0 ? Math.round(donTotalMes / donCountMes) : 0;
 
   // Sum donations for all discipulado groups. Uses d.di first (authoritative from PHP panel),
