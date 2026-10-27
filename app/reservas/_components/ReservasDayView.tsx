@@ -123,6 +123,17 @@ export function ReservasDayView({
 
   return (
     <>
+      <DesktopDay
+        spaces={spaces}
+        bySpace={bySpace}
+        dateParam={dateParam}
+        prevDate={prevDate}
+        nextDate={nextDate}
+        onSelect={setSelectedId}
+      />
+
+      {/* ── Celular ── */}
+      <div className="md:hidden flex flex-col gap-4 flex-1">
       {/* Día | Mes: el mismo segmentado que el resto del portal */}
       <nav className="segmented w-full" aria-label="Vista">
         <Link href={`/reservas?date=${dateParam}`} aria-current="page" className="segmented-link flex-1 text-center">Día</Link>
@@ -230,7 +241,7 @@ export function ReservasDayView({
               </div>
 
               {spaceBookings.length > 0 && (
-                <p className="text-[12.5px] pl-[90px]" style={{ color: "#3E4A45" }}>
+                <p className="text-[12.5px] pl-[90px]" style={{ color: "var(--color-muted)" }}>
                   {spaceBookings.map((b, i) => {
                     if (!b.starts_at) return null;
                     const time = new Date(b.starts_at).toLocaleTimeString("es-CO", {
@@ -261,7 +272,7 @@ export function ReservasDayView({
       </div>
 
       {/* Legend */}
-      <div className="flex gap-3 flex-wrap text-xs mt-1" style={{ color: "#3E4A45" }}>
+      <div className="flex gap-3 flex-wrap text-xs mt-1" style={{ color: "var(--color-muted)" }}>
         <span className="inline-flex items-center gap-[6px]">
           <span
             className="w-[10px] h-[10px] rounded-full inline-block"
@@ -289,6 +300,7 @@ export function ReservasDayView({
         <Icon name="plus" size={18} strokeWidth={2.2} />
         Nueva reserva
       </Link>
+      </div>
 
       {/* Bottom sheet */}
       {selected && (
@@ -404,5 +416,170 @@ export function ReservasDayView({
         </>
       )}
     </>
+  );
+}
+
+// ── Escritorio: línea de tiempo por espacio (estilo Calendario de Apple) ─────
+
+const D_START = 7;   // 7 a. m.
+const D_END = 22;    // 10 p. m.
+const D_HOURS = Array.from({ length: D_END - D_START + 1 }, (_, i) => D_START + i);
+
+function hourLabel(h: number): string {
+  if (h === 12) return "12 m";
+  return h < 12 ? `${h} a. m.` : `${h - 12} p. m.`;
+}
+
+function pctOf(iso: string): number {
+  const { h, m } = bogotaHHMM(iso);
+  const mins = (h - D_START) * 60 + m;
+  return Math.max(0, Math.min(100, (mins / ((D_END - D_START) * 60)) * 100));
+}
+
+function nowPct(): number | null {
+  const { h, m } = bogotaHHMM(new Date().toISOString());
+  const mins = (h - D_START) * 60 + m;
+  if (mins < 0 || mins > (D_END - D_START) * 60) return null;
+  return (mins / ((D_END - D_START) * 60)) * 100;
+}
+
+const DAY_COLOR = (b: BookingBlock) =>
+  b.isOwn ? "var(--color-info)" : b.status === "requested" ? "var(--color-gold)" : "var(--color-accent)";
+
+function DesktopDay({
+  spaces,
+  bySpace,
+  dateParam,
+  prevDate,
+  nextDate,
+  onSelect,
+}: {
+  spaces: SpaceInfo[];
+  bySpace: Map<string, BookingBlock[]>;
+  dateParam: string;
+  prevDate: string;
+  nextDate: string;
+  onSelect: (id: string) => void;
+}) {
+  const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+  const isToday = dateParam === todayKey;
+  const d = new Date(dateParam + "T12:00:00");
+  const weekday = d.toLocaleDateString("es-CO", { weekday: "long" });
+  const dateLong = d.toLocaleDateString("es-CO", { day: "numeric", month: "long" });
+  const now = isToday ? nowPct() : null;
+
+  return (
+    <div className="hidden md:flex flex-col gap-5">
+      {/* Encabezado */}
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col">
+          <span className="text-[15px] font-semibold capitalize" style={{ color: "var(--color-accent)" }}>
+            {isToday ? `Hoy · ${weekday}` : weekday}
+          </span>
+          <h1 className="text-[38px] font-semibold leading-none tracking-[-0.03em]" style={{ color: "var(--color-ink)" }}>
+            {dateLong}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <nav className="segmented" aria-label="Vista">
+            <Link href={`/reservas?date=${dateParam}`} aria-current="page" className="segmented-link">Día</Link>
+            <Link href={`/reservas?date=${dateParam}&view=mes`} prefetch className="segmented-link">Mes</Link>
+          </nav>
+          <div className="flex items-center gap-1.5 ml-1">
+            <Link href={`/reservas?date=${prevDate}`} prefetch className="icon-btn" aria-label="Día anterior"><Icon name="chevron-left" /></Link>
+            {!isToday && (
+              <Link href="/reservas" prefetch className="h-9 px-3.5 rounded-full text-[14px] font-semibold inline-flex items-center"
+                style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-accent)", boxShadow: "inset 0 1px 0 var(--glass-border)" }}>
+                Hoy
+              </Link>
+            )}
+            <Link href={`/reservas?date=${nextDate}`} prefetch className="icon-btn" aria-label="Día siguiente"><Icon name="chevron-right" /></Link>
+          </div>
+          <Link href="/reservas/nueva" prefetch className="btn-primary ml-2 !min-h-[38px] !px-4 !text-[14px] rounded-full">
+            <Icon name="plus" size={16} strokeWidth={2.2} />
+            Nueva reserva
+          </Link>
+        </div>
+      </div>
+
+      {/* Línea de tiempo */}
+      <div className="card overflow-hidden">
+        {/* Horas */}
+        <div className="grid border-b" style={{ gridTemplateColumns: "168px 1fr" }}>
+          <div />
+          <div className="relative h-9">
+            {D_HOURS.map((h, i) => (i % 2 === 1 ? null : (
+              <span key={h} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-[11.5px] font-medium tabular whitespace-nowrap"
+                style={{ left: `${(i / (D_HOURS.length - 1)) * 100}%`, color: "var(--color-muted)" }}>
+                {i === 0 ? "" : hourLabel(h)}
+              </span>
+            )))}
+          </div>
+        </div>
+
+        {/* Filas por espacio */}
+        {spaces.map((space, rowIdx) => {
+          const list = bySpace.get(space.id) ?? [];
+          const maint = space.status === "maintenance";
+          return (
+            <div key={space.id} className="grid" style={{ gridTemplateColumns: "168px 1fr", borderTop: rowIdx === 0 ? undefined : "1px solid var(--color-line)" }}>
+              <div className="flex flex-col justify-center px-5 py-4">
+                <span className="text-[15px] font-semibold" style={{ color: "var(--color-ink)" }}>{space.name}</span>
+                <span className="text-[12px]" style={{ color: "var(--color-muted)" }}>
+                  {maint ? "No disponible" : list.length === 0 ? "Libre todo el día" : `${list.length} ${list.length === 1 ? "reserva" : "reservas"}`}
+                </span>
+              </div>
+              <div className="relative min-h-[72px]" style={maint ? { background: "repeating-linear-gradient(135deg, transparent 0 8px, var(--color-surface-2) 8px 10px)" } : undefined}>
+                {/* Líneas de cada hora */}
+                {D_HOURS.map((h, i) => (
+                  <span key={h} className="absolute top-0 bottom-0 w-px" style={{ left: `${(i / (D_HOURS.length - 1)) * 100}%`, background: "var(--color-line)", opacity: i % 2 === 0 ? 1 : 0.5 }} />
+                ))}
+                {/* Reservas */}
+                {list.map((b) => {
+                  const left = pctOf(b.starts_at);
+                  const width = Math.max(2.5, pctOf(b.ends_at) - left);
+                  const color = DAY_COLOR(b);
+                  const who = b.isOwn ? `Tu reserva · ${b.display_owner ?? ""}` : (b.display_owner ?? b.title ?? "Reserva");
+                  const what = b.use_type ? (USE_TYPE_LABELS[b.use_type] ?? b.use_type) : null;
+                  return (
+                    <button key={b.id} type="button" onClick={() => onSelect(b.id)}
+                      className="absolute top-2 bottom-2 rounded-[10px] px-2.5 py-1.5 text-left overflow-hidden transition-[filter] hover:brightness-95"
+                      style={{
+                        left: `calc(${left}% + 2px)`, width: `calc(${width}% - 4px)`,
+                        background: `color-mix(in srgb, ${color} 18%, var(--color-surface-solid))`,
+                        boxShadow: `inset 3px 0 0 ${color}`,
+                        color: "var(--color-ink)",
+                      }}
+                      aria-label={`${who}${what ? ` · ${what}` : ""}, ${formatTime(b.starts_at)} a ${formatTime(b.ends_at)}`}
+                    >
+                      <span className="block text-[12.5px] font-semibold truncate">{what ?? who}</span>
+                      <span className="block text-[11.5px] truncate tabular" style={{ color: "var(--color-muted)" }}>
+                        {formatTime(b.starts_at)}–{formatTime(b.ends_at)}{what && who ? ` · ${who}` : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+                {/* Hora actual */}
+                {now !== null && (
+                  <span className="absolute top-0 bottom-0 w-[2px] -translate-x-1/2 pointer-events-none" style={{ left: `${now}%`, background: "var(--color-down)" }}>
+                    {rowIdx === 0 && <span className="absolute -top-[3px] -left-[3px] w-2 h-2 rounded-full" style={{ background: "var(--color-down)" }} />}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Leyenda */}
+      <div className="flex gap-4 flex-wrap text-[12px]" style={{ color: "var(--color-muted)" }}>
+        {[["Ministerios", "var(--color-accent)"], ["Tus reservas", "var(--color-info)"], ["Por aprobar", "var(--color-gold)"]].map(([label, c]) => (
+          <span key={label} className="inline-flex items-center gap-1.5">
+            <span className="w-[8px] h-[8px] rounded-full" style={{ background: c }} />
+            {label}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { Icon } from "@/app/_components/ui/Icon";
 import { Chevron as ChevronIcon } from "@/app/_components/ui/PeriodPicker";
+import { MonthGrid, type MonthCell, type MonthItem } from "@/app/_components/ui/MonthGrid";
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { AsanaEvent } from "@/lib/asana";
@@ -572,7 +573,6 @@ function SemanaView({ events, linksByGid, anchor, selDay, setSelDay, onEventClic
   );
 }
 
-const MAX_EVS_DAY = 4;
 
 function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
   events: AsanaEvent[];
@@ -588,74 +588,35 @@ function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }
   const cells     = useMemo(() => getMonthGrid(year, month), [year, month]);
   const selDayEvs = useMemo(() => eventsForDate(events, selDay), [events, selDay]);
 
+  const monthCells: MonthCell[] = cells.map(({ date, current }) => ({
+    key: toDateStr(date), day: date.getDate(), inMonth: current, weekend: date.getDay() === 0 || date.getDay() === 6,
+  }));
+  const itemsByDay: Record<string, MonthItem[]> = {};
+  for (const c of monthCells) {
+    itemsByDay[c.key] = eventsForDate(events, c.key)
+      .map(e => ({ e, link: linksByGid[e.gid] }))
+      .sort((a, b) => (a.link?.starts_at ?? "~").localeCompare(b.link?.starts_at ?? "~"))
+      .map(({ e, link }) => ({
+        id: e.gid,
+        title: e.name,
+        time: link?.starts_at ? fmtTime(link.starts_at) : null,
+        color: catStyle(e.category).color,
+        onClick: () => onEventClick(e),
+        dim: c.key < today,
+      }));
+  }
+
   return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-        {DOW_SUN.map(l => (
-          <div key={l} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", padding: "4px 0 6px" }}>
-            {l}
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderTop: "1px solid var(--color-line)", borderLeft: "1px solid var(--color-line)" }}>
-        {cells.map(({ date, current }, idx) => {
-          const ds     = toDateStr(date);
-          const dayEvs = eventsForDate(events, ds);
-          const isToday = ds === today;
-          const isSel   = ds === selDay;
-          const isPast  = ds < today;
-          const shown   = dayEvs.slice(0, MAX_EVS_DAY);
-          const more    = dayEvs.length - shown.length;
-          return (
-            <div key={idx} onClick={() => setSelDay(ds)} style={{
-              borderRight: "1px solid var(--color-line)", borderBottom: "1px solid var(--color-line)",
-              minHeight: 80, padding: "4px 2px 4px", cursor: "pointer",
-              background: isSel && !isToday ? "var(--color-accent-soft)" : "transparent",
-            }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
-                <span style={{
-                  width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
-                  borderRadius: "50%", fontSize: 12, fontWeight: isToday ? 700 : 400,
-                  background: isToday ? "var(--color-accent)" : "transparent",
-                  color: isToday ? "var(--color-accent-ink)" : !current ? "var(--color-faint)" : isPast ? "var(--color-muted)" : "var(--color-ink)",
-                }}>
-                  {date.getDate()}
-                </span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                {shown.map(e => {
-                  const link = linksByGid[e.gid];
-                  const { color } = catStyle(e.category);
-                  return (
-                    <button key={e.gid} type="button"
-                      onClick={ev => { ev.stopPropagation(); onEventClick(e); }}
-                      style={{
-                        display: "flex", alignItems: "center", width: "100%", textAlign: "left",
-                        padding: "0 2px 0 0", background: "none", cursor: "pointer",
-                        borderTop: "none", borderRight: "none", borderBottom: "none",
-                        borderLeftWidth: 2, borderLeftStyle: "solid", borderLeftColor: color,
-                        opacity: isPast ? 0.55 : 1,
-                      }}>
-                      <span style={{ flex: 1, fontSize: 10.5, fontWeight: 600, color: "var(--color-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginLeft: 3 }}>
-                        {e.name}
-                      </span>
-                      {link?.starts_at && (
-                        <span style={{ fontSize: 9.5, color: "var(--color-faint)", flexShrink: 0, marginLeft: 2 }}>
-                          {fmtTime(link.starts_at)}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-                {more > 0 && (
-                  <span style={{ fontSize: 9.5, color: "var(--color-muted)", paddingLeft: 5 }}>+{more} más</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <DayEventList events={selDayEvs} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} />
+    <div className="flex flex-col gap-2">
+      <MonthGrid
+        weekdays={["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]}
+        cells={monthCells}
+        itemsByDay={itemsByDay}
+        today={today}
+        selected={selDay}
+        onSelect={setSelDay}
+      />
+      <DayEventList events={selDayEvs} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} compact />
     </div>
   );
 }
@@ -837,19 +798,16 @@ export function CalendarioShell({
   }
 
   const DESKTOP_VIEWS: { key: DesktopView; label: string }[] = [
-    { key: "lista",  label: "Lista"  },
     { key: "dia",    label: "Día"    },
     { key: "semana", label: "Semana" },
     { key: "mes",    label: "Mes"    },
+    { key: "lista",  label: "Lista"  },
   ];
 
   const selectedLink = selectedEvent ? (linksByGid[selectedEvent.gid] ?? null) : null;
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "24px clamp(12px, 3vw, 40px) 80px" }}>
-      {/* Título (en el celular lo reemplaza el encabezado de año y mes) */}
-      <h1 className="page-title hidden sm:block mb-5">Calendario</h1>
-
       {/* ── Mobile ── */}
       <div className="block sm:hidden">
         <MobileCalendario events={events} linksByGid={linksByGid} onEventClick={setSelectedEvent} />
@@ -857,29 +815,35 @@ export function CalendarioShell({
 
       {/* ── Desktop ── */}
       <div className="hidden sm:block">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px 24px", marginBottom: 20, flexWrap: "wrap" }}>
-          <div className="segmented" role="group" aria-label="Vista">
-            {DESKTOP_VIEWS.map(({ key, label }) => (
-              <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>
-                {label}
-              </button>
-            ))}
+        <div className="flex items-end justify-between gap-4 flex-wrap mb-5">
+          <div className="flex flex-col">
+            <span className="text-[15px] font-semibold tabular" style={{ color: "var(--color-accent)" }}>
+              {view === "mes" ? year : view === "lista" ? "Calendario" : String(year)}
+            </span>
+            <h1 className="text-[38px] font-semibold leading-none tracking-[-0.03em] capitalize" style={{ color: "var(--color-ink)" }}>
+              {view === "mes" ? MONTHS[month] : view === "lista" ? "Próximos eventos" : periodLabel()}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="segmented" role="group" aria-label="Vista">
+              {DESKTOP_VIEWS.map(({ key, label }) => (
+                <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {view !== "lista" && (
+              <div className="flex items-center gap-1.5">
+                <button type="button" className="icon-btn" onClick={prev} aria-label="Anterior"><ChevronIcon dir="left" /></button>
+                <button type="button" onClick={goToday} className="h-9 px-3.5 rounded-full text-[14px] font-semibold"
+                  style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-accent)", boxShadow: "inset 0 1px 0 var(--glass-border)" }}>
+                  Hoy
+                </button>
+                <button type="button" className="icon-btn" onClick={next} aria-label="Siguiente"><ChevronIcon dir="right" /></button>
+              </div>
+            )}
           </div>
         </div>
-
-        {view !== "lista" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <span style={{ flex: 1, fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--color-ink)", textTransform: "capitalize" }}>
-              {periodLabel()}
-            </span>
-            <button type="button" className="icon-btn" onClick={prev} aria-label="Anterior"><ChevronIcon dir="left" /></button>
-            <button type="button" onClick={goToday} className="h-9 px-3.5 rounded-full text-[14px] font-semibold"
-              style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-accent)", boxShadow: "inset 0 1px 0 var(--glass-border)" }}>
-              Hoy
-            </button>
-            <button type="button" className="icon-btn" onClick={next} aria-label="Siguiente"><ChevronIcon dir="right" /></button>
-          </div>
-        )}
 
         {view === "lista"  && <ListaView  events={events} linksByGid={linksByGid} onEventClick={setSelectedEvent} />}
         {view === "dia"    && <DiaView    events={events} linksByGid={linksByGid} anchor={anchor} onEventClick={setSelectedEvent} />}

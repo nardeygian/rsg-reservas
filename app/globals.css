@@ -578,6 +578,9 @@ summary.list-none::-webkit-details-marker { display: none; }
 /* =====================================================================
    Controles compartidos: segmentado de vidrio y botón de ícono
    ===================================================================== */
+/* En la capa de componentes, para que las utilidades (hidden, md:hidden,
+   md:inline-flex…) puedan mostrarlos u ocultarlos según el ancho. */
+@layer components {
 .segmented {
   display: inline-flex;
   gap: 2px;
@@ -625,6 +628,7 @@ summary.list-none::-webkit-details-marker { display: none; }
   color: var(--color-action-fg);
   border-color: transparent;
 }
+}
 
 /* Encabezado de página compartido */
 .page-title {
@@ -635,6 +639,7 @@ summary.list-none::-webkit-details-marker { display: none; }
   color: var(--color-ink);
 }
 
+@layer components {
 /* El segmentado también sirve para navegar (enlaces con aria-current) */
 .segmented > .segmented-link {
   padding: 6px 14px;
@@ -651,6 +656,7 @@ summary.list-none::-webkit-details-marker { display: none; }
 }
 .dark .segmented > .segmented-link[aria-current="page"] {
   background: rgba(233, 231, 226, 0.14);
+}
 }
 
 /* =====================================================================

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/app/_components/ui/Icon";
 import type { BookingBlock } from "./ReservasDayView";
+import { MonthGrid, type MonthCell, type MonthItem } from "@/app/_components/ui/MonthGrid";
 import { formatTime } from "@/lib/datetime";
 
 // Mismo lenguaje visual que el Calendario de eventos (estilo Apple):
@@ -74,9 +75,13 @@ export function ReservasMesView({
       <div className="flex items-end justify-between gap-3">
         <div className="flex flex-col">
           <span className="text-[15px] font-semibold tabular" style={{ color: "var(--color-accent)" }}>{yearStr}</span>
-          <h1 className="text-[34px] font-semibold leading-none tracking-[-0.03em]" style={{ color: "var(--color-ink)" }}>{monthName}</h1>
+          <h1 className="text-[34px] md:text-[38px] font-semibold leading-none tracking-[-0.03em]" style={{ color: "var(--color-ink)" }}>{monthName}</h1>
         </div>
         <div className="flex items-center gap-1.5 pb-0.5">
+          <nav className="segmented hidden md:inline-flex mr-2" aria-label="Vista">
+            <Link href={`/reservas?date=${anchorParam}`} prefetch className="segmented-link">Día</Link>
+            <Link href={`/reservas?date=${anchorParam}&view=mes`} aria-current="page" className="segmented-link">Mes</Link>
+          </nav>
           <Link href={`/reservas?date=${prevMonthParam}&view=mes`} prefetch className="icon-btn" aria-label="Mes anterior">
             <Icon name="chevron-left" />
           </Link>
@@ -89,17 +94,46 @@ export function ReservasMesView({
           <Link href={`/reservas?date=${nextMonthParam}&view=mes`} prefetch className="icon-btn" aria-label="Mes siguiente">
             <Icon name="chevron-right" />
           </Link>
+          <Link href="/reservas/nueva" prefetch className="btn-primary hidden md:inline-flex ml-2 !min-h-[38px] !px-4 !text-[14px] rounded-full">
+            <Icon name="plus" size={16} strokeWidth={2.2} />
+            Nueva reserva
+          </Link>
         </div>
       </div>
 
-      {/* Día | Mes */}
-      <nav className="segmented w-full" aria-label="Vista">
+      {/* Día | Mes (en escritorio va en el encabezado) */}
+      <nav className="segmented w-full md:hidden" aria-label="Vista">
         <Link href={`/reservas?date=${anchorParam}`} prefetch className="segmented-link flex-1 text-center">Día</Link>
         <Link href={`/reservas?date=${anchorParam}&view=mes`} aria-current="page" className="segmented-link flex-1 text-center">Mes</Link>
       </nav>
 
-      {/* Letras de los días + cuadrícula */}
-      <div>
+      {/* Escritorio: misma cuadrícula que el Calendario de eventos */}
+      <div className="hidden md:block">
+        <MonthGrid
+          weekdays={["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]}
+          cells={gridDayKeys.map((key, i): MonthCell => ({
+            key, day: Number(key.slice(8)), inMonth: key.slice(0, 7) === anchorMonthKey, weekend: i % 7 >= 5,
+          }))}
+          itemsByDay={Object.fromEntries(gridDayKeys.map((key) => [key,
+            [...(bookingsByDay[key] ?? [])]
+              .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+              .map((b): MonthItem => ({
+                id: b.id,
+                title: [b.space_name, b.display_owner ?? b.title].filter(Boolean).join(" · ") || "Reserva",
+                time: formatTime(b.starts_at),
+                color: bookingColor(b),
+                href: `/reservas/${b.id}`,
+                dim: key < today,
+              })),
+          ]))}
+          today={today}
+          selected={selDay}
+          onSelect={setSelDay}
+        />
+      </div>
+
+      {/* Celular: letras de los días + cuadrícula */}
+      <div className="md:hidden">
         <div className="grid grid-cols-7">
           {DOW_LETTER.map((l, i) => (
             <span key={i} className="text-center text-[12px] font-semibold pb-1.5" style={{ color: "var(--color-faint)" }}>{l}</span>
@@ -186,7 +220,7 @@ export function ReservasMesView({
         ))}
       </div>
 
-      <Link href="/reservas/nueva" prefetch className="btn-primary w-full mt-auto">
+      <Link href="/reservas/nueva" prefetch className="btn-primary w-full mt-auto md:hidden">
         <Icon name="plus" size={18} strokeWidth={2.2} />
         Nueva reserva
       </Link>

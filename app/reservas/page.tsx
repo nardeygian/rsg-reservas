@@ -108,7 +108,7 @@ export default async function ReservasPage({
 
     return (
       <main className="min-h-dvh flex flex-col">
-        <div className="flex-1 px-4 pt-6 pb-4 max-w-md mx-auto w-full flex flex-col gap-4">
+        <div className="flex-1 px-4 pt-6 pb-4 max-w-md md:max-w-[1180px] md:px-[clamp(12px,3vw,40px)] mx-auto w-full flex flex-col gap-4">
           <ReservasMesView
             gridDayKeys={gridDays.map(toDateParam)}
             bookingsByDay={bookingsByDay}
@@ -176,8 +176,8 @@ export default async function ReservasPage({
 
   return (
     <main className="min-h-dvh flex flex-col">
-      <div className="flex-1 px-4 pt-6 pb-4 max-w-md mx-auto w-full flex flex-col gap-4">
-        <h1 className="page-title">Reservas</h1>
+      <div className="flex-1 px-4 pt-6 pb-4 max-w-md md:max-w-[1180px] md:px-[clamp(12px,3vw,40px)] mx-auto w-full flex flex-col gap-4">
+        <h1 className="page-title md:hidden">Reservas</h1>
         <ReservasDayView
           spaces={visibleSpaces}
           bookings={bookingBlocks}

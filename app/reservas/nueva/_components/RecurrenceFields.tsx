@@ -27,7 +27,7 @@ export function RecurrenceFields({
   const [freq, setFreq] = useState<Freq>("weekly");
 
   return (
-    <fieldset className="border-t border-line pt-4 space-y-3">
+    <fieldset className="border-t pt-5 space-y-3">
       <label className="flex items-center gap-2 text-sm cursor-pointer">
         <input
           type="checkbox"

@@ -78,29 +78,26 @@ export default async function NewBookingPage({
   const recurrenceUntilDefault = toDateParam(addMonths(startDefault, 3));
 
   return (
-    <main className="min-h-dvh px-4 py-5 max-w-md mx-auto space-y-4">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <span className="eyebrow">Nueva</span>
-          <h1
-            className="text-[22px] font-semibold mt-0.5 leading-tight"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Crear reserva
-          </h1>
+    <main className="min-h-dvh px-4 pt-6 pb-8 max-w-md md:max-w-[1180px] md:px-[clamp(12px,3vw,40px)] mx-auto flex flex-col gap-5">
+      <header className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="page-title">Nueva reserva</h1>
+          <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+            Elige el espacio y el horario. Si el espacio requiere aprobación, te avisamos cuando la revisen.
+          </p>
         </div>
-        <Link
-          href="/calendario"
-          className="text-sm"
-          style={{ color: "var(--color-muted)" }}
-        >
+        <Link href="/reservas" prefetch className="h-9 px-4 rounded-full text-[14px] font-semibold inline-flex items-center flex-none"
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-ink)", boxShadow: "inset 0 1px 0 var(--glass-border)" }}>
           Cancelar
         </Link>
       </header>
 
-      <form action={createBookingAction} className="space-y-4">
+      <form action={createBookingAction} className="grid gap-5 md:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] md:items-start">
+        {/* ── Columna principal ── */}
+        <div className="card p-5 md:p-7 flex flex-col gap-5">
+        <h2 className="text-[13px] font-semibold" style={{ color: "var(--color-muted)" }}>Dónde y cuándo</h2>
         <div>
-          <label htmlFor="space_id" className="block text-sm mb-1">
+          <label htmlFor="space_id" className="field-label block mb-1.5">
             Espacio
           </label>
           <select
@@ -150,9 +147,9 @@ export default async function NewBookingPage({
           </label>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2 gap-3">
           <div>
-            <label htmlFor="starts_at" className="block text-sm mb-1">
+            <label htmlFor="starts_at" className="field-label block mb-1.5">
               Inicio
             </label>
             <input
@@ -165,7 +162,7 @@ export default async function NewBookingPage({
             />
           </div>
           <div>
-            <label htmlFor="ends_at" className="block text-sm mb-1">
+            <label htmlFor="ends_at" className="field-label block mb-1.5">
               Fin
             </label>
             <input
@@ -179,8 +176,9 @@ export default async function NewBookingPage({
           </div>
         </div>
 
+        <h2 className="text-[13px] font-semibold pt-3 border-t" style={{ color: "var(--color-muted)" }}>Detalles</h2>
         <div>
-          <label htmlFor="use_type" className="block text-sm mb-1">
+          <label htmlFor="use_type" className="field-label block mb-1.5">
             Tipo de uso
           </label>
           <select
@@ -202,7 +200,7 @@ export default async function NewBookingPage({
         </div>
 
         <div>
-          <label htmlFor="title" className="block text-sm mb-1">
+          <label htmlFor="title" className="field-label block mb-1.5">
             Título{" "}
             <span style={{ color: "var(--color-faint)" }}>(opcional)</span>
           </label>
@@ -217,7 +215,7 @@ export default async function NewBookingPage({
         </div>
 
         <div>
-          <label htmlFor="expected_attendance" className="block text-sm mb-1">
+          <label htmlFor="expected_attendance" className="field-label block mb-1.5">
             Asistencia esperada{" "}
             <span style={{ color: "var(--color-faint)" }}>(opcional)</span>
           </label>
@@ -231,25 +229,33 @@ export default async function NewBookingPage({
           />
         </div>
 
+        <RecurrenceFields
+          defaultUntil={recurrenceUntilDefault}
+          defaultByday={getBogotaWeekday(startDefault)}
+        />
+        </div>
+
+        {/* ── Columna lateral: lo que hay que montar y confirmar ── */}
+        <div className="flex flex-col gap-4 md:sticky md:top-6">
         {(itemsAvail ?? []).length > 0 && (
-          <fieldset
-            className="border-t pt-4 space-y-2"
-            style={{ borderColor: "var(--color-line)" }}
-          >
-            <legend className="eyebrow">¿Necesitas algo más?</legend>
-            <p className="text-xs" style={{ color: "var(--color-muted)" }}>
-              Para reservas internas no hay costo. Solo es para que el equipo
-              sepa qué montar. El número es la disponibilidad para la franja
-              default; si cambias hora, se revalida al guardar.
-            </p>
-            <p className="text-xs" style={{ color: "var(--color-gold)" }}>
-              Las series recurrentes ignoran items en esta versión.
-            </p>
+          <fieldset className="card p-5 flex flex-col gap-3">
+            <legend className="sr-only">¿Necesitas algo más?</legend>
+            <div className="flex flex-col gap-1">
+              <h2 className="text-[15px] font-semibold" style={{ color: "var(--color-ink)" }}>¿Necesitas algo más?</h2>
+              <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+                Sin costo para reservas internas. Indícalo para que el equipo lo deje listo.
+                Revisamos que haya suficientes al guardar.
+              </p>
+              <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>
+                Si la reserva se repite, pide estos elementos aparte para cada fecha.
+              </p>
+            </div>
             <ul className="space-y-2">
               {(itemsAvail ?? []).map((it) => (
                 <li
                   key={it.item_id}
-                  className="flex items-center gap-3 card px-3 py-2"
+                  className="flex items-center gap-3 rounded-[var(--radius-control)] px-3 py-2.5"
+                  style={{ background: "var(--color-surface-2)" }}
                 >
                   <div className="flex-1">
                     <p className="text-sm font-medium">{it.name}</p>
@@ -272,10 +278,6 @@ export default async function NewBookingPage({
           </fieldset>
         )}
 
-        <RecurrenceFields
-          defaultUntil={recurrenceUntilDefault}
-          defaultByday={getBogotaWeekday(startDefault)}
-        />
 
         {error && (
           <p
@@ -291,15 +293,16 @@ export default async function NewBookingPage({
         )}
 
         <button type="submit" className="btn-primary w-full">
-          Crear
+          Crear reserva
         </button>
         <p
           className="text-xs text-center"
           style={{ color: "var(--color-faint)" }}
         >
-          Si el espacio requiere aprobación, queda como pendiente hasta que un
+          Si el espacio requiere aprobación, queda pendiente hasta que un
           pastor o admin la apruebe.
         </p>
+        </div>
       </form>
     </main>
   );
