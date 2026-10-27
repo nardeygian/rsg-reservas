@@ -79,7 +79,9 @@ export async function POST(req: NextRequest) {
   if (phpToken && sameSecret(reqToken, phpToken)) {
     try {
       const h = req.headers.get("x-rsg-fila");
-      if (h) fila = JSON.parse(h);
+      // Los headers HTTP llegan como Latin-1: se recuperan los bytes UTF-8
+      // originales para no guardar "DÃ­az" en vez de "Díaz".
+      if (h) fila = JSON.parse(Buffer.from(h, "latin1").toString("utf8"));
     } catch {}
   }
 

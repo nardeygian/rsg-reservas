@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { Donacion } from "./types";
 import type { SvMiembro } from "@/app/servicio/_lib/types";
 import { svNorm } from "@/app/servicio/_lib/sv-logic";
+import { normalizarDonacion } from "./don-logic";
 
 // Lecturas con service_role, sin chequeo de permisos: quien las llame decide
 // qué parte de los datos puede ver el usuario (ver donacionesParaLider).
@@ -13,7 +14,8 @@ export const donTable = (svc: ReturnType<typeof createServiceClient>) => (svc as
 export async function donReadData(): Promise<Donacion[]> {
   const service = createServiceClient();
   const { data } = await donTable(service).select("donaciones").eq("id", "main").maybeSingle();
-  return (data?.donaciones as Donacion[] | null) ?? [];
+  // Repara tildes/ñ dañadas al leer, sin reescribir los datos guardados.
+  return ((data?.donaciones as Donacion[] | null) ?? []).map(normalizarDonacion);
 }
 
 /**

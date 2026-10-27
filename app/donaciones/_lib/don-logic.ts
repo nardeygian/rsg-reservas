@@ -11,7 +11,10 @@ export const metodo = (m: string) => METODOS[m] || m || "";
 export const esDar  = (d: Donacion) => d.o === "Módulo Dar";
 export const esEfe  = (d: Donacion) => d.met === "Efectivo";
 export const suma   = (list: Donacion[]) => list.reduce((a, d) => a + d.m, 0);
-export const donantes = (list: Donacion[]) => new Set(list.map((d) => d.k)).size;
+// Una sola definición de "donante" para toda la app: la misma persona cuenta
+// una vez aunque sus donaciones vengan con claves `k` distintas (el panel PHP
+// y el portal las generan de forma diferente). Ver clusterDonantes.
+export const donantes = (list: Donacion[]) => clusterDonantes(list).length;
 export const COP = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 export const money = (n: number) => COP.format(Math.round(n || 0));
 export const moneyShort = (n: number) =>
@@ -118,4 +121,108 @@ export function niceMax(v: number): number {
   const p = Math.pow(10, Math.floor(Math.log10(v)));
   const f = v / p;
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+
+// ── Texto con tildes y ñ ────────────────────────────────────────────────────
+
+/**
+ * Repara texto UTF-8 que se leyó como Latin-1 ("DÃ­az" → "Díaz", "PeÃ±a" →
+ * "Peña"). Solo toca cadenas que tienen la marca típica del error y que se
+ * pueden decodificar sin pérdida; cualquier otro texto se devuelve igual.
+ */
+export function repararTexto(s: string): string {
+  if (!s || !/[ÃÂ]/.test(s)) return s;
+  const bytes = Array.from(s, (c) => c.charCodeAt(0));
+  if (bytes.some((b) => b > 255)) return s;
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bytes));
+  } catch {
+    return s;
+  }
+}
+
+/** Copia de la donación con los textos visibles reparados. */
+export function normalizarDonacion(d: Donacion): Donacion {
+  const n = repararTexto(d.n);
+  const t = repararTexto(d.t);
+  const o = repararTexto(d.o);
+  return n === d.n && t === d.t && o === d.o ? d : { ...d, n, t, o };
+}
+
+// ── Identidad del donante ───────────────────────────────────────────────────
+
+/** Nombre sin tildes, mayúsculas ni signos, para comparar. */
+export function normDon(s: string) {
+  return repararTexto(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Primer nombre + primer apellido ("maria alejandra llanos" → "maria llanos"). */
+function claveDon(n: string): string | null {
+  const p = normDon(n).split(" ").filter(Boolean);
+  if (p.length < 2) return null;
+  return p[0] + " " + p[Math.min(2, p.length - 1)];
+}
+
+/** Claves fuertes de la persona: cédula (solo dígitos) y email. */
+function clavesFuertes(d: Donacion): string[] {
+  const out: string[] = [];
+  const doc = (d.doc ?? "").replace(/\D/g, "");
+  if (doc.length >= 5) out.push("c:" + doc);
+  const email = (d.e ?? "").trim().toLowerCase();
+  if (email) out.push("e:" + email);
+  if (d.k) out.push("k:" + d.k);
+  return out;
+}
+
+export type DonCluster = { nombre: string; total: number; count: number; conceptos: string[]; list: Donacion[] };
+
+/**
+ * Agrupa las donaciones por persona. Primero por cédula, email o clave `k`;
+ * si no hay coincidencia, por nombre (exacto, prefijo, o primer nombre +
+ * primer apellido). Es la base de todos los conteos de donantes.
+ */
+export function clusterDonantes(lista: Donacion[]): DonCluster[] {
+  const clusters: { names: string[]; list: Donacion[] }[] = [];
+  const claveToIdx = new Map<string, number>();
+
+  for (const d of lista) {
+    const claves = clavesFuertes(d);
+    let found = -1;
+    for (const c of claves) {
+      const idx = claveToIdx.get(c);
+      if (idx !== undefined) { found = idx; break; }
+    }
+
+    if (found === -1) {
+      const kD = normDon(d.n);
+      const claveD = claveDon(d.n);
+      for (let i = 0; i < clusters.length && found === -1; i++) {
+        for (const cn of clusters[i].names) {
+          const kC = normDon(cn);
+          if (
+            kD === kC ||
+            (kD.length >= 8 && (kD.startsWith(kC + " ") || kC.startsWith(kD + " "))) ||
+            (claveD !== null && claveDon(cn) === claveD)
+          ) { found = i; break; }
+        }
+      }
+    }
+
+    if (found === -1) {
+      found = clusters.length;
+      clusters.push({ names: [], list: [] });
+    }
+    const c = clusters[found];
+    c.list.push(d);
+    if (!c.names.includes(d.n)) c.names.push(d.n);
+    for (const k of claves) claveToIdx.set(k, found);
+  }
+
+  return clusters.map((c) => {
+    const nombre = c.names.map(repararTexto).reduce((b, n) => n.length > b.length ? n : b, "");
+    const total = c.list.reduce((s, d) => s + (d.m ?? 0), 0);
+    const conceptos = [...new Set(c.list.map((d) => d.t).filter(Boolean))];
+    return { nombre, total, count: c.list.length, conceptos, list: c.list };
+  }).sort((a, b) => b.total - a.total);
 }

@@ -8,7 +8,8 @@ import {
   CONCEPTOS, MES3, money, moneyShort, suma, donantes, esDar, esEfe,
   metodo, fmtFecha, ordenConcepto, cap, niceMax,
   donDe, shiftDon, periodoActualDon, etiquetaDon, esFuturoDon, chartData,
-  type DonPer,
+  clusterDonantes, normDon,
+  type DonPer, type DonCluster,
 } from "../_lib/don-logic";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -752,83 +753,6 @@ function CardDiscipulosVsIglesia({ lista, etiq, onOpen }: {
       </div>
     </div>
   );
-}
-
-// Normalize name for matching (same logic as svNorm / svNombreClave in sv-logic)
-function normDon(s: string) {
-  return (s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
-}
-function claveDon(n: string): string | null {
-  const p = normDon(n).split(" ").filter(Boolean);
-  if (p.length < 2) return null;
-  return p[0] + " " + p[Math.min(2, p.length - 1)];
-}
-
-type DonCluster = { nombre: string; total: number; count: number; conceptos: string[]; list: Donacion[] };
-
-function clusterDonantes(lista: Donacion[]): DonCluster[] {
-  const clusters: { names: string[]; docs: string[]; list: Donacion[] }[] = [];
-  const keyToIdx = new Map<string, number>();
-  const docToIdx = new Map<string, number>();
-
-  for (const d of lista) {
-    // 1. Donor key match
-    if (d.k && keyToIdx.has(d.k)) {
-      const idx = keyToIdx.get(d.k)!;
-      const c = clusters[idx];
-      c.list.push(d);
-      if (!c.names.includes(d.n)) c.names.push(d.n);
-      if (d.doc && !c.docs.includes(d.doc)) { c.docs.push(d.doc); docToIdx.set(d.doc, idx); }
-      continue;
-    }
-
-    // 2. Document number match (más confiable que el nombre)
-    if (d.doc && docToIdx.has(d.doc)) {
-      const idx = docToIdx.get(d.doc)!;
-      const c = clusters[idx];
-      c.list.push(d);
-      if (!c.names.includes(d.n)) c.names.push(d.n);
-      if (d.k) keyToIdx.set(d.k, idx);
-      continue;
-    }
-
-    // 3. Name matching (exact → prefix → primer nombre + primer apellido)
-    const kD = normDon(d.n);
-    const claveD = claveDon(d.n);
-    let found = -1;
-
-    for (let i = 0; i < clusters.length; i++) {
-      for (const cn of clusters[i].names) {
-        const kC = normDon(cn);
-        if (
-          kD === kC ||
-          (kD.length >= 8 && (kD.startsWith(kC + " ") || kC.startsWith(kD + " "))) ||
-          (claveD !== null && claveDon(cn) === claveD)
-        ) { found = i; break; }
-      }
-      if (found !== -1) break;
-    }
-
-    if (found !== -1) {
-      const c = clusters[found];
-      c.list.push(d);
-      if (!c.names.includes(d.n)) c.names.push(d.n);
-      if (d.k) keyToIdx.set(d.k, found);
-      if (d.doc && !c.docs.includes(d.doc)) { c.docs.push(d.doc); docToIdx.set(d.doc, found); }
-    } else {
-      const idx = clusters.length;
-      clusters.push({ names: [d.n], docs: d.doc ? [d.doc] : [], list: [d] });
-      if (d.k) keyToIdx.set(d.k, idx);
-      if (d.doc) docToIdx.set(d.doc, idx);
-    }
-  }
-
-  return clusters.map((c) => {
-    const nombre = c.names.reduce((b, n) => n.length > b.length ? n : b, "");
-    const total = c.list.reduce((s, d) => s + (d.m ?? 0), 0);
-    const conceptos = [...new Set(c.list.map((d) => d.t).filter(Boolean))];
-    return { nombre, total, count: c.list.length, conceptos, list: c.list };
-  }).sort((a, b) => b.total - a.total);
 }
 
 function CardRegistroDonantes({ clusters, onDonante }: {
