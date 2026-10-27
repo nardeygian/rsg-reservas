@@ -809,3 +809,21 @@ body::before {
 @media (min-width: 768px) {
   .tabbar { display: none; }
 }
+
+/* =====================================================================
+   Fluidez en iPhone
+   ===================================================================== */
+/* Toques inmediatos: sin destello gris de Safari ni espera de doble toque */
+html { -webkit-tap-highlight-color: transparent; }
+a, button, summary, select, input, label { touch-action: manipulation; }
+
+/* Lo que flota vive en su propia capa: al hacer scroll el iPhone solo la
+   compone, no vuelve a pintar el vidrio en cada cuadro. */
+.tabbar,
+.glass-strong,
+.sidebar-glass {
+  transform: translateZ(0);
+  will-change: transform;
+}
+/* La animación de la barra solo recalcula la barra, no la página */
+.tabbar { contain: layout style; }
