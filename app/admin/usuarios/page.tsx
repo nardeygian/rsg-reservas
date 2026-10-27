@@ -9,7 +9,7 @@ import {
   asignarGrupoAction,
   deleteUserAction,
 } from "./actions";
-import { svReadData } from "@/app/servicio/actions";
+import { svReadData } from "@/app/servicio/_lib/data";
 import type { SvGrupo } from "@/app/servicio/_lib/types";
 import { UserSearch, InviteSection, AddRoleForm, DeleteUserButton } from "./_components";
 

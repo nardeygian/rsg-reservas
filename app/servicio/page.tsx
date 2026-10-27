@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserCaps } from "@/lib/auth";
-import { svReadData } from "./actions";
+import { svReadData } from "./_lib/data";
 import { ServicioShell } from "./_components/ServicioShell";
 import type { SvData } from "./_lib/types";
 

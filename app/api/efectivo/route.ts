@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/service";
+import { timingSafeEqual } from "crypto";
+import { donMutate } from "@/app/donaciones/_lib/data";
 import type { Donacion } from "@/app/donaciones/_lib/types";
 
 const KEEP = new Set(["id","f","m","n","k","t","o","met","di","gid","e","doc","ref"]);
@@ -23,7 +24,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
 
-  if (!body.token || body.token !== token) {
+  const given = Buffer.from(String(body.token ?? ""));
+  const expected = Buffer.from(token);
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
     return NextResponse.json({ ok: false, error: "Llave incorrecta" }, { status: 401 });
   }
 
@@ -39,21 +42,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, importadas: 0, omitidas: body.filas.length });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const service = createServiceClient();
-  const donTable = (service as any).from("donaciones_data");
-
-  const { data: existing } = await donTable.select("donaciones").eq("id", "main").maybeSingle();
-  const actuales: Donacion[] = (existing?.donaciones as Donacion[] | null) ?? [];
-  const existentesSet = new Set(actuales.map((d: Donacion) => d.id));
-
-  const nuevas = validas.filter((d) => !existentesSet.has(d.id));
-  const omitidas = validas.length - nuevas.length;
-
-  if (nuevas.length > 0) {
-    const merged = [...actuales, ...nuevas].sort((a, b) => b.f.localeCompare(a.f));
-    await donTable.upsert({ id: "main", donaciones: merged, updated_at: new Date().toISOString() });
-  }
+  const { nuevas, omitidas } = await donMutate((actuales) => {
+    const existentesSet = new Set(actuales.map((d: Donacion) => d.id));
+    const nuevas = validas.filter((d) => !existentesSet.has(d.id));
+    const omitidas = validas.length - nuevas.length;
+    return {
+      donaciones: nuevas.length > 0
+        ? [...actuales, ...nuevas].sort((a, b) => b.f.localeCompare(a.f))
+        : null,
+      result: { nuevas, omitidas },
+    };
+  });
 
   return NextResponse.json({ ok: true, importadas: nuevas.length, omitidas });
 }

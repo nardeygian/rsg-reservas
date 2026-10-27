@@ -18,6 +18,12 @@ function translateAuthError(msg: string): string {
   return msg;
 }
 
+// Solo rutas internas: "//evil.com" o "/\evil.com" saldrían del sitio.
+function safeNext(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return "/";
+  return raw;
+}
+
 function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +40,7 @@ function AuthCallbackInner() {
     const code      = searchParams.get("code");
     const tokenHash = searchParams.get("token_hash");
     const type      = searchParams.get("type") as EmailOtpType | null;
-    const next      = searchParams.get("next") ?? "/";
+    const next      = safeNext(searchParams.get("next"));
     const isRecoveryNext = type === "recovery" ? "/reset-password" : next;
 
     // 1. PKCE flow (code in query params)

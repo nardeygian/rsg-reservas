@@ -7,10 +7,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getCalendarEvents } from "@/lib/asana";
 import { svNorm } from "./_lib/sv-logic";
 import type { SvData, SvFila, SvGrupo, SvMiembro } from "./_lib/types";
-
-const DEFAULT_DATA: SvData = {
-  reuniones: {}, servidores: {}, registros: {}, sync: 0, sync_error: "", grupos: {}, miembros: {},
-};
+import { svTable, svReadData, normalizeSvData, DEFAULT_DATA } from "./_lib/data";
+import { nextUpdatedAt } from "@/app/donaciones/_lib/data";
 
 async function assertAccess(): Promise<void> {
   const supabase = await createClient();
@@ -34,35 +32,34 @@ async function assertAccess(): Promise<void> {
   throw new Error("Sin acceso al módulo de Servicio");
 }
 
-// servicio_data not in generated types yet (migration pending).
-// eslint-disable-next-line
-const svTable = (svc: ReturnType<typeof createServiceClient>) => (svc as any).from("servicio_data");
-
-// Migrates old single lider_user_id → lider_user_ids array on first read.
-function normalizeSvData(d: SvData): SvData {
-  for (const g of Object.values(d.grupos ?? {})) {
-    const raw = g as Record<string, unknown>;
-    if (!Array.isArray(g.lider_user_ids)) {
-      g.lider_user_ids = raw["lider_user_id"] ? [raw["lider_user_id"] as string] : [];
-    }
-  }
-  return d;
-}
-
-export async function svReadData(): Promise<SvData> {
-  const service = createServiceClient();
-  const { data } = await svTable(service).select("data").eq("id", "main").maybeSingle();
-  return normalizeSvData((data?.data as SvData | null) ?? { ...DEFAULT_DATA });
-}
-
+// Igual que donMutate: la escritura solo se aplica si updated_at no cambió
+// desde la lectura, para no pisar a otra persona editando al mismo tiempo.
 async function mutate<T>(fn: (d: SvData) => T): Promise<T> {
   const service = createServiceClient();
-  const { data } = await svTable(service).select("data").eq("id", "main").maybeSingle();
-  const d: SvData = normalizeSvData((data?.data as SvData | null) ?? { ...DEFAULT_DATA });
-  const result = fn(d);
-  await svTable(service).upsert({ id: "main", data: d, updated_at: new Date().toISOString() });
-  revalidatePath("/servicio");
-  return result;
+  for (let intento = 0; intento < 6; intento++) {
+    const { data } = await svTable(service).select("data, updated_at").eq("id", "main").maybeSingle();
+    const d: SvData = normalizeSvData(structuredClone((data?.data as SvData | null) ?? DEFAULT_DATA));
+    const result = fn(d);
+
+    let guardado: boolean;
+    if (!data) {
+      const { error } = await svTable(service).insert({ id: "main", data: d, updated_at: nextUpdatedAt(null) });
+      guardado = !error;
+    } else {
+      const { data: escritas, error } = await svTable(service)
+        .update({ data: d, updated_at: nextUpdatedAt(data.updated_at) })
+        .eq("id", "main")
+        .eq("updated_at", data.updated_at)
+        .select("id");
+      if (error) throw new Error(`No se pudo guardar Servicio: ${error.message}`);
+      guardado = (escritas ?? []).length > 0;
+    }
+    if (guardado) {
+      revalidatePath("/servicio");
+      return result;
+    }
+  }
+  throw new Error("Otra persona está guardando cambios en Servicio; intenta de nuevo.");
 }
 
 function svCleanName(n: string): string {

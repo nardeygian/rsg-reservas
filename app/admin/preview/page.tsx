@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { svReadData } from "@/app/servicio/actions";
+import { svReadData } from "@/app/servicio/_lib/data";
 
 export default async function PreviewPage() {
   const supabase = await createClient();

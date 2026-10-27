@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Donacion } from "./_lib/types";
+import { donMutate } from "./_lib/data";
 
 async function assertAccess(): Promise<void> {
   const supabase = await createClient();
@@ -16,14 +17,6 @@ async function assertAccess(): Promise<void> {
   }
 }
 
-// eslint-disable-next-line
-const donTable = (svc: ReturnType<typeof createServiceClient>) => (svc as any).from("donaciones_data");
-
-export async function donReadData(): Promise<Donacion[]> {
-  const service = createServiceClient();
-  const { data } = await donTable(service).select("donaciones").eq("id", "main").maybeSingle();
-  return (data?.donaciones as Donacion[] | null) ?? [];
-}
 
 // ── Shared matching logic ──────────────────────────────────────────────────
 
@@ -136,11 +129,6 @@ export async function donImportarAction(fd: FormData): Promise<{ importadas: num
   try { filas = JSON.parse(raw); } catch { throw new Error("El JSON no es válido"); }
   if (!Array.isArray(filas)) throw new Error("Se esperaba un arreglo de donaciones");
 
-  const service = createServiceClient();
-  const { data } = await donTable(service).select("donaciones").eq("id", "main").maybeSingle();
-  const actuales: Donacion[] = (data?.donaciones as Donacion[] | null) ?? [];
-  const existentes = new Set(actuales.map((d) => d.id));
-
   const KEEP = new Set(["id","f","m","n","k","t","o","met","di","gid","sg","e","doc","ref"]);
   const limpiar = (r: Record<string, unknown>): Donacion => {
     const out: Record<string, unknown> = {};
@@ -148,21 +136,27 @@ export async function donImportarAction(fd: FormData): Promise<{ importadas: num
     return out as Donacion;
   };
   const validas = filas.filter((r: Record<string, unknown>) => r.id && (r.m as number) > 0 && r.f && r.n);
-  const nuevas  = validas.filter((r: Record<string, unknown>) => !existentes.has(r.id as string)).map(limpiar);
-  const repetidas = validas.length - nuevas.length;
 
-  if (nuevas.length === 0) return { importadas: 0, repetidas, autovinculadas: 0, sin_match: 0 };
-
-  // Auto-vincular nuevas donaciones antes de guardar
+  const service = createServiceClient();
   const candidatos = await cargarCandidatos(service);
-  const nuevasIds = new Set(nuevas.map(d => d.id));
-  const merged = [...actuales, ...nuevas].sort((a, b) => b.f.localeCompare(a.f));
-  const { donaciones: mergedVinculadas, vinculadas: autovinculadas, sin_match } = vincularEnLista(merged, candidatos, nuevasIds);
 
-  await donTable(service).upsert({ id: "main", donaciones: mergedVinculadas, updated_at: new Date().toISOString() });
-  revalidatePath("/donaciones");
+  const res = await donMutate((actuales) => {
+    const existentes = new Set(actuales.map((d) => d.id));
+    const nuevas  = validas.filter((r: Record<string, unknown>) => !existentes.has(r.id as string)).map(limpiar);
+    const repetidas = validas.length - nuevas.length;
+    if (nuevas.length === 0) {
+      return { donaciones: null, result: { importadas: 0, repetidas, autovinculadas: 0, sin_match: 0 } };
+    }
 
-  return { importadas: nuevas.length, repetidas, autovinculadas, sin_match };
+    // Auto-vincular nuevas donaciones antes de guardar
+    const nuevasIds = new Set(nuevas.map(d => d.id));
+    const merged = [...actuales, ...nuevas].sort((a, b) => b.f.localeCompare(a.f));
+    const { donaciones, vinculadas: autovinculadas, sin_match } = vincularEnLista(merged, candidatos, nuevasIds);
+    return { donaciones, result: { importadas: nuevas.length, repetidas, autovinculadas, sin_match } };
+  });
+
+  if (res.importadas > 0) revalidatePath("/donaciones");
+  return res;
 }
 
 export async function donVincularAction(): Promise<{ vinculadas: number; sin_match: number }> {
@@ -170,58 +164,48 @@ export async function donVincularAction(): Promise<{ vinculadas: number; sin_mat
   const service = createServiceClient();
   const candidatos = await cargarCandidatos(service);
 
-  const { data: row } = await donTable(service).select("donaciones").eq("id", "main").maybeSingle();
-  const actuales: Donacion[] = (row?.donaciones as Donacion[] | null) ?? [];
+  const res = await donMutate((actuales) => {
+    const { donaciones, vinculadas, sin_match } = vincularEnLista(actuales, candidatos);
+    return { donaciones: vinculadas > 0 ? donaciones : null, result: { vinculadas, sin_match } };
+  });
 
-  const { donaciones: actualizadas, vinculadas, sin_match } = vincularEnLista(actuales, candidatos);
-
-  if (vinculadas > 0) {
-    await donTable(service).upsert({ id: "main", donaciones: actualizadas, updated_at: new Date().toISOString() });
-    revalidatePath("/donaciones");
-  }
-  return { vinculadas, sin_match };
+  if (res.vinculadas > 0) revalidatePath("/donaciones");
+  return res;
 }
 
 export async function donVincularManualAction(donId: string, di: string, gid: string): Promise<void> {
   await assertAccess();
-  const service = createServiceClient();
-  const { data: row } = await donTable(service).select("donaciones").eq("id", "main").maybeSingle();
-  const actuales: Donacion[] = (row?.donaciones as Donacion[] | null) ?? [];
-
-  const actualizadas = actuales.map((d): Donacion => {
-    if (d.id !== donId) return d;
-    const out: Donacion = { ...d, di, gid, mv: true };
-    delete out.ext;
-    return out;
-  });
-
-  await donTable(service).upsert({ id: "main", donaciones: actualizadas, updated_at: new Date().toISOString() });
+  await donMutate((actuales) => ({
+    donaciones: actuales.map((d): Donacion => {
+      if (d.id !== donId) return d;
+      const out: Donacion = { ...d, di, gid, mv: true };
+      delete out.ext;
+      return out;
+    }),
+    result: undefined,
+  }));
   revalidatePath("/donaciones");
 }
 
 export async function donMarcarExternoAction(donId: string): Promise<void> {
   await assertAccess();
-  const service = createServiceClient();
-  const { data: row } = await donTable(service).select("donaciones").eq("id", "main").maybeSingle();
-  const actuales: Donacion[] = (row?.donaciones as Donacion[] | null) ?? [];
-
-  const actualizadas = actuales.map((d): Donacion => {
-    if (d.id !== donId) return d;
-    const out: Donacion = { ...d, ext: true };
-    delete out.di;
-    delete out.gid;
-    delete out.sg;
-    delete out.mv;
-    return out;
-  });
-
-  await donTable(service).upsert({ id: "main", donaciones: actualizadas, updated_at: new Date().toISOString() });
+  await donMutate((actuales) => ({
+    donaciones: actuales.map((d): Donacion => {
+      if (d.id !== donId) return d;
+      const out: Donacion = { ...d, ext: true };
+      delete out.di;
+      delete out.gid;
+      delete out.sg;
+      delete out.mv;
+      return out;
+    }),
+    result: undefined,
+  }));
   revalidatePath("/donaciones");
 }
 
 export async function donBorrarTodoAction(): Promise<void> {
   await assertAccess();
-  const service = createServiceClient();
-  await donTable(service).upsert({ id: "main", donaciones: [], updated_at: new Date().toISOString() });
+  await donMutate(() => ({ donaciones: [], result: undefined }));
   revalidatePath("/donaciones");
 }

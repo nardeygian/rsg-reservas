@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getUserCaps } from "@/lib/auth";
-import { donReadData, donVincularAction } from "./actions";
-import { svReadData } from "@/app/servicio/actions";
+import { donVincularAction } from "./actions";
+import { donReadData } from "./_lib/data";
+import { svReadData } from "@/app/servicio/_lib/data";
 import { DonacionesShell } from "./_components/DonacionesShell";
 import { DonacionesRealtime } from "./_components/DonacionesRealtime";
 import type { Donacion } from "./_lib/types";

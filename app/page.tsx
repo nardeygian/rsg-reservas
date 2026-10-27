@@ -5,8 +5,8 @@ import { getSessionProfile, getUserCaps } from "@/lib/auth";
 import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
 import { ThemeToggle } from "./_components/ThemeToggle";
 import { getCalendarEvents } from "@/lib/asana";
-import { svReadData } from "@/app/servicio/actions";
-import { donReadData } from "@/app/donaciones/actions";
+import { svReadData } from "@/app/servicio/_lib/data";
+import { donReadData } from "@/app/donaciones/_lib/data";
 import { svNorm, svServiciosGrupo, svTablaDiscipulos, svEnPeriodo, periodoActual, MESES } from "@/app/servicio/_lib/sv-logic";
 
 const ROLE_LABELS: Record<string, string> = {

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { svReadData } from "@/app/servicio/actions";
-import { donReadData } from "@/app/donaciones/actions";
+import { svReadData } from "@/app/servicio/_lib/data";
+import { donReadData, donacionesParaLider } from "@/app/donaciones/_lib/data";
 import { DiscipulosShell } from "./_components/DiscipulosShell";
 import { DiscipulosAdminShell } from "./_components/DiscipulosAdminShell";
 
@@ -32,6 +32,10 @@ export default async function DiscipulosPage({
 
   const myGroup = previewGroup ?? Object.values(grupos).find((g) => g.lider_user_ids.includes(user.id)) ?? null;
 
+  const miembrosDeMiGrupo = myGroup
+    ? Object.values(miembros).filter((m) => m.grupo_id === myGroup.id)
+    : [];
+
   const miembrosPorGrupo: Record<string, typeof miembros[string][]> = {};
   for (const m of Object.values(miembros)) {
     if (!miembrosPorGrupo[m.grupo_id]) miembrosPorGrupo[m.grupo_id] = [];
@@ -54,9 +58,9 @@ export default async function DiscipulosPage({
       ) : myGroup ? (
         <DiscipulosShell
           grupo={myGroup}
-          miembros={Object.values(miembros).filter((m) => m.grupo_id === myGroup.id)}
+          miembros={miembrosDeMiGrupo}
           svData={svData}
-          donaciones={donaciones}
+          donaciones={donacionesParaLider(donaciones, miembrosDeMiGrupo)}
           canEdit={!previewGroup}
         />
       ) : (
