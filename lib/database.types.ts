@@ -1176,6 +1176,7 @@ export type Database = {
           id: string
           kind: string
           link: string | null
+          pushed_at: string | null
           read_at: string | null
           title: string
           user_id: string
@@ -1187,6 +1188,7 @@ export type Database = {
           id?: string
           kind: string
           link?: string | null
+          pushed_at?: string | null
           read_at?: string | null
           title: string
           user_id: string
@@ -1198,6 +1200,7 @@ export type Database = {
           id?: string
           kind?: string
           link?: string | null
+          pushed_at?: string | null
           read_at?: string | null
           title?: string
           user_id?: string
@@ -2247,6 +2250,10 @@ export type Database = {
       }
     }
     Functions: {
+      broadcast_recipients: {
+        Args: { p_audience: string; p_scope_id: string }
+        Returns: string[]
+      }
       can_assign: {
         Args: { p_area_id: string; p_ministry_id: string }
         Returns: boolean
@@ -2280,6 +2287,14 @@ export type Database = {
         Args: { m: Database["public"]["Tables"]["meetings"]["Row"] }
         Returns: string
       }
+      my_broadcast_audiences: {
+        Args: never
+        Returns: {
+          audience: string
+          label: string
+          scope_id: string
+        }[]
+      }
       my_role_scopes: {
         Args: never
         Returns: {
@@ -2288,6 +2303,20 @@ export type Database = {
           scope_type: string
         }[]
       }
+      notif_cuando: { Args: { p_ts: string }; Returns: string }
+      notificador_disparar: { Args: never; Returns: number }
+      notificador_por_enviar: {
+        Args: { p_limit?: number }
+        Returns: {
+          body: string
+          id: string
+          kind: string
+          link: string
+          title: string
+          user_id: string
+        }[]
+      }
+      notificador_procesar: { Args: never; Returns: Json }
       permission_scopes: {
         Args: { p_permission: string }
         Returns: {
@@ -2298,6 +2327,18 @@ export type Database = {
       promote_user_role: {
         Args: { new_role: string; target_user_id: string }
         Returns: undefined
+      }
+      register_push_device: {
+        Args: {
+          p_app_version?: string
+          p_auth?: string
+          p_device?: string
+          p_endpoint?: string
+          p_p256dh?: string
+          p_platform: string
+          p_token?: string
+        }
+        Returns: string
       }
       respond_assignment: {
         Args: { p_accept: boolean; p_assignment_id: string; p_reason?: string }
