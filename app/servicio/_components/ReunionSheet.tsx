@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import { useState, useRef } from "react";
 import { svFmt, svNombreLimpio, svTipo, svNorm } from "../_lib/sv-logic";
 import { svGuardarAction, svBorrarAction, svReunionQuitarAction } from "../actions";
@@ -168,10 +170,10 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                 style={{ background: editMode ? "var(--color-surface-2)" : "var(--color-accent)", color: editMode ? "var(--color-ink)" : "var(--color-accent-ink)", border: editMode ? "1px solid var(--color-line)" : "none" }}
                 onClick={() => setEditMode(m => !m)}
               >
-                {editMode ? "← Ver listado" : "Editar"}
+                {editMode ? <span className="inline-flex items-center gap-1.5"><Icon name="chevron-left" size={14} />Ver listado</span> : "Editar"}
               </button>
             )}
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }} aria-label="Cerrar">×</button>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }} aria-label="Cerrar"><Icon name="close" size={16} label="Cerrar" /></button>
           </div>
           {/* Sum bar */}
           {hasListado && (
@@ -374,7 +376,7 @@ function ViewDeptos({ reg, svData }: { reg: SvRegistro; svData: SvData }) {
                 style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
                 onClick={() => setCollapsed(prev => { const s = new Set(prev); s.has(label) ? s.delete(label) : s.add(label); return s; })}
               >
-                <span className="text-[10px]" style={{ color: "var(--color-muted)" }}>{isCollapsed ? "▶" : "▼"}</span>
+                <span className="text-[10px]" style={{ color: "var(--color-muted)" }}><Icon name={isCollapsed ? "chevron-right" : "chevron-down"} size={13} /></span>
                 <span className="font-bold text-xs flex-1">{label}</span>
                 <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
                   {sirv} sirvieron{aus > 0 && <span style={{ color: "var(--color-down)" }}> · {aus} aus.</span>}
@@ -451,7 +453,7 @@ function FilasAgrupadas({ filas, collapsedDeptos, onToggleDepto, svEstado, onCha
               style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
               onClick={() => onToggleDepto(label)}
             >
-              <span className="text-[10px]" style={{ color: "var(--color-muted)" }}>{collapsed ? "▶" : "▼"}</span>
+              <span className="text-[10px]" style={{ color: "var(--color-muted)" }}><Icon name={collapsed ? "chevron-right" : "chevron-down"} size={13} /></span>
               <span className="font-bold text-xs flex-1">{label}</span>
               <span className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
                 {items.length - ausentes} sirven

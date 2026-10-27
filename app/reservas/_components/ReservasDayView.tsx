@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import Link from "next/link";
 import { useState, useRef } from "react";
 import { formatTime } from "@/lib/datetime";
@@ -121,52 +123,32 @@ export function ReservasDayView({
 
   return (
     <>
-      {/* View toggle */}
-      <div
-        className="flex rounded-[var(--radius-control)] p-[4px] gap-1"
-        style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
-      >
-        <span
-          className="flex-1 text-center text-sm py-1.5 rounded-[var(--radius-control)] font-semibold"
-          style={{ background: "var(--color-accent)", color: "#fff" }}
-        >
-          Día
-        </span>
-        <Link
-          href={`/reservas?date=${dateParam}&view=mes`}
-          className="flex-1 text-center text-sm py-1.5 rounded-[var(--radius-control)]"
-          style={{ color: "var(--color-muted)" }}
-        >
-          Mes
-        </Link>
-      </div>
+      {/* Día | Mes: el mismo segmentado que el resto del portal */}
+      <nav className="segmented w-full" aria-label="Vista">
+        <Link href={`/reservas?date=${dateParam}`} aria-current="page" className="segmented-link flex-1 text-center">Día</Link>
+        <Link href={`/reservas?date=${dateParam}&view=mes`} prefetch className="segmented-link flex-1 text-center">Mes</Link>
+      </nav>
 
       {/* Day navigator */}
-      <div
-        className="flex items-center justify-between rounded-[var(--radius-control)] p-[6px]"
-        style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
-      >
+      <div className="flex items-center justify-between gap-2">
         <Link
           href={`/reservas?date=${prevDate}`}
-          className="w-10 h-10 inline-flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
-          style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
+          prefetch
+          className="icon-btn"
           aria-label="Día anterior"
         >
-          ‹
+          <Icon name="chevron-left" size={18} />
         </Link>
-        <span
-          className="font-semibold text-[15px]"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <span className="font-semibold text-[17px] tracking-[-0.01em] text-center" style={{ color: "var(--color-ink)" }}>
           {dayLabel}
         </span>
         <Link
           href={`/reservas?date=${nextDate}`}
-          className="w-10 h-10 inline-flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
-          style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
+          prefetch
+          className="icon-btn"
           aria-label="Día siguiente"
         >
-          ›
+          <Icon name="chevron-right" size={18} />
         </Link>
       </div>
 
@@ -221,7 +203,7 @@ export function ReservasDayView({
                     const right = toTimeline(b.ends_at);
                     const width = Math.max(1, right - left);
                     const blockColor = b.isOwn
-                      ? "#2F5E9E"
+                      ? "var(--color-info)"
                       : b.status === "requested"
                       ? "var(--color-gold)"
                       : "var(--color-accent)";
@@ -290,7 +272,7 @@ export function ReservasDayView({
         <span className="inline-flex items-center gap-[6px]">
           <span
             className="w-[10px] h-[10px] rounded-full inline-block"
-            style={{ background: "#2F5E9E" }}
+            style={{ background: "var(--color-info)" }}
           />
           Tus reservas
         </span>
@@ -303,7 +285,8 @@ export function ReservasDayView({
         </span>
       </div>
 
-      <Link href="/reservas/nueva" className="btn-primary w-full mt-auto">
+      <Link href="/reservas/nueva" prefetch className="btn-primary w-full mt-auto">
+        <Icon name="plus" size={18} strokeWidth={2.2} />
         Nueva reserva
       </Link>
 
@@ -365,7 +348,7 @@ export function ReservasDayView({
                   style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }}
                   aria-label="Cerrar"
                 >
-                  ×
+                  <Icon name="close" size={16} label="Cerrar" />
                 </button>
               </div>
             </div>

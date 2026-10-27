@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import Link from "next/link";
 import type { AsanaEvent } from "@/lib/asana";
 import type { LinkInfo, BookingOption } from "../page";
@@ -131,7 +133,7 @@ export function EventPanel({
               style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}
               aria-label="Cerrar"
             >
-              ×
+              <Icon name="close" size={16} label="Cerrar" />
             </button>
           </div>
 

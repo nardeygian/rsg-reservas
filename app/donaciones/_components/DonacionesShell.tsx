@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Donacion } from "../_lib/types";
@@ -212,7 +214,7 @@ export function DonacionesShell({
           <button type="button" onClick={() => shiftP(-1)}
             className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
             style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
-          >‹</button>
+          ><Icon name="chevron-left" size={18} /></button>
           <span className="text-sm font-semibold min-w-[140px] text-center" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>
             {etiq}
           </span>
@@ -220,7 +222,7 @@ export function DonacionesShell({
             className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
             style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
             disabled={esFuturoDon(per, nextShift[0], nextShift[1])}
-          >›</button>
+          ><Icon name="chevron-right" size={18} /></button>
         </div>
       </div>
       {/* Row 2: origen filter with separator */}
@@ -277,7 +279,7 @@ export function DonacionesShell({
               ))}
             </div>
             <span className="text-xs font-semibold opacity-80 flex items-center gap-1">
-              Ver registro completo →
+              <span className="inline-flex items-center gap-1">Ver registro completo<Icon name="arrow-right" size={14} /></span>
             </span>
           </button>
 
@@ -423,7 +425,7 @@ export function DonacionesShell({
                     </h2>
                   </div>
                 </div>
-                <button onClick={closeSheet} className="w-8 h-8 flex items-center justify-center rounded-full text-xl flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>×</button>
+                <button onClick={closeSheet} className="w-8 h-8 flex items-center justify-center rounded-full text-xl flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}><Icon name="close" size={16} label="Cerrar" /></button>
               </div>
               {sheet.type === "listado" && (
                 <div className="flex flex-col gap-2">

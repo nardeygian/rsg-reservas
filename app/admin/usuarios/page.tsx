@@ -1,3 +1,4 @@
+import { Icon } from "@/app/_components/ui/Icon";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -298,7 +299,7 @@ function UserCard({
                   className="w-5 h-5 flex items-center justify-center rounded-full text-[11px] font-bold transition flex-none"
                   style={{ background: "var(--color-line)", color: "var(--color-muted)" }}
                   aria-label={`Quitar rol ${er.role}`}>
-                  ×
+                  <Icon name="close" size={16} label="Cerrar" />
                 </button>
               </form>
             </div>

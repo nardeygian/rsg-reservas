@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import { useState } from "react";
 import {
   svGrupoEditarAction, svGrupoQuitarAction,
@@ -89,7 +91,7 @@ export function GrupoSheet({
               <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>Discipulado</p>
               <h2 className="font-bold text-lg leading-tight mt-0.5" style={{ color: "var(--color-ink)" }}>{grupo.nombre}</h2>
             </div>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }} aria-label="Cerrar">×</button>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", fontSize: 20 }} aria-label="Cerrar"><Icon name="close" size={16} label="Cerrar" /></button>
           </div>
         </div>
 
@@ -149,7 +151,7 @@ export function GrupoSheet({
                       style={{ color: "var(--color-faint)", lineHeight: 1 }}
                       onClick={() => handleQuitarMiembro(m.id)}
                       disabled={saving}
-                    >×</button>
+                    ><Icon name="close" size={16} label="Cerrar" /></button>
                   </span>
                 ))}
               </div>

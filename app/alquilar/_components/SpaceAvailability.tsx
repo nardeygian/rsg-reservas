@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -94,7 +96,7 @@ export function SpaceAvailability({ spaceId }: { spaceId: string }) {
                   className="text-xs mt-0.5"
                   style={{ color: "var(--color-positive)" }}
                 >
-                  ● Libre todo el día
+                  <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle" style={{ background: "currentColor" }} />Libre todo el día
                 </p>
               ) : (
                 <ul className="mt-1 flex flex-wrap gap-1">

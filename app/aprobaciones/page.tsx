@@ -1,3 +1,4 @@
+import { Icon } from "@/app/_components/ui/Icon";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -272,14 +273,14 @@ export default async function ApprovalsPage({
                     formAction={approveBookingAction}
                     className="rounded-[var(--radius-control)] bg-green-600 text-white px-3 py-1.5 text-sm font-medium"
                   >
-                    ✓ Aprobar
+                    <span className="inline-flex items-center gap-1.5"><Icon name="check" size={15} />Aprobar</span>
                   </button>
                   <button
                     type="submit"
                     formAction={rejectBookingAction}
                     className="rounded-[var(--radius-control)] border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-1.5 text-sm font-medium"
                   >
-                    ✗ Rechazar
+                    <span className="inline-flex items-center gap-1.5"><Icon name="close" size={15} />Rechazar</span>
                   </button>
                   <Link
                     href={`/reservas/${b.id}`}

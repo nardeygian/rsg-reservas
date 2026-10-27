@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import { useEffect, useMemo, useState } from "react";
 import { submitExternalBookingAction } from "../actions";
 import { formatCents } from "@/lib/money";
@@ -315,7 +317,7 @@ export function RentalForm({
                 }
                 className="text-xs rounded-full border border-line px-3 py-1.5 hover:bg-bg-muted transition"
               >
-                {copied === "llave" ? "Copiado ✓" : "Copiar"}
+                {copied === "llave" ? <span className="inline-flex items-center gap-1.5"><Icon name="check" size={14} />Copiado</span> : "Copiar"}
               </button>
             </div>
           </div>
@@ -342,7 +344,7 @@ export function RentalForm({
                 }
                 className="text-xs rounded-full border border-line px-3 py-1.5 hover:bg-bg-muted transition"
               >
-                {copied === "cuenta" ? "Copiado ✓" : "Copiar"}
+                {copied === "cuenta" ? <span className="inline-flex items-center gap-1.5"><Icon name="check" size={14} />Copiado</span> : "Copiar"}
               </button>
             </div>
           </div>
@@ -422,12 +424,12 @@ export function RentalForm({
           />
           {receiptFile ? (
             <>
-              <p className="text-base font-medium">✓ {receiptFile.name}</p>
+              <p className="text-base font-medium inline-flex items-center gap-1.5"><Icon name="check-circle" size={18} />{receiptFile.name}</p>
               <p className="text-xs text-fg2">Toca para cambiar de archivo</p>
             </>
           ) : (
             <>
-              <p className="text-base font-medium">📎 Adjuntar comprobante</p>
+              <p className="text-base font-medium inline-flex items-center gap-1.5"><Icon name="paperclip" size={18} />Adjuntar comprobante</p>
               <p className="text-xs text-fg3">
                 PDF, PNG o JPG · Máximo 5 MB
               </p>

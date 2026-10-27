@@ -108,17 +108,7 @@ export default async function ReservasPage({
 
     return (
       <main className="min-h-dvh flex flex-col">
-        <div className="flex-1 px-4 pt-5 pb-4 max-w-md mx-auto w-full flex flex-col gap-3">
-          <header className="flex flex-col gap-0.5">
-            <span className="eyebrow">Reservas de espacios</span>
-            <h1
-              className="text-[22px] font-semibold leading-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              ¿Qué espacio necesitas?
-            </h1>
-          </header>
-
+        <div className="flex-1 px-4 pt-6 pb-4 max-w-md mx-auto w-full flex flex-col gap-4">
           <ReservasMesView
             gridDayKeys={gridDays.map(toDateParam)}
             bookingsByDay={bookingsByDay}
@@ -186,16 +176,8 @@ export default async function ReservasPage({
 
   return (
     <main className="min-h-dvh flex flex-col">
-      <div className="flex-1 px-4 pt-5 pb-4 max-w-md mx-auto w-full flex flex-col gap-3">
-        <header className="flex flex-col gap-0.5">
-          <span className="eyebrow">Reservas de espacios</span>
-          <h1
-            className="text-[22px] font-semibold leading-tight"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            ¿Qué espacio necesitas?
-          </h1>
-        </header>
+      <div className="flex-1 px-4 pt-6 pb-4 max-w-md mx-auto w-full flex flex-col gap-4">
+        <h1 className="page-title">Reservas</h1>
         <ReservasDayView
           spaces={visibleSpaces}
           bookings={bookingBlocks}

@@ -1,4 +1,6 @@
 "use client";
+
+import { Icon } from "@/app/_components/ui/Icon";
 import { Chevron as ChevronIcon } from "@/app/_components/ui/PeriodPicker";
 
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -701,7 +703,7 @@ function ListaView({ events, linksByGid, onEventClick }: {
           <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: isPast ? "var(--color-faint)" : "var(--color-muted)" }}>
             {MONTHS[m - 1]} {y}
           </span>
-          <span style={{ fontSize: 10, color: "var(--color-faint)" }}>{isCollapsed ? "▶" : "▼"}</span>
+          <span style={{ fontSize: 10, color: "var(--color-faint)" }}><Icon name={isCollapsed ? "chevron-right" : "chevron-down"} size={13} /></span>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 99, background: "var(--color-surface-2)", color: "var(--color-muted)" }}>{evs.length}</span>
         </button>
         {!isCollapsed && (
@@ -769,7 +771,7 @@ function ListaView({ events, linksByGid, onEventClick }: {
           <button type="button" onClick={() => setShowPast(v => !v)}
             style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
             <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", fontSize: 10 }}>
-              {showPast ? "▲" : "▼"}
+              <Icon name={showPast ? "chevron-up" : "chevron-down"} size={13} />
             </span>
             {showPast ? "Ocultar meses anteriores" : `Ver meses anteriores (${pastGroups.length})`}
           </button>

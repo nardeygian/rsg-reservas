@@ -1,3 +1,4 @@
+import { Icon } from "@/app/_components/ui/Icon";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -47,7 +48,7 @@ export default async function EditItemPage({
           </h1>
         </div>
         <Link href="/admin/items" className="text-sm underline text-fg2">
-          ← Items
+          <span className="inline-flex items-center gap-1.5"><Icon name="chevron-left" size={15} />Items</span>
         </Link>
       </header>
 

@@ -1,3 +1,4 @@
+import { Icon } from "@/app/_components/ui/Icon";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -235,7 +236,7 @@ export default async function BookingDetailPage({
             border: "1px solid var(--color-line)",
           }}
         >
-          ← Reservas
+          <span className="inline-flex items-center gap-1.5"><Icon name="chevron-left" size={15} />Reservas</span>
         </Link>
       </header>
 
@@ -271,7 +272,7 @@ export default async function BookingDetailPage({
             </span>
             {isPartOfSeries && (
               <span className="text-xs font-medium" style={{ color: "var(--color-muted)" }}>
-                🔁 serie semanal
+                <span className="inline-flex items-center gap-1.5"><Icon name="repeat" size={13} />serie semanal</span>
               </span>
             )}
           </div>
@@ -308,7 +309,7 @@ export default async function BookingDetailPage({
           <InfoRow label="Tipo" value={USE_TYPE_LABELS[base.use_type] ?? base.use_type} />
         )}
         {base.title && <InfoRow label="Título" value={base.title} />}
-        {base.has_montaje_lock && <InfoRow label="Montaje" value="🔒 Bloqueado" />}
+        {base.has_montaje_lock && <InfoRow label="Montaje" value={<span className="inline-flex items-center gap-1.5"><Icon name="lock" size={13} />Bloqueado</span>} />}
         {(bookedItems ?? []).length > 0 && (
           <InfoRow
             label="Items"
@@ -462,7 +463,7 @@ export default async function BookingDetailPage({
                   className="inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 h-11 text-sm font-semibold active:scale-[0.97] transition"
                   style={{ background: "var(--color-up-soft)", color: "var(--color-up)" }}
                 >
-                  ✓ Aprobar
+                  <Icon name="check" size={17} />Aprobar
                 </button>
               </form>
               <form action={rejectBookingAction}>
@@ -472,7 +473,7 @@ export default async function BookingDetailPage({
                   className="inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
                   style={{ borderColor: "var(--color-down)", color: "var(--color-down)" }}
                 >
-                  ✗ Rechazar
+                  <Icon name="close" size={17} />Rechazar
                 </button>
               </form>
             </>
@@ -552,7 +553,7 @@ export default async function BookingDetailPage({
             className="text-sm font-medium"
             style={{ color: "var(--color-accent)" }}
           >
-            📅 Agregar a mi calendario (.ics)
+            <span className="inline-flex items-center gap-1.5"><Icon name="calendar-plus" size={16} />Agregar a mi calendario (.ics)</span>
           </a>
           <p className="text-xs" style={{ color: "var(--color-muted)" }}>
             Importa este evento como una foto puntual. Si la reserva cambia, tu calendario no se actualiza solo.

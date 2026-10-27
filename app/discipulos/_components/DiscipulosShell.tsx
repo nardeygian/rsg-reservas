@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/app/_components/ui/Icon";
+
 import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -138,7 +140,7 @@ export function DiscipulosShell({
             className="w-8 h-8 flex items-center justify-center rounded-full text-lg"
             style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
             onClick={() => shiftP(-1)}
-          >‹</button>
+          ><Icon name="chevron-left" size={18} /></button>
           <span className="text-sm font-semibold min-w-[120px] text-center" style={{ color: "var(--color-ink)" }}>
             {etiqueta(per, y, i)}
           </span>
@@ -148,7 +150,7 @@ export function DiscipulosShell({
             style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
             onClick={() => shiftP(1)}
             disabled={esFuturo(per, nextShift[0], nextShift[1])}
-          >›</button>
+          ><Icon name="chevron-right" size={18} /></button>
         </div>
       </div>
 

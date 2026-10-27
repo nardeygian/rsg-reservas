@@ -1,3 +1,4 @@
+import { Icon } from "@/app/_components/ui/Icon";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -315,7 +316,7 @@ export default async function HomePage() {
                   Recaudado en el mes
                 </span>
                 <Link href="/donaciones" style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", textDecoration: "none", opacity: 0.9 }}>
-                  Ver registro →
+                  <span className="inline-flex items-center gap-1">Ver registro<Icon name="arrow-right" size={14} /></span>
                 </Link>
               </div>
               <span className="tabular" style={{ fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, letterSpacing: "-.035em", lineHeight: 1.05, color: "#fff" }}>
@@ -371,7 +372,7 @@ export default async function HomePage() {
                     Última reunión
                   </span>
                   <Link href={`/servicio?rid=${ultimaReunion.id}`} style={{ fontSize: 12.5, fontWeight: 600, color: "var(--color-accent)", textDecoration: "none" }}>
-                    Ver detalle →
+                    <span className="inline-flex items-center gap-1">Ver detalle<Icon name="arrow-right" size={14} /></span>
                   </Link>
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{ultimaReunion.nombre}</span>
