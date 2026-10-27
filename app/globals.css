@@ -662,14 +662,14 @@ summary.list-none::-webkit-details-marker { display: none; }
      línea y usa la anterior, así que nunca se rompe.
    ===================================================================== */
 :root {
-  --liquid-bg: rgba(246, 245, 241, 0.34);
+  --liquid-bg: rgba(236, 234, 228, 0.62);
   --liquid-rim: rgba(255, 255, 255, 0.85);
   --liquid-rim-soft: rgba(255, 255, 255, 0.28);
   --liquid-glow: rgba(255, 255, 255, 0.22);
   --liquid-caustic: rgba(0, 51, 41, 0.14);
 }
 .dark {
-  --liquid-bg: rgba(14, 36, 30, 0.36);
+  --liquid-bg: rgba(10, 30, 25, 0.62);
   --liquid-rim: rgba(233, 231, 226, 0.35);
   --liquid-rim-soft: rgba(233, 231, 226, 0.08);
   --liquid-glow: rgba(189, 205, 194, 0.08);
@@ -684,9 +684,12 @@ summary.list-none::-webkit-details-marker { display: none; }
     inset 0 0 16px var(--liquid-glow),
     inset 0 -12px 22px -14px var(--liquid-caustic),
     var(--glass-shadow);
-  -webkit-backdrop-filter: blur(9px) saturate(200%) brightness(1.04);
-  backdrop-filter: blur(9px) saturate(200%) brightness(1.04);
-  backdrop-filter: url(#liquid-refract) blur(5px) saturate(200%) brightness(1.04);
+  /* Esmerilado: suficiente desenfoque para que el texto de atrás no se lea
+     a través del vidrio (en Safari/iPhone no hay refracción, solo esto). */
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  /* Primero esmerilar y después refractar: al revés el texto de atrás se colaba */
+  backdrop-filter: blur(18px) saturate(180%) url(#liquid-refract);
 }
 /* Reflejo especular: una mancha de luz curva arriba, como en una gota */
 .glass.liquid::before {
