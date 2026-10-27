@@ -60,10 +60,19 @@ type ExtraRole = {
 
 type Ministry = { id: string; name: string; type: string };
 
-function isPending(r: UserRow): boolean {
-  if (!r.requested_role) return false;
+// La solicitud ya está resuelta si el usuario tiene ese rol, sea como rol
+// primario o como rol adicional (p. ej. líder de departamento con su depto).
+function requestGranted(r: UserRow, extraRoles: ExtraRole[]): boolean {
+  const req = r.requested_role;
+  if (!req) return true;
+  if (req === r.role) return true;
+  if (req === "lider_discipulado" && r.role === "mentor") return true;
+  return extraRoles.some((er) => er.role === req);
+}
+
+function isPending(r: UserRow, extraRoles: ExtraRole[]): boolean {
+  if (requestGranted(r, extraRoles)) return false;
   if (r.requested_role === "lider_departamento" && r.role === "leader") return false;
-  if (r.requested_role === r.role) return false;
   return r.role === "leader";
 }
 
@@ -141,8 +150,9 @@ export default async function UsuariosPage({
   }
 
   const rows = profiles ?? [];
-  const pending = rows.filter(isPending);
-  const others = rows.filter((r) => !isPending(r));
+  const pendingOf = (r: UserRow) => isPending(r, extraRolesByUser.get(r.id) ?? []);
+  const pending = rows.filter(pendingOf);
+  const others = rows.filter((r) => !pendingOf(r));
 
   return (
     <main className="min-h-dvh">
@@ -243,7 +253,7 @@ function UserCard({
       style={highlight ? { borderColor: "var(--color-gold)", background: "var(--color-gold-soft)" } : undefined}
     >
       {/* Fila: avatar + nombre/email + rol primario */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold flex-none"
           style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}
@@ -257,27 +267,27 @@ function UserCard({
             {isSelf && <span className="ml-1.5 text-xs font-normal" style={{ color: "var(--color-faint)" }}>(tú)</span>}
           </p>
           <p className="text-xs truncate" style={{ color: "var(--color-muted)" }}>{email ?? u.id}</p>
-        </div>
-        <div className="flex items-center gap-1.5 flex-wrap justify-end flex-none max-w-[220px]">
-          <span className="text-[11px] font-semibold px-2 py-[2px] rounded-full whitespace-nowrap"
-            style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}>
-            {ROLE_LABELS[u.role] ?? u.role}
-          </span>
-          {u.requested_role && (
+          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
             <span className="text-[11px] font-semibold px-2 py-[2px] rounded-full whitespace-nowrap"
-              style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }}>
-              Solicita: {REQUESTED_LABELS[u.requested_role] ?? u.requested_role}
+              style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}>
+              {ROLE_LABELS[u.role] ?? u.role}
             </span>
-          )}
+            {!requestGranted(u, extraRoles) && (
+              <span className="text-[11px] font-semibold px-2 py-[2px] rounded-full whitespace-nowrap"
+                style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }}>
+                Solicita: {REQUESTED_LABELS[u.requested_role!] ?? u.requested_role}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Roles adicionales */}
       {extraRoles.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pl-11">
+        <div className="flex flex-wrap gap-1.5 sm:pl-11">
           {extraRoles.map((er) => (
             <div key={er.id} className="flex items-center gap-1">
-              <span className="text-[11px] font-semibold px-2 py-[2px] rounded-full"
+              <span className="text-[11px] font-semibold px-2 py-[2px] rounded-full min-w-0"
                 style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}>
                 {EXTRA_ROLE_LABELS[er.role] ?? er.role}
                 {er.ministry_name ? ` · ${er.ministry_name}` : ""}
@@ -285,7 +295,7 @@ function UserCard({
               <form action={removeUserRoleAction}>
                 <input type="hidden" name="role_id" value={er.id} />
                 <button type="submit"
-                  className="w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold transition"
+                  className="w-5 h-5 flex items-center justify-center rounded-full text-[11px] font-bold transition flex-none"
                   style={{ background: "var(--color-line)", color: "var(--color-muted)" }}
                   aria-label={`Quitar rol ${er.role}`}>
                   ×
@@ -309,7 +319,7 @@ function UserCard({
         className="flex items-center gap-2"
         style={{ borderTop: "1px solid var(--color-line)", paddingTop: 10 }}>
         <input type="hidden" name="user_id" value={u.id} />
-        <select name="role" defaultValue={u.role} className="input flex-1 text-sm"
+        <select name="role" defaultValue={u.role} className="input flex-1 min-w-0 text-sm"
           style={{ height: 36, paddingTop: 0, paddingBottom: 0 }}
           disabled={isSelf} aria-label="Rol primario">
           {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
@@ -349,7 +359,7 @@ function UserCard({
             <select
               name="grupo_id"
               defaultValue={grupoActual?.id ?? ""}
-              className="input text-sm flex-1"
+              className="input text-sm flex-1 min-w-0"
               style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}
             >
               <option value="">— Sin grupo —</option>

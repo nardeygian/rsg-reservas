@@ -205,14 +205,15 @@ export function AddRoleForm({
   const mins  = ministries.filter((m) => m.type === "ministerio");
 
   return (
-    <form action={addAction} className="flex items-center gap-2 pl-11">
+    <form action={addAction} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:pl-11">
       <input type="hidden" name="user_id" value={userId} />
       <select
         name="role"
         value={role}
         onChange={(e) => setRole(e.target.value)}
-        className="input text-sm flex-none"
-        style={{ height: 32, paddingTop: 0, paddingBottom: 0, width: 170 }}
+        className="input text-sm col-span-2 min-w-0"
+        style={{ height: 36, paddingTop: 0, paddingBottom: 0 }}
+        aria-label="Rol adicional"
       >
         <option value="lider_departamento">Líder de departamento</option>
         <option value="pastor_ministerio">Pastor de ministerio</option>
@@ -221,22 +222,22 @@ export function AddRoleForm({
       </select>
 
       {role === "lider_departamento" && (
-        <select name="ministry_id" className="input text-sm flex-1"
-          style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}>
+        <select name="ministry_id" className="input text-sm min-w-0" aria-label="Departamento"
+          style={{ height: 36, paddingTop: 0, paddingBottom: 0 }}>
           <option value="">— sin vincular —</option>
           {depts.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
       )}
       {role === "pastor_ministerio" && (
-        <select name="ministry_id" className="input text-sm flex-1"
-          style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}>
+        <select name="ministry_id" className="input text-sm min-w-0" aria-label="Ministerio"
+          style={{ height: 36, paddingTop: 0, paddingBottom: 0 }}>
           <option value="">— sin vincular —</option>
           {mins.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
       )}
       {role === "lider_discipulado" && (
-        <select name="grupo_id" className="input text-sm flex-1"
-          style={{ height: 32, paddingTop: 0, paddingBottom: 0 }}>
+        <select name="grupo_id" className="input text-sm min-w-0" aria-label="Grupo de discipulado"
+          style={{ height: 36, paddingTop: 0, paddingBottom: 0 }}>
           <option value="">— sin vincular —</option>
           {grupos.map((g) => <option key={g.id} value={g.id}>{g.nombre}</option>)}
         </select>
@@ -244,8 +245,8 @@ export function AddRoleForm({
 
       <button
         type="submit"
-        className="text-sm font-semibold flex-none px-3 rounded-[var(--radius-control)] transition"
-        style={{ height: 32, background: "var(--color-surface-2)", color: "var(--color-accent)", border: "1px solid var(--color-line)" }}
+        className="text-sm font-semibold px-3 rounded-[var(--radius-control)] transition col-start-2"
+        style={{ height: 36, background: "var(--color-surface-2)", color: "var(--color-accent)", border: "1px solid var(--color-line)" }}
       >
         + Agregar
       </button>
