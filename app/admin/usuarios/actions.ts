@@ -100,6 +100,22 @@ export async function inviteUserAction(formData: FormData) {
   );
 }
 
+// Al otorgar el rol que el usuario pidió al registrarse, la solicitud queda
+// resuelta y deja de aparecer como pendiente.
+async function clearRequestIfGranted(
+  service: ReturnType<typeof createServiceClient>,
+  userId: string,
+  grantedRole: string
+) {
+  const matches =
+    grantedRole === "mentor" ? ["mentor", "lider_discipulado"] : [grantedRole];
+  await service
+    .from("profiles")
+    .update({ requested_role: null })
+    .eq("id", userId)
+    .in("requested_role", matches);
+}
+
 const VALID_EXTRA_ROLES = ["lider_departamento", "pastor_ministerio", "pastor_sede", "lider_discipulado"] as const;
 type ExtraRole = (typeof VALID_EXTRA_ROLES)[number];
 function isExtraRole(v: string): v is ExtraRole {
@@ -130,6 +146,8 @@ export async function addUserRoleAction(formData: FormData) {
       : error.message;
     redirect(`/admin/usuarios?error=${encodeURIComponent(msg)}`);
   }
+
+  await clearRequestIfGranted(service, userId, role);
 
   // For discipulado: also assign the group leader in svData
   if (role === "lider_discipulado" && grupoId) {
@@ -273,6 +291,8 @@ export async function updateUserRoleAction(formData: FormData) {
       : error.message;
     redirect(`/admin/usuarios?error=${encodeURIComponent(msg)}`);
   }
+
+  await clearRequestIfGranted(service, userId, role);
 
   revalidatePath("/admin/usuarios");
   revalidatePath("/");

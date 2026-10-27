@@ -52,8 +52,13 @@ export default async function CalendarioPage({
   }
 
   // Eventos de Asana, links actuales y opciones de reserva (en paralelo)
+  let asanaError: string | null = null;
   const [events, { data: linksRaw }, { data: bookingsRaw }] = await Promise.all([
-    getCalendarEvents(),
+    getCalendarEvents().catch((e: Error) => {
+      console.error("[calendario] Asana:", e.message);
+      asanaError = e.message;
+      return [] as Awaited<ReturnType<typeof getCalendarEvents>>;
+    }),
     service.from("calendar_links").select("asana_gid, booking_id"),
     service
       .from("bookings_calendar")
@@ -96,6 +101,14 @@ export default async function CalendarioPage({
 
   return (
     <main className="min-h-dvh">
+      {asanaError && (
+        <div className="px-4 pt-4 max-w-3xl mx-auto">
+          <p role="alert" className="text-sm rounded-[var(--radius-control)] px-4 py-3"
+            style={{ background: "var(--color-down-soft)", color: "var(--color-down)", border: "1px solid var(--color-down)" }}>
+            No se pudieron cargar los eventos del calendario de Asana. {asanaError}
+          </p>
+        </div>
+      )}
       {(ok || error) && (
         <div className="px-4 pt-4 max-w-3xl mx-auto">
           {ok && (
