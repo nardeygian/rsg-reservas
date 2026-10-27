@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserClient } from "@supabase/ssr";
+import type { Database } from "@/types/supabase";
 import type { EmailOtpType } from "@supabase/supabase-js";
 
 function translateAuthError(msg: string): string {
@@ -15,6 +16,8 @@ function translateAuthError(msg: string): string {
     return "El enlace ha expirado. Solicita uno nuevo";
   if (m.includes("user not found"))
     return "No existe una cuenta con ese email";
+  if (m.includes("code verifier") || m.includes("pkce"))
+    return "Abre el enlace en el mismo navegador donde lo pediste, o solicita uno nuevo";
   return msg;
 }
 
@@ -36,7 +39,14 @@ function AuthCallbackInner() {
   });
 
   async function handle() {
-    const supabase = createClient();
+    // Cliente propio sin detección automática de la URL: el cliente de
+    // @supabase/ssr es PKCE y rechazaría los tokens del fragmento (#access_token)
+    // que traen los enlaces de recuperación e invitación.
+    const supabase = createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { isSingleton: false, auth: { detectSessionInUrl: false } }
+    );
     const code      = searchParams.get("code");
     const tokenHash = searchParams.get("token_hash");
     const type      = searchParams.get("type") as EmailOtpType | null;
@@ -65,13 +75,27 @@ function AuthCallbackInner() {
       return;
     }
 
-    // 3. Implicit / hash-based flow — Supabase client reads the hash automatically
-    //    Give the client a tick to parse the fragment before calling getSession
-    await new Promise(r => setTimeout(r, 100));
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const hash = typeof window !== "undefined" ? window.location.hash : "";
-      const isRecovery = hash.includes("type=recovery");
+    // 3. Flujo implícito: tokens en el fragmento (#access_token=…&type=recovery).
+    //    Lo usan la recuperación de contraseña y las invitaciones del admin.
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const hashError = hash.get("error_description");
+    if (hashError) {
+      router.replace(`/login?error=${encodeURIComponent(translateAuthError(hashError))}`);
+      return;
+    }
+    const accessToken  = hash.get("access_token");
+    const refreshToken = hash.get("refresh_token");
+    if (accessToken && refreshToken) {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) {
+        router.replace(`/login?error=${encodeURIComponent(translateAuthError(error.message))}`);
+        return;
+      }
+      const hashType = hash.get("type");
+      const isRecovery = hashType === "recovery" || hashType === "invite";
       router.replace(isRecovery ? "/reset-password" : next);
       return;
     }

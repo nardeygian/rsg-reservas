@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createEmailLinkClient } from "@/lib/supabase/email-link";
 
 export async function forgotPasswordAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -10,7 +10,7 @@ export async function forgotPasswordAction(formData: FormData) {
     redirect("/forgot-password?error=El%20email%20es%20obligatorio");
   }
 
-  const supabase = await createClient();
+  const supabase = createEmailLinkClient();
   const origin = process.env.SITE_URL ?? "https://rsg-reservas.vercel.app";
 
   // No reportamos si el email existe o no (anti-enumeración).
