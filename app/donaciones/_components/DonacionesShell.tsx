@@ -710,8 +710,7 @@ function CardDiscipulosVsIglesia({ lista, etiq, onOpen }: {
   const totalRe = suma(reLista);
   const pDi = T ? (totalDi / T) * 100 : 0;
   const pRe = T ? (totalRe / T) * 100 : 0;
-  const donDi = donantes(diLista);
-  const donRe = donantes(reLista);
+  const [open, setOpen] = useState(true);
 
   if (T === 0) return null;
 
@@ -722,12 +721,15 @@ function CardDiscipulosVsIglesia({ lista, etiq, onOpen }: {
 
   return (
     <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
-      <div className="p-5 flex flex-col gap-4">
-        <div className="flex flex-wrap justify-between items-baseline gap-2">
-          <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Discípulos vs. resto de la iglesia</h2>
+      <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full flex-wrap" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Discípulos vs. resto de la iglesia</h2>
+        <div className="flex items-center gap-2 flex-none">
           <span className="text-xs" style={{ color: "var(--color-muted)" }}>Diezmos y ofrendas · {etiq}</span>
+          <Chevron open={open} />
         </div>
-
+      </button>
+      {open && (
+      <div className="px-5 pb-5 flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           {subCards.map(({ label, v, p, list, color }) => (
             <button
@@ -755,6 +757,7 @@ function CardDiscipulosVsIglesia({ lista, etiq, onOpen }: {
           <div style={{ width: cssPct(pRe), background: "var(--color-gold)" }} />
         </div>
       </div>
+      )}
     </div>
   );
 }
