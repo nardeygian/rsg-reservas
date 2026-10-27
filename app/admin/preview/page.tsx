@@ -31,7 +31,7 @@ export default async function PreviewPage() {
   );
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       <div className="px-4 pt-6 pb-10 max-w-2xl mx-auto flex flex-col gap-6">
 
         <header className="flex flex-col gap-1">
@@ -52,7 +52,7 @@ export default async function PreviewPage() {
             className="card card-hover flex items-center gap-4 px-4 py-4"
             style={{ textDecoration: "none" }}
           >
-            <span className="w-10 h-10 rounded-[8px] flex items-center justify-center flex-none" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}>
+            <span className="w-10 h-10 rounded-[var(--radius-control)] flex items-center justify-center flex-none" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}>
               {eyeIcon}
             </span>
             <div className="flex flex-col gap-0.5 min-w-0">
@@ -71,7 +71,7 @@ export default async function PreviewPage() {
             className="card card-hover flex items-center gap-4 px-4 py-4"
             style={{ textDecoration: "none" }}
           >
-            <span className="w-10 h-10 rounded-[8px] flex items-center justify-center flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>
+            <span className="w-10 h-10 rounded-[var(--radius-control)] flex items-center justify-center flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>
               {eyeIcon}
             </span>
             <div className="flex flex-col gap-0.5 min-w-0">
@@ -94,7 +94,7 @@ export default async function PreviewPage() {
                 className="card card-hover flex items-center gap-4 px-4 py-4"
                 style={{ textDecoration: "none" }}
               >
-                <span className="w-10 h-10 rounded-[8px] flex items-center justify-center flex-none text-sm font-bold" style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }}>
+                <span className="w-10 h-10 rounded-[var(--radius-control)] flex items-center justify-center flex-none text-sm font-bold" style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)" }}>
                   {g.nombre.slice(0, 2).toUpperCase()}
                 </span>
                 <div className="flex flex-col gap-0.5 min-w-0">

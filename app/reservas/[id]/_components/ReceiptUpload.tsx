@@ -18,7 +18,7 @@ export function ReceiptUpload({
 
       <button
         type="button"
-        className="rounded-[12px] border-2 border-dashed px-4 py-5 flex flex-col items-center gap-2 w-full text-left transition"
+        className="rounded-[var(--radius-card)] border-2 border-dashed px-4 py-5 flex flex-col items-center gap-2 w-full text-left transition"
         style={{
           borderColor: file ? "var(--color-accent)" : "var(--color-line)",
           background: file ? "var(--color-accent-soft)" : "var(--color-surface-2)",

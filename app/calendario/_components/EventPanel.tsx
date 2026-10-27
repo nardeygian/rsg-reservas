@@ -87,7 +87,7 @@ export function EventPanel({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-[65]"
         style={{ background: "rgba(0,0,0,0.4)" }}
         onClick={onClose}
         aria-hidden="true"
@@ -95,7 +95,7 @@ export function EventPanel({
 
       {/* Panel */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[20px] flex flex-col"
+        className="glass glass-strong fixed bottom-0 left-0 right-0 z-[70] rounded-t-[var(--radius-sheet)] flex flex-col"
         style={{
           background: "var(--color-surface)",
           boxShadow: "0 -4px 32px rgba(0,0,0,0.18)",
@@ -136,8 +136,8 @@ export function EventPanel({
           </div>
 
           {/* Fecha */}
-          <div className="flex items-center gap-3 rounded-[12px] px-4 py-3" style={{ background: "var(--color-bg)", border: "1px solid var(--color-line)" }}>
-            <div className="w-10 h-10 rounded-[10px] flex flex-col items-center justify-center flex-none" style={{ background: bg }}>
+          <div className="flex items-center gap-3 rounded-[var(--radius-card)] px-4 py-3" style={{ background: "var(--color-bg)", border: "1px solid var(--color-line)" }}>
+            <div className="w-10 h-10 rounded-[var(--radius-control)] flex flex-col items-center justify-center flex-none" style={{ background: bg }}>
               <span className="text-[10px] font-bold uppercase" style={{ color, lineHeight: 1 }}>
                 {MONTH_NAMES[new Date(event.due_on + "T12:00:00").getMonth()].slice(0, 3)}
               </span>
@@ -161,7 +161,7 @@ export function EventPanel({
           {link ? (
             <div className="flex flex-col gap-2">
               <span className="eyebrow">Espacio reservado</span>
-              <div className="flex items-center justify-between gap-3 rounded-[12px] px-4 py-3"
+              <div className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 py-3"
                 style={{ background: "var(--color-accent-soft)", border: "1px solid var(--color-accent)" }}>
                 <div>
                   <p className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>
@@ -175,7 +175,7 @@ export function EventPanel({
                 </div>
                 <Link
                   href={`/reservas/${link.booking_id}`}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+                  className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
                   style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
                   onClick={onClose}
                 >
@@ -229,7 +229,7 @@ export function EventPanel({
                 )}
                 <Link
                   href={`/reservas/nueva?date=${event.due_on}`}
-                  className="text-sm font-medium text-center rounded-[10px] px-4 py-2.5 block"
+                  className="text-sm font-medium text-center rounded-[var(--radius-control)] px-4 py-2.5 block"
                   style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }}
                   onClick={onClose}
                 >

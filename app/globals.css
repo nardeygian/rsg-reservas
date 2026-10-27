@@ -9,21 +9,25 @@
    ===================================================================== */
 @theme {
   /* Tipografía */
-  --font-sans:    var(--font-public-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-sora), system-ui, sans-serif;
-  --font-serif:   var(--font-sora), system-ui, sans-serif; /* alias compat */
-  --font-mono:    ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  --font-sans:    var(--font-instrument), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-instrument), system-ui, sans-serif;
+  --font-serif:   var(--font-instrument), system-ui, sans-serif; /* alias compat: la app no usa serif */
+  --font-mono:    var(--font-instrument), ui-monospace, monospace; /* cifras y fechas: misma familia, números tabulares */
 
   /* Radios */
-  --radius-sm:  8px;
-  --radius-md:  10px;
-  --radius-lg:  10px;
-  --radius-xl:  12px;
+  /* Escala única de radios: todo el portal usa solo estos tres (más círculos) */
+  --radius-control: 12px;  /* botones, campos, chips cuadrados, filas, mosaicos */
+  --radius-card:    22px;  /* tarjetas, bloques, paneles dentro de la página */
+  --radius-sheet:   30px;  /* hojas, barra flotante, menú lateral */
+  --radius-sm:  var(--radius-control);
+  --radius-md:  var(--radius-control);
+  --radius-lg:  var(--radius-card);
+  --radius-xl:  var(--radius-card);
 
   /* Sombras (tinte verde oscuro) */
-  --shadow-sm: 0 1px 2px rgba(11, 26, 23, 0.06);
-  --shadow-md: 0 4px 16px rgba(11, 26, 23, 0.08);
-  --shadow-lg: 0 18px 48px rgba(11, 26, 23, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 51, 41, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 51, 41, 0.08);
+  --shadow-lg: 0 18px 48px rgba(0, 51, 41, 0.12);
 
   /* Tracking */
   --tracking-tight: -0.02em;
@@ -36,112 +40,179 @@
 :root {
   color-scheme: light;
 
-  /* Aliases de compatibilidad (páginas que aún usan los tokens anteriores) */
-  --color-fg1:        #131A17;
-  --color-fg2:        #5A6661;
-  --color-fg3:        #8A9590;
-  --color-bg-elev:    #FFFFFF;
-  --color-bg-muted:   #EDF1EF;
-  --color-line-strong: #C4CEC9;
-  --color-forest:     #0B6E55;
-  --color-forest-500: #0B6E55;
-  --color-sage-400:   #DDEFE8;
-  --color-positive:   #0B7A3E;
-  --color-notice:     #9A6B00;
-  --color-critical:   #B3261E;
-  --color-sand-200:   #EDF1EF;
+  /* Paleta de marca (RSG Visual Identity Deck) */
+  --brand-forest: #003329;
+  --brand-light-green: #BDCDC2;
+  --brand-soft-blue: #B1CAD2;
+  --brand-pale-yellow: #E5E5CF;
+  --brand-choco: #342B21;
+  --brand-dark-grey: #20231F;
+  --brand-paper: #E9E7E2;
 
-  /* Fondo */
-  --color-bg:        #F3F5F4;
-  --color-surface:   #FFFFFF;
-  --color-surface-2: #EDF1EF;
+  /* Aliases de compatibilidad (páginas que aún usan los tokens anteriores) */
+  --color-fg1:        #20231F;
+  --color-fg2:        #55524A;
+  --color-fg3:        #858177;
+  --color-bg-elev:    #F6F5F1;
+  --color-bg-muted:   #E1DED6;
+  --color-line-strong: #C7C2B6;
+  --color-forest:     #003329;
+  --color-forest-500: #003329;
+  --color-sage-400:   #BDCDC2;
+  --color-positive:   #1F6B4F;
+  --color-notice:     #6B5A1E;
+  --color-critical:   #9A3B2E;
+  --color-sand-200:   #E1DED6;
+
+  /* Fondo: papel cálido. Superficies: vidrio translúcido sobre la atmósfera */
+  --color-bg:        #E9E7E2;
+  --color-surface:   rgba(250, 249, 246, 0.62);
+  --color-surface-2: rgba(214, 220, 212, 0.55);
+  --color-surface-solid: #F6F5F1;
 
   /* Texto */
-  --color-ink:   #131A17;
-  --color-muted: #5A6661;
-  --color-faint: #8A9590;
+  --color-ink:   #20231F;
+  --color-muted: #55524A;
+  --color-faint: #858177;
 
-  /* Borde */
-  --color-line: #DCE3DF;
+  /* Borde: línea sutil verde bosque, para separadores y contornos */
+  --color-line: rgba(0, 51, 41, 0.1);
 
-  /* Acento principal */
-  --color-accent:      #0B6E55;
-  --color-accent-dark: #095E49;
-  --color-accent-ink:  #FFFFFF;
-  --color-accent-soft: #DDEFE8;
+  /* Acento principal: Forest Green */
+  --color-accent:      #003329;
+  --color-accent-dark: #00221B;
+  --color-accent-ink:  #F6F5F1;
+  --color-accent-soft: #D3DED6;
 
-  /* Semánticos de estado */
-  --color-up:        #0B7A3E;
-  --color-up-soft:   #DCF1E4;
-  --color-down:      #B3261E;
-  --color-down-soft: #FDECEA;
-  --color-gold:      #9A6B00;
-  --color-gold-text: #7A5500;
-  --color-gold-soft: #F6EEDC;
+  /* Semánticos de estado, en tonos de la marca */
+  --color-up:        #1F6B4F;
+  --color-up-soft:   #D3DED6;
+  --color-down:      #9A3B2E;
+  --color-down-soft: #F0DDD6;
+  --color-gold:      #8A7424;
+  --color-gold-text: #5E4E17;
+  --color-gold-soft: #E5E5CF;
+  --color-info:      #2E5A66;
+  --color-info-soft: #D2E0E5;
 
   /* Botón primario */
-  --color-action-bg: #0B6E55;
-  --color-action-fg: #FFFFFF;
+  --color-action-bg: #003329;
+  --color-action-fg: #F6F5F1;
 
   /* Anillo de foco */
-  --color-focus-ring: rgba(11, 110, 85, 0.3);
+  --color-focus-ring: rgba(0, 51, 41, 0.28);
+
+  /* Degradados de marca: el arco difuminado del deck */
+  --grad-hero:
+    radial-gradient(120% 140% at 0% 0%, #003329 0%, #0A4436 38%, #3B6F66 72%, #7FA3A6 100%);
+  --grad-arc-base: #CBD9DD;
+  --grad-arc:
+    linear-gradient(180deg, #003329 0%, #1E4E46 6%, #6F9493 16%, rgba(177, 202, 210, 0.55) 30%, rgba(177, 202, 210, 0) 52%);
+  --grad-arc-glow: radial-gradient(60% 50% at 0% 75%, rgba(189, 205, 194, 0.9), rgba(189, 205, 194, 0) 70%);
+  --grad-icon: linear-gradient(145deg, #D3E3D9 0%, #BDCDC2 55%, #B1CAD2 100%);
+
+  /* Liquid glass: vidrio claro con brillo especular y sombra suave */
+  --glass-bg:        rgba(246, 245, 241, 0.55);
+  --glass-bg-strong: rgba(246, 245, 241, 0.72);
+  --glass-border:    rgba(255, 255, 255, 0.65);
+  --glass-edge:      rgba(0, 51, 41, 0.08);
+  --glass-shine:     linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.08) 38%, rgba(255, 255, 255, 0) 60%);
+  --glass-shadow:    0 12px 32px rgba(0, 51, 41, 0.16), 0 2px 8px rgba(0, 51, 41, 0.08);
+  --glass-lens:      rgba(189, 205, 194, 0.55);
+
+  /* Atmósfera de la página: lavados de Light Green y Soft Blue del deck,
+     para que el vidrio de las tarjetas tenga algo que dejar ver. */
+  --atmosphere:
+    radial-gradient(70% 55% at 100% 0%, rgba(189, 205, 194, 0.75), rgba(189, 205, 194, 0) 70%),
+    radial-gradient(60% 50% at 0% 100%, rgba(177, 202, 210, 0.7), rgba(177, 202, 210, 0) 70%),
+    radial-gradient(50% 40% at 0% 15%, rgba(229, 229, 207, 0.7), rgba(229, 229, 207, 0) 70%);
+
+  /* Espacio que reservan las páginas para la barra flotante (celular) */
+  --nav-space: calc(78px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  :root { --nav-space: 0px; }
 }
 
 /* =====================================================================
-   Tokens semánticos — modo oscuro
+   Tokens semánticos — modo oscuro: verde bosque profundo, no negro
    ===================================================================== */
 .dark {
   color-scheme: dark;
 
-  /* Aliases de compatibilidad — dark */
-  --color-fg1:        #E7EEEA;
-  --color-fg2:        #A1AEA8;
-  --color-fg3:        #76837D;
-  --color-bg-elev:    #161D1A;
-  --color-bg-muted:   #1C2521;
-  --color-line-strong: #3A4641;
-  --color-forest:     #43C29C;
-  --color-forest-500: #43C29C;
-  --color-sage-400:   #193A30;
-  --color-positive:   #5AD08A;
-  --color-notice:     #E3B44C;
-  --color-critical:   #FF8A80;
-  --color-sand-200:   #1C2521;
+  --color-fg1:        #E9E7E2;
+  --color-fg2:        #AFBDB4;
+  --color-fg3:        #7D8F86;
+  --color-bg-elev:    #0F2620;
+  --color-bg-muted:   #15312A;
+  --color-line-strong: #2C4B43;
+  --color-forest:     #BDCDC2;
+  --color-forest-500: #BDCDC2;
+  --color-sage-400:   #1B3A32;
+  --color-positive:   #8CC5A6;
+  --color-notice:     #E5E5CF;
+  --color-critical:   #E8A094;
+  --color-sand-200:   #15312A;
 
-  --color-bg:        #0E1311;
-  --color-surface:   #161D1A;
-  --color-surface-2: #1C2521;
+  --color-bg:        #071A15;
+  --color-surface:   rgba(22, 52, 44, 0.5);
+  --color-surface-2: rgba(48, 84, 74, 0.38);
+  --color-surface-solid: #0F2620;
 
-  --color-ink:   #E7EEEA;
-  --color-muted: #A1AEA8;
-  --color-faint: #76837D;
+  --color-ink:   #E9E7E2;
+  --color-muted: #AFBDB4;
+  --color-faint: #7D8F86;
 
-  --color-line: #2A3531;
+  --color-line: rgba(189, 205, 194, 0.12);
 
-  --color-accent:      #43C29C;
-  --color-accent-dark: #38A888;
-  --color-accent-ink:  #06140F;
-  --color-accent-soft: #193A30;
+  --color-accent:      #BDCDC2;
+  --color-accent-dark: #A6BBAE;
+  --color-accent-ink:  #003329;
+  --color-accent-soft: #1B3A32;
 
-  --color-up:        #5AD08A;
-  --color-up-soft:   #0F3020;
-  --color-down:      #FF8A80;
-  --color-down-soft: #3B0F0F;
-  --color-gold:      #E3B44C;
-  --color-gold-text: #E3B44C;
-  --color-gold-soft: #2E2200;
+  --color-up:        #8CC5A6;
+  --color-up-soft:   #143528;
+  --color-down:      #E8A094;
+  --color-down-soft: #3A1C17;
+  --color-gold:      #E5E5CF;
+  --color-gold-text: #E5E5CF;
+  --color-gold-soft: #2E2C1D;
+  --color-info:      #B1CAD2;
+  --color-info-soft: #17323A;
 
-  --color-action-bg: #43C29C;
-  --color-action-fg: #06140F;
+  --color-action-bg: #BDCDC2;
+  --color-action-fg: #003329;
 
-  --color-focus-ring: rgba(67, 194, 156, 0.35);
+  --color-focus-ring: rgba(189, 205, 194, 0.35);
+
+  --grad-hero:
+    radial-gradient(120% 140% at 0% 0%, #002A22 0%, #0B4537 40%, #2F6359 75%, #5E8A86 100%);
+  --grad-arc-base: #071A15;
+  --grad-arc:
+    linear-gradient(180deg, rgba(189, 205, 194, 0.8) 0%, #4F7D74 7%, #1F4A41 20%, rgba(7, 26, 21, 0) 50%);
+  --grad-arc-glow: radial-gradient(60% 50% at 0% 75%, rgba(177, 202, 210, 0.18), rgba(177, 202, 210, 0) 70%);
+
+  --glass-bg:        rgba(15, 38, 32, 0.52);
+  --glass-bg-strong: rgba(15, 38, 32, 0.7);
+  --glass-border:    rgba(233, 231, 226, 0.14);
+  --glass-edge:      rgba(0, 0, 0, 0.35);
+  --glass-shine:     linear-gradient(180deg, rgba(233, 231, 226, 0.16) 0%, rgba(233, 231, 226, 0.03) 40%, rgba(233, 231, 226, 0) 60%);
+  --glass-shadow:    0 14px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --glass-lens:      rgba(189, 205, 194, 0.16);
+
+  --atmosphere:
+    radial-gradient(70% 55% at 100% 0%, rgba(0, 51, 41, 0.9), rgba(0, 51, 41, 0) 70%),
+    radial-gradient(60% 50% at 0% 100%, rgba(46, 90, 102, 0.45), rgba(46, 90, 102, 0) 70%),
+    radial-gradient(50% 40% at 0% 15%, rgba(27, 58, 50, 0.6), rgba(27, 58, 50, 0) 70%);
 }
 
 /* =====================================================================
    Base
    ===================================================================== */
 body {
-  background:              var(--color-bg);
+  background-color:        var(--color-bg);
+  min-height:              100dvh;
   color:                   var(--color-ink);
   font-family:             var(--font-sans);
   font-size:               14px;
@@ -150,6 +221,11 @@ body {
 }
 
 @layer base {
+  /* Tailwind 4 usa currentColor como color de borde por defecto: en oscuro
+     eso pintaba los separadores (divide-y, border-t) de blanco. */
+  *, ::before, ::after, ::backdrop, ::file-selector-button {
+    border-color: var(--color-line);
+  }
   a {
     color: var(--color-accent);
   }
@@ -194,7 +270,7 @@ body {
     @apply transition;
     background:   var(--color-surface);
     border:       1px solid var(--color-line);
-    border-radius: 10px;
+    border-radius: var(--radius-card);
     box-shadow:   var(--shadow-sm);
   }
 
@@ -203,7 +279,7 @@ body {
     @apply inline-flex items-center justify-center gap-2 font-semibold text-[15px] px-5 min-h-[48px] transition active:scale-[0.97];
     background:    var(--color-action-bg);
     color:         var(--color-action-fg);
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     border:        none;
   }
   .btn-primary:hover { filter: brightness(0.92); }
@@ -212,23 +288,37 @@ body {
     @apply inline-flex items-center justify-center gap-2 font-semibold text-[15px] px-5 min-h-[48px] transition active:scale-[0.97] bg-transparent;
     color:         var(--color-ink);
     border:        1px solid var(--color-line);
-    border-radius: 10px;
+    border-radius: var(--radius-control);
   }
   .btn-secondary:hover { background: var(--color-surface-2); }
 
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 text-[15px] px-4 min-h-[44px] transition bg-transparent;
     color:         var(--color-ink);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
   }
   .btn-ghost:hover { background: var(--color-surface-2); }
 
   /* ── Input ────────────────────────────────────────────────────────── */
+  /* Selector compacto para filas de filtros */
+  .filter-select {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 13px;
+    text-overflow: ellipsis;
+  }
+
+  .field-label {
+    font-size:   13px;
+    font-weight: 500;
+    color:       var(--color-ink);
+  }
+
   .input {
     @apply w-full min-h-[44px] px-4 text-sm transition-colors bg-transparent;
     color:         var(--color-ink);
     border:        1px solid var(--color-line);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
   }
   .input::placeholder { color: var(--color-faint); }
   .input:focus-visible { border-color: var(--color-accent); }
@@ -242,7 +332,7 @@ body {
     border-radius: 99px;
   }
   .chip-accent  { background: var(--color-accent-soft); color: var(--color-accent); }
-  .chip-muted   { background: var(--color-surface-2);   color: #3E4A45; }
+  .chip-muted   { background: var(--color-surface-2);   color: var(--color-muted); }
   .chip-gold    { background: var(--color-gold-soft);   color: var(--color-gold-text); }
   .chip-up      { background: var(--color-up-soft);     color: var(--color-up); }
   .chip-down    { background: var(--color-down-soft);   color: var(--color-down); }
@@ -268,14 +358,14 @@ body {
   .accent-block {
     background:    var(--color-accent);
     color:         var(--color-accent-ink);
-    border-radius: 10px;
+    border-radius: var(--radius-card);
     padding:       22px;
   }
 
   /* Filas de acción dentro del accent-block */
   .accent-row {
     background:    var(--color-accent-dark);
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     padding:       14px 16px;
   }
 
@@ -308,4 +398,411 @@ body {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* =====================================================================
+   Marca: degradados y monograma
+   ===================================================================== */
+@layer components {
+  /* Bloque principal: arco verde bosque que se abre hacia azul suave. */
+  .brand-hero {
+    background: var(--grad-hero);
+    color: #F6F5F1;
+    border-radius: var(--radius-card);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .brand-hero-tile {
+    position: relative;
+    background: linear-gradient(180deg, rgba(233, 231, 226, 0.14) 0%, rgba(233, 231, 226, 0.04) 45%, rgba(0, 20, 16, 0.18) 100%);
+    border: 1px solid rgba(233, 231, 226, 0.18);
+    border-radius: var(--radius-control);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 8px 24px rgba(0, 20, 16, 0.18);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+  }
+
+  /* Fondo de pantalla completa con el arco difuminado del deck. */
+  .brand-arc {
+    background: var(--grad-arc-base);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .brand-arc::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    top: -2vh;
+    width: max(140vw, 900px);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: var(--grad-arc);
+    filter: blur(28px);
+  }
+  .brand-arc::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--grad-arc-glow);
+  }
+
+  /* Monograma RgS como máscara: toma el color de `background`. */
+  .brand-mark {
+    display: inline-block;
+    aspect-ratio: 1;
+    background: currentColor;
+    -webkit-mask: url("/brand/rgs-mark.png") center / contain no-repeat;
+    mask: url("/brand/rgs-mark.png") center / contain no-repeat;
+  }
+}
+
+/* =====================================================================
+   Liquid glass
+   Vidrio con desenfoque y saturación del fondo, borde de luz, brillo
+   especular arriba y sombra suave. Solo CSS, funciona en Safari (iPhone).
+   ===================================================================== */
+@layer components {
+  .glass {
+    position: relative;
+    isolation: isolate;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 var(--glass-edge);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--glass-shine);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .glass-strong { background: var(--glass-bg-strong); }
+
+  /* Barra inferior flotante (celular) */
+  .tabbar {
+    position: fixed;
+    z-index: 50;
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    max-width: 520px;
+    margin: 0 auto;
+    border-radius: var(--radius-sheet);
+    padding: 6px;
+  }
+  .tabbar-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 54px;
+    border-radius: calc(var(--radius-sheet) - 6px);
+    font-weight: 600;
+    transition: color 0.2s ease, transform 0.15s ease;
+  }
+  .tabbar-item:active { transform: scale(0.94); }
+  /* Lente: la pestaña activa se ve como una gota de vidrio tintada */
+  .tabbar-item[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: calc(var(--radius-sheet) - 8px);
+    background: var(--glass-lens);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 var(--glass-edge);
+    z-index: -1;
+  }
+}
+
+/* En el celular las páginas dejan libre el espacio de la barra flotante,
+   así los botones al final de la pantalla no quedan debajo de ella. */
+@media (max-width: 767px) {
+  main.min-h-dvh { min-height: calc(100dvh - var(--nav-space)); }
+}
+
+/* =====================================================================
+   Superficies de vidrio en todo el portal
+   Las tarjetas que pintan `--color-surface` (clase .card o estilo en línea)
+   reciben el borde de luz y la sombra del material, sin repetirlo en cada
+   componente. El desenfoque real queda para lo que flota (barra, hojas, menú).
+   ===================================================================== */
+.card,
+[style*="background: var(--color-surface)"] {
+  box-shadow:
+    inset 0 1px 0 var(--glass-border),
+    0 1px 2px rgba(0, 51, 41, 0.04),
+    0 8px 24px rgba(0, 51, 41, 0.06);
+}
+.dark .card,
+.dark [style*="background: var(--color-surface)"] {
+  box-shadow:
+    inset 0 1px 0 rgba(233, 231, 226, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Hojas inferiores y laterales: vidrio esmerilado fuerte, legible encima del contenido */
+.glass-strong { background: var(--glass-bg-strong) !important; }
+
+/* Menú lateral (escritorio): panel de vidrio flotante */
+.sidebar-glass {
+  top: 12px !important;
+  left: 12px !important;
+  bottom: 12px !important;
+  border-radius: var(--radius-sheet);
+}
+
+/* `font-serif` quedó como clase de "título de página" en pantallas antiguas:
+   ahora es Instrument Sans con el peso y el ajuste de los demás títulos. */
+.font-serif {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.font-mono { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+summary.list-none::-webkit-details-marker { display: none; }
+
+/* =====================================================================
+   Controles compartidos: segmentado de vidrio y botón de ícono
+   ===================================================================== */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  box-shadow: inset 0 1px 2px rgba(0, 51, 41, 0.08);
+}
+.segmented > button {
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.segmented > button[aria-pressed="true"] {
+  background: var(--color-surface-solid);
+  color: var(--color-ink);
+  box-shadow: 0 1px 3px rgba(0, 51, 41, 0.14), inset 0 1px 0 var(--glass-border);
+}
+.dark .segmented > button[aria-pressed="true"] {
+  background: rgba(233, 231, 226, 0.14);
+  box-shadow: inset 0 1px 0 rgba(233, 231, 226, 0.12);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  box-shadow: inset 0 1px 0 var(--glass-border);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.icon-btn:active { transform: scale(0.94); }
+.icon-btn:disabled { opacity: 0.35; }
+.icon-btn-accent {
+  background: var(--color-action-bg);
+  color: var(--color-action-fg);
+  border-color: transparent;
+}
+
+/* Encabezado de página compartido */
+.page-title {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--color-ink);
+}
+
+/* El segmentado también sirve para navegar (enlaces con aria-current) */
+.segmented > .segmented-link {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-decoration: none;
+}
+.segmented > .segmented-link[aria-current="page"] {
+  background: var(--color-surface-solid);
+  color: var(--color-ink);
+  box-shadow: 0 1px 3px rgba(0, 51, 41, 0.14), inset 0 1px 0 var(--glass-border);
+}
+.dark .segmented > .segmented-link[aria-current="page"] {
+  background: rgba(233, 231, 226, 0.14);
+}
+
+/* =====================================================================
+   Liquid glass con refracción (barra, menú lateral, login)
+   - Base para todos los navegadores: más translúcido, borde de lente con luz
+     arriba a la izquierda, brillo interior en los bordes y sombra cáustica.
+   - Chrome/Android: además dobla el fondo con un filtro SVG (#liquid-refract,
+     en app/layout.tsx). Safari no admite url() en backdrop-filter: descarta esa
+     línea y usa la anterior, así que nunca se rompe.
+   ===================================================================== */
+:root {
+  --liquid-bg: rgba(246, 245, 241, 0.34);
+  --liquid-rim: rgba(255, 255, 255, 0.85);
+  --liquid-rim-soft: rgba(255, 255, 255, 0.28);
+  --liquid-glow: rgba(255, 255, 255, 0.22);
+  --liquid-caustic: rgba(0, 51, 41, 0.14);
+}
+.dark {
+  --liquid-bg: rgba(14, 36, 30, 0.36);
+  --liquid-rim: rgba(233, 231, 226, 0.35);
+  --liquid-rim-soft: rgba(233, 231, 226, 0.08);
+  --liquid-glow: rgba(189, 205, 194, 0.08);
+  --liquid-caustic: rgba(0, 0, 0, 0.35);
+}
+.glass.liquid {
+  background: var(--liquid-bg);
+  border-color: transparent;
+  box-shadow:
+    inset 1.5px 1.5px 0 var(--liquid-rim),
+    inset -1px -1px 0 var(--liquid-rim-soft),
+    inset 0 0 16px var(--liquid-glow),
+    inset 0 -12px 22px -14px var(--liquid-caustic),
+    var(--glass-shadow);
+  -webkit-backdrop-filter: blur(9px) saturate(200%) brightness(1.04);
+  backdrop-filter: blur(9px) saturate(200%) brightness(1.04);
+  backdrop-filter: url(#liquid-refract) blur(5px) saturate(200%) brightness(1.04);
+}
+/* Reflejo especular: una mancha de luz curva arriba, como en una gota */
+.glass.liquid::before {
+  background:
+    radial-gradient(120% 70% at 25% -10%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 40%);
+  opacity: 0.9;
+}
+.dark .glass.liquid::before { opacity: 0.35; }
+
+/* La pestaña activa es una lente dentro del vidrio */
+.liquid .tabbar-item[aria-current="page"]::before {
+  background: color-mix(in srgb, var(--color-accent-soft) 70%, transparent);
+  box-shadow:
+    inset 1px 1px 0 var(--liquid-rim),
+    inset 0 0 10px var(--liquid-glow),
+    0 4px 12px rgba(0, 51, 41, 0.12);
+}
+
+/* Atmósfera en una capa fija propia (en vez de background-attachment: fixed,
+   que obliga a repintar todo el fondo al hacer scroll en el iPhone). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--atmosphere);
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+/* =====================================================================
+   Barra inferior compacta: solo íconos; la pestaña activa se abre con
+   suavidad hasta el ancho de su nombre, que aparece bajo el ícono.
+   ===================================================================== */
+.tabbar {
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 999px;
+}
+.tabbar-item {
+  flex: none;
+  height: 50px;
+  min-height: 0;
+  gap: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  /* Curva con un leve rebote: se siente líquida */
+  transition:
+    width 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.12),
+    color 0.25s ease;
+}
+.tabbar-item[aria-current="page"]::before {
+  inset: 0;
+  border-radius: 999px;
+  transition: opacity 0.25s ease;
+}
+.tabbar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  transform: translateY(0);
+  transition: transform 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.12);
+}
+.tabbar-item:not([data-active]) .tabbar-icon { transform: translateY(0); }
+.tabbar-item[data-active] .tabbar-icon { transform: translateY(-2px); }
+.tabbar-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(4px) scale(0.92);
+  transition:
+    max-height 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.12),
+    opacity 0.25s ease 0.06s,
+    transform 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.12);
+}
+.tabbar-item[data-active] .tabbar-label {
+  max-height: 14px;
+  margin-top: 3px;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.tabbar-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #F6F5F1;
+  background: var(--grad-hero);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.tabbar-item[data-active] .tabbar-avatar {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 2px var(--color-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabbar-item, .tabbar-icon, .tabbar-label { transition: none; }
+}
+
+/* En escritorio manda el menú lateral: la barra inferior no se muestra
+   (esta regla va después de .tabbar, que define display: flex). */
+@media (min-width: 768px) {
+  .tabbar { display: none; }
 }

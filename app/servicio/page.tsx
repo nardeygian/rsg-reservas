@@ -41,17 +41,17 @@ export default async function ServicioPage({
   }
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       {needsMigration ? (
         <div className="max-w-xl mx-auto px-4 py-16 text-center">
-          <p className="text-sm rounded-[12px] px-4 py-4"
+          <p className="text-sm rounded-[var(--radius-card)] px-4 py-4"
             style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)", border: "1px solid var(--color-gold)" }}>
             El módulo de Servicio necesita una migración de base de datos.
             Aplica el archivo <code>supabase/migrations/20261009040000_servicio.sql</code> en el dashboard de Supabase.
           </p>
         </div>
       ) : (
-        <ServicioShell svData={svData!} canEdit={canEdit} />
+        <ServicioShell svData={svData!} canEdit={canEdit} showCommunity={caps.discipulos} />
       )}
     </main>
   );

@@ -74,9 +74,9 @@ export function GrupoSheet({
 
   return (
     <>
-      <div className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 z-[65]" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose} aria-hidden />
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[20px] flex flex-col"
+        className="glass glass-strong fixed bottom-0 left-0 right-0 z-[70] rounded-t-[var(--radius-sheet)] flex flex-col"
         style={{ background: "var(--color-surface)", boxShadow: "0 -4px 32px rgba(0,0,0,0.18)", maxHeight: "90dvh", maxWidth: 640, margin: "0 auto" }}
       >
         <div className="flex justify-center pt-3 pb-1 flex-none">
@@ -114,7 +114,7 @@ export function GrupoSheet({
             {grupo.lider_user_ids.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {grupo.lider_user_ids.map(uid => (
-                  <span key={uid} className="text-[11px] font-mono px-2 py-1 rounded-[6px]"
+                  <span key={uid} className="text-[11px] font-mono px-2 py-1 rounded-[var(--radius-control)]"
                     style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", border: "1px solid var(--color-line)" }}>
                     {uid}
                   </span>
@@ -131,7 +131,7 @@ export function GrupoSheet({
                 value={userId}
                 onChange={e => setUserId(e.target.value)}
               />
-              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleAsignarLider} disabled={saving}>+ Agregar</button>
+              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleAsignarLider} disabled={saving}>+ Agregar</button>
             </div>
           </div>
 
@@ -176,7 +176,7 @@ export function GrupoSheet({
           <div className="flex flex-col gap-2 pt-2 border-t" style={{ borderColor: "var(--color-line)" }}>
             <button
               type="button"
-              className="text-sm font-semibold px-3 py-2 rounded-[8px] self-start"
+              className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)] self-start"
               style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
               onClick={handleQuitarGrupo}
               disabled={saving}

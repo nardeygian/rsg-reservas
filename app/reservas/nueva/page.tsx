@@ -280,7 +280,7 @@ export default async function NewBookingPage({
         {error && (
           <p
             role="alert"
-            className="text-sm rounded-[10px] px-4 py-3"
+            className="text-sm rounded-[var(--radius-control)] px-4 py-3"
             style={{
               background: "var(--color-down-soft)",
               color: "var(--color-down)",

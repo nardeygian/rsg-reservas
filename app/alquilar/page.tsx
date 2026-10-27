@@ -70,7 +70,7 @@ export default async function AlquilarPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-[14px] px-4 py-3"
+          className="text-sm rounded-[var(--radius-card)] px-4 py-3"
           style={{
             background: "#f2e3dd",
             color: "var(--color-critical)",
@@ -81,7 +81,7 @@ export default async function AlquilarPage({
       )}
 
       {spaces.length === 0 ? (
-        <p className="text-sm rounded-[14px] border border-line px-4 py-3 bg-bg-elev">
+        <p className="text-sm rounded-[var(--radius-card)] border border-line px-4 py-3 bg-bg-elev">
           Por ahora no hay espacios disponibles para alquilar. Vuelve más tarde.
         </p>
       ) : (

@@ -62,8 +62,8 @@ export function ServidorSheet({ sid, svData, canEdit, onClose, onSaved, onOpenRe
 
   return (
     <>
-      <div className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose} aria-hidden />
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[20px] flex flex-col" style={{ background: "var(--color-surface)", boxShadow: "0 -4px 32px rgba(0,0,0,0.18)", maxHeight: "90dvh", maxWidth: 640, margin: "0 auto" }}>
+      <div className="fixed inset-0 z-[65]" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose} aria-hidden />
+      <div className="glass glass-strong fixed bottom-0 left-0 right-0 z-[70] rounded-t-[var(--radius-sheet)] flex flex-col" style={{ background: "var(--color-surface)", boxShadow: "0 -4px 32px rgba(0,0,0,0.18)", maxHeight: "90dvh", maxWidth: 640, margin: "0 auto" }}>
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-none">
           <div className="w-10 h-1 rounded-full" style={{ background: "var(--color-line)" }} />
@@ -104,11 +104,11 @@ export function ServidorSheet({ sid, svData, canEdit, onClose, onSaved, onOpenRe
                     <option value="">Elegir para unir…</option>
                     {otros.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
                   </select>
-                  <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleUnir} disabled={saving}>Unir</button>
+                  <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleUnir} disabled={saving}>Unir</button>
                 </div>
               </div>
 
-              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[8px] self-start"
+              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)] self-start"
                 style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
                 onClick={handleQuitar} disabled={saving}>
                 {confirmQuitar ? "Confirmar: se quita de todos los listados" : "Eliminar servidor"}

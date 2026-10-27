@@ -58,7 +58,7 @@ export function DiscipuladosShell({ svData }: { svData: SvData }) {
     : [];
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       <div className="px-4 pt-6 pb-10 max-w-2xl mx-auto flex flex-col gap-5">
 
         <header className="flex flex-col gap-1">
@@ -71,12 +71,12 @@ export function DiscipuladosShell({ svData }: { svData: SvData }) {
           </p>
         </header>
 
-        <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+        <div className="rounded-[var(--radius-card)] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
           <div className="px-4 pt-4 pb-3 border-b flex items-center gap-3 flex-wrap" style={{ borderColor: "var(--color-line)" }}>
             <h2 className="font-bold text-base flex-1" style={{ color: "var(--color-ink)" }}>Discipulados</h2>
             <button
               type="button"
-              className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+              className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
               style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
               onClick={() => setShowNuevoGrupo(v => !v)}
             >
@@ -121,7 +121,7 @@ export function DiscipuladosShell({ svData }: { svData: SvData }) {
                         <td className="px-4 py-2.5 text-right">
                           <button
                             type="button"
-                            className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+                            className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
                             style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }}
                             onClick={() => setSheet({ gid: g.id })}
                           >
@@ -139,7 +139,7 @@ export function DiscipuladosShell({ svData }: { svData: SvData }) {
               <span>Aún no hay discipulados. Crea el primero arriba.</span>
               <button
                 type="button"
-                className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+                className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
                 style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)", border: "1px solid var(--color-gold)" }}
                 onClick={handleSeedDiscipulados}
                 disabled={pending}
@@ -153,7 +153,7 @@ export function DiscipuladosShell({ svData }: { svData: SvData }) {
       </div>
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-[10px] text-sm font-semibold shadow-lg"
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-[var(--radius-control)] text-sm font-semibold shadow-lg"
           style={{ background: "var(--color-ink)", color: "var(--color-bg)", whiteSpace: "nowrap" }}>
           {toast}
         </div>

@@ -184,7 +184,7 @@ export function DonacionesShell({
           <>
             <button
               type="button"
-              className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+              className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
               style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-muted)" }}
               onClick={() => setSheet({ type: "importar" })}
             >
@@ -198,7 +198,7 @@ export function DonacionesShell({
       {/* ── Period controls ──────────────────────────────────────────────── */}
       {/* Row 1: period type selector + prev/label/next */}
       <div className="px-4 pb-2 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+        <div className="flex rounded-[var(--radius-control)] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
           {(["mes","trimestre","semestre","anio"] as DonPer[]).map((p) => (
             <button key={p} type="button" onClick={() => changePer(p)}
               className="px-3 py-1.5 text-xs font-semibold"
@@ -210,14 +210,14 @@ export function DonacionesShell({
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => shiftP(-1)}
-            className="w-9 h-9 flex items-center justify-center rounded-[8px] border text-lg"
+            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
             style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
           >‹</button>
           <span className="text-sm font-semibold min-w-[140px] text-center" style={{ fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>
             {etiq}
           </span>
           <button type="button" onClick={() => shiftP(1)}
-            className="w-9 h-9 flex items-center justify-center rounded-[8px] border text-lg"
+            className="w-9 h-9 flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
             style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
             disabled={esFuturoDon(per, nextShift[0], nextShift[1])}
           >›</button>
@@ -226,7 +226,7 @@ export function DonacionesShell({
       {/* Row 2: origen filter with separator */}
       {!readOnly && (
         <div className="px-4 pb-3 border-b" style={{ borderColor: "var(--color-line)" }}>
-          <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)", width: "fit-content" }}>
+          <div className="flex rounded-[var(--radius-control)] overflow-hidden" style={{ border: "1px solid var(--color-line)", width: "fit-content" }}>
             {(["todo","dar","form"] as const).map((o) => (
               <button key={o} type="button" onClick={() => setOrigen(o)}
                 className="px-3 py-1.5 text-xs font-semibold"
@@ -245,8 +245,7 @@ export function DonacionesShell({
           {/* Total card */}
           <button
             type="button"
-            className="rounded-[16px] p-5 flex flex-col gap-3 text-left w-full"
-            style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
+            className="brand-hero p-5 flex flex-col gap-3 text-left w-full"
             onClick={() => { setSheetQ(""); setSheetO(""); setSheetT(""); setSheetG(""); setSheet({ type: "listado" }); }}
           >
             <span className="text-xs font-semibold opacity-80 uppercase tracking-wide">
@@ -265,7 +264,7 @@ export function DonacionesShell({
             ) : (
               <span className="text-sm opacity-70">Sin datos del periodo anterior</span>
             )}
-            <div className="grid grid-cols-3 gap-px rounded-[10px] overflow-hidden mt-1" style={{ background: "rgba(255,255,255,0.2)" }}>
+            <div className="grid grid-cols-3 gap-px rounded-[var(--radius-control)] overflow-hidden mt-1" style={{ background: "rgba(255,255,255,0.2)" }}>
               {[
                 { label: "donaciones", value: lista.length.toLocaleString("es-CO") },
                 { label: "donantes",   value: donClusters.length.toLocaleString("es-CO") },
@@ -283,7 +282,7 @@ export function DonacionesShell({
           </button>
 
           {/* Chart */}
-          <div className="rounded-[16px] p-5 flex flex-col gap-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+          <div className="rounded-[var(--radius-card)] p-5 flex flex-col gap-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
             <div className="flex justify-between items-baseline gap-2">
               <span className="text-sm font-semibold" style={{ color: "var(--color-ink)" }}>{chartTitle}</span>
               {bars.length > 0 && (
@@ -311,7 +310,7 @@ export function DonacionesShell({
                       >
                         {b.v > 0 && (
                           <div
-                            className="rounded-t-[3px] transition-opacity"
+                            className="rounded-t-full transition-opacity"
                             style={{
                               height: `${Math.sqrt(b.v / chartMax) * 100}%`,
                               background: "var(--color-accent)",
@@ -322,7 +321,7 @@ export function DonacionesShell({
                         )}
                         {b.v > 0 && (
                           <div
-                            className={`absolute top-1 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1.5 rounded-[6px] pointer-events-none transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                            className={`absolute top-1 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap text-[11px] font-semibold px-2 py-1.5 rounded-[var(--radius-control)] pointer-events-none transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                             style={{ background: "var(--color-ink)", color: "var(--color-bg)" }}
                           >
                             {b.t}<br />{money(b.v)} · {b.n} {b.n === 1 ? "aporte" : "aportes"}
@@ -388,16 +387,16 @@ export function DonacionesShell({
       {/* ── Sheet ───────────────────────────────────────────────────────── */}
       {sheet && (
         <>
-          <div className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.45)" }} onClick={closeSheet} />
+          <div className="fixed inset-0 z-[65]" style={{ background: "rgba(0,0,0,0.45)" }} onClick={closeSheet} />
           <div
-            className="fixed top-0 right-0 bottom-0 z-50 flex flex-col"
-            style={{ width: "min(640px, 100vw)", background: "var(--color-bg)", boxShadow: "-8px 0 30px rgba(0,0,0,0.2)" }}
+            className="glass glass-strong fixed top-0 right-0 bottom-0 z-[70] flex flex-col rounded-l-[var(--radius-sheet)] overflow-hidden"
+            style={{ width: "min(640px, 100vw)" }}
             onTouchStart={(e) => { swipeStartX.current = e.touches[0].clientX; }}
             onTouchEnd={(e) => { if (e.changedTouches[0].clientX - swipeStartX.current > 80) closeSheet(); }}
           >
 
             {/* Sheet header */}
-            <div className="flex-none px-5 pt-5 pb-4 border-b flex flex-col gap-3" style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}>
+            <div className="flex-none px-5 pt-5 pb-4 border-b flex flex-col gap-3">
               <div className="flex justify-between items-start gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   {prevSheet && (
@@ -427,27 +426,30 @@ export function DonacionesShell({
                 <button onClick={closeSheet} className="w-8 h-8 flex items-center justify-center rounded-full text-xl flex-none" style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>×</button>
               </div>
               {sheet.type === "listado" && (
-                <div className="flex gap-2 flex-wrap">
-                  <input value={sheetQ} onChange={(e) => setSheetQ(e.target.value)} placeholder="Buscar donante, referencia o método" className="input flex-1 text-sm" style={{ minWidth: 180 }} />
-                  <select value={sheetO} onChange={(e) => setSheetO(e.target.value)} className="input text-sm">
-                    <option value="">Todos los orígenes</option>
+                <div className="flex flex-col gap-2">
+                  <input value={sheetQ} onChange={(e) => setSheetQ(e.target.value)} placeholder="Buscar donante, referencia o método" className="input text-sm" />
+                  {/* Filtros en una sola fila para dejar el espacio a la lista */}
+                  <div className="grid grid-cols-3 gap-2">
+                  <select value={sheetO} onChange={(e) => setSheetO(e.target.value)} className="input filter-select" aria-label="Origen">
+                    <option value="">Origen</option>
                     {[...new Set(donDePer(true).map((d) => d.o))].sort().map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
-                  <select value={sheetT} onChange={(e) => setSheetT(e.target.value)} className="input text-sm">
-                    <option value="">Todos los conceptos</option>
+                  <select value={sheetT} onChange={(e) => setSheetT(e.target.value)} className="input filter-select" aria-label="Concepto">
+                    <option value="">Concepto</option>
                     {[...new Set(lista.map((d) => d.t))].sort((a, b) => ordenConcepto(a) - ordenConcepto(b)).map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  <select value={sheetG} onChange={(e) => setSheetG(e.target.value)} className="input text-sm">
-                    <option value="">Todos los discipulados</option>
+                  <select value={sheetG} onChange={(e) => setSheetG(e.target.value)} className="input filter-select" aria-label="Discipulado">
+                    <option value="">Discipulado</option>
                     {grupos.sort((a, b) => a.nombre.localeCompare(b.nombre, "es")).map((g) => <option key={g.id} value={g.id}>{g.nombre}</option>)}
                     <option value="__sin__">Sin discipulado</option>
                   </select>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Sheet body */}
-            <div className="flex-1 overflow-auto">
+            {/* Sheet body: deja libre la zona inferior del iPhone para ver hasta el último registro */}
+            <div className="flex-1 overflow-auto" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
               {sheet.type === "importar" && (
                 <ImportarPane onDone={(msg) => { closeSheet(); showToast(msg); startTransition(() => {}); }} />
               )}
@@ -479,7 +481,7 @@ export function DonacionesShell({
 
       {/* Toast */}
       {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[12px] shadow-lg pointer-events-none"
+        <div className="fixed left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[var(--radius-card)] shadow-lg pointer-events-none"
           style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", background: "var(--color-ink)", color: "var(--color-bg)", maxWidth: 340, textAlign: "center" }}>
           {toast}
         </div>
@@ -509,7 +511,7 @@ function CardConceptos({ lista, onFilter }: { lista: Donacion[]; onFilter: (t: s
     return { c, v: suma(sub), n: sub.length };
   });
   return (
-    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+    <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
       <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full" onClick={() => setOpen(o => !o)}>
         <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Diezmos y ofrendas por concepto</h2>
         <div className="flex items-center gap-2 flex-none">
@@ -550,7 +552,7 @@ function CardEfectivo({ lista, etiq, onOpen }: {
   ];
 
   return (
-    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+    <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
       <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full flex-wrap" onClick={() => setOpen(o => !o)}>
         <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>En línea y efectivo</h2>
         <div className="flex items-center gap-2 flex-none">
@@ -569,7 +571,7 @@ function CardEfectivo({ lista, etiq, onOpen }: {
                 key={label}
                 type="button"
                 onClick={() => onOpen(list, label)}
-                className="rounded-[12px] p-4 flex flex-col gap-1.5 text-left"
+                className="rounded-[var(--radius-card)] p-4 flex flex-col gap-1.5 text-left"
                 style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}
               >
                 <div className="flex items-center justify-between gap-1 w-full">
@@ -593,7 +595,7 @@ function CardEfectivo({ lista, etiq, onOpen }: {
 
           {/* Tabla por concepto */}
           {conceptos.length > 0 && (
-            <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: "var(--color-line)" }}>
+            <div className="overflow-x-auto rounded-[var(--radius-control)] border" style={{ borderColor: "var(--color-line)" }}>
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ background: "var(--color-bg)", color: "var(--color-muted)" }}>
@@ -648,7 +650,7 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
   const totalPrimario = suma(lista.filter((d) => d.gid));
 
   return (
-    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+    <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
       <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full flex-wrap" onClick={() => setOpen(o => !o)}>
         <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Discipulados</h2>
         <div className="flex items-center gap-2 flex-none">
@@ -660,7 +662,7 @@ function CardGrupos({ lista, grupos, miembros, etiq, onGrupo }: {
         <p className="text-sm text-center px-5 pb-5" style={{ color: "var(--color-muted)" }}>Sin datos de discipulados</p>
       ) : (
         <div className="flex flex-col gap-4 px-5 pb-5">
-          <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: "var(--color-line)" }}>
+          <div className="overflow-x-auto rounded-[var(--radius-control)] border" style={{ borderColor: "var(--color-line)" }}>
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ background: "var(--color-bg)", color: "var(--color-muted)" }}>
@@ -717,7 +719,7 @@ function CardDiscipulosVsIglesia({ lista, etiq, onOpen }: {
   ];
 
   return (
-    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+    <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
       <div className="p-5 flex flex-col gap-4">
         <div className="flex flex-wrap justify-between items-baseline gap-2">
           <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Discípulos vs. resto de la iglesia</h2>
@@ -730,7 +732,7 @@ function CardDiscipulosVsIglesia({ lista, etiq, onOpen }: {
               key={label}
               type="button"
               onClick={() => onOpen(list, label)}
-              className="rounded-[12px] p-4 flex flex-col gap-1.5 text-left"
+              className="rounded-[var(--radius-card)] p-4 flex flex-col gap-1.5 text-left"
               style={{ border: "1px solid var(--color-line)", background: "var(--color-surface)" }}
             >
               <div className="flex items-center justify-between gap-1 w-full">
@@ -769,7 +771,7 @@ function CardRegistroDonantes({ clusters, onDonante }: {
   const shown = filtered.slice(0, 100);
 
   return (
-    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+    <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
       <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full flex-wrap" onClick={() => setOpen(o => !o)}>
         <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Registro de donantes</h2>
         <div className="flex items-center gap-2 flex-none">
@@ -788,7 +790,7 @@ function CardRegistroDonantes({ clusters, onDonante }: {
           {filtered.length === 0 ? (
             <p className="text-sm text-center py-4" style={{ color: "var(--color-muted)" }}>Sin resultados</p>
           ) : (
-            <div className="rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+            <div className="rounded-[var(--radius-control)] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
               {shown.map((r, idx) => (
                 <button
                   key={idx}
@@ -839,11 +841,11 @@ function CardRanking({ clusters, etiq, rankTab, onRankTab, onDonante }: {
   const max = top.length ? (rankTab === "monto" ? top[0].total : top[0].veces) : 1;
 
   return (
-    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+    <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
       <div className="flex justify-between items-center gap-2 p-5 flex-wrap">
         <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Ranking de donantes</h2>
         <div className="flex items-center gap-2 flex-none">
-          <div className="flex rounded-[8px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+          <div className="flex rounded-[var(--radius-control)] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
             {(["monto","frecuencia"] as const).map((t) => (
               <button key={t} type="button" onClick={() => onRankTab(t)}
                 className="px-3 py-1 text-xs font-semibold"
@@ -869,7 +871,7 @@ function CardRanking({ clusters, etiq, rankTab, onRankTab, onDonante }: {
               return (
                 <li key={d.n}>
                   <button type="button" onClick={() => onDonante(d.list, d.n)}
-                    className="w-full grid items-center gap-2.5 px-2 py-2 rounded-[8px] text-left hover:opacity-80"
+                    className="w-full grid items-center gap-2.5 px-2 py-2 rounded-[var(--radius-control)] text-left hover:opacity-80"
                     style={{ gridTemplateColumns: "26px minmax(0,1fr) auto" }}
                   >
                     <span className="w-[26px] h-[26px] rounded-full flex items-center justify-center text-xs font-bold"
@@ -912,7 +914,31 @@ function ListadoPane({ lista, grupos }: { lista: Donacion[]; grupos: Map<string,
       {lista.length === 0 ? (
         <p className="text-sm text-center py-8" style={{ color: "var(--color-muted)" }}>Sin donaciones con estos filtros</p>
       ) : (
-        <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: "var(--color-line)" }}>
+        <>
+          {/* Celular: filas con el monto siempre visible a la derecha */}
+          <ul className="sm:hidden card overflow-hidden divide-y">
+            {lista.map((d) => (
+              <li key={d.id} className="px-4 py-3 flex flex-col gap-0.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-semibold text-[15px] truncate" style={{ color: "var(--color-ink)" }}>{d.n}</span>
+                  <span className="font-semibold text-[15px] tabular flex-none" style={{ color: "var(--color-ink)" }}>{money(d.m)}</span>
+                </div>
+                <span className="text-[12.5px] tabular" style={{ color: "var(--color-muted)" }}>
+                  {[fmtFecha(d.f), d.t || (esEfe(d) ? "Efectivo" : "Formulario"), metodo(d.met), d.gid ? grupos.get(d.gid)?.nombre : null].filter(Boolean).join(" · ")}
+                </span>
+                {(d.e || d.doc) && (
+                  <span className="text-[12px] truncate" style={{ color: "var(--color-faint)" }}>{[d.doc, d.e].filter(Boolean).join(" · ")}</span>
+                )}
+              </li>
+            ))}
+            <li className="px-4 py-3 flex items-baseline justify-between" style={{ background: "var(--color-surface-2)" }}>
+              <span className="font-semibold" style={{ color: "var(--color-ink)" }}>Total · {lista.length}</span>
+              <span className="font-semibold tabular" style={{ color: "var(--color-ink)" }}>{money(total)}</span>
+            </li>
+          </ul>
+
+          {/* Escritorio: tabla completa */}
+          <div className="hidden sm:block overflow-x-auto rounded-[var(--radius-control)] border">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>
@@ -946,7 +972,8 @@ function ListadoPane({ lista, grupos }: { lista: Donacion[]; grupos: Map<string,
               </tr>
             </tfoot>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -963,7 +990,7 @@ function GrupoPane({ lista, miembros }: { lista: Donacion[]; miembros: SvMiembro
 
   return (
     <div className="p-4">
-      <div className="overflow-x-auto rounded-[10px] border" style={{ borderColor: "var(--color-line)" }}>
+      <div className="overflow-x-auto rounded-[var(--radius-control)] border" style={{ borderColor: "var(--color-line)" }}>
         <table className="w-full text-sm">
           <thead>
             <tr style={{ background: "var(--color-surface-2)", color: "var(--color-muted)" }}>
@@ -1015,7 +1042,7 @@ function VincularBtn({ onDone }: { onDone: (msg: string) => void }) {
     <button
       type="button"
       disabled={loading}
-      className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+      className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
       style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-muted)" }}
       onClick={handleClick}
     >
@@ -1089,7 +1116,7 @@ function DonantesAgrupadosPane({ lista, onDonante }: {
       {filtered.length === 0 ? (
         <p className="text-sm text-center py-8" style={{ color: "var(--color-muted)" }}>Sin resultados</p>
       ) : (
-        <div className="rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+        <div className="rounded-[var(--radius-control)] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
           {filtered.map((r, idx) => (
             <button
               key={idx}
@@ -1202,7 +1229,7 @@ function FilaPorVincular({
           type="button"
           disabled={pending}
           onClick={() => { setPending(true); onExterno(); }}
-          className="flex-none text-[11px] font-semibold px-2 py-1 rounded-[6px]"
+          className="flex-none text-[11px] font-semibold px-2 py-1 rounded-[var(--radius-control)]"
           style={{ background: "var(--color-surface-2)", color: "var(--color-faint)", border: "1px solid var(--color-line)" }}
         >
           Externo
@@ -1242,7 +1269,7 @@ function FilaPorVincular({
         />
         {resultados.length > 0 && (
           <div
-            className="absolute left-0 right-0 top-full mt-1 rounded-[10px] overflow-hidden z-20 flex flex-col"
+            className="absolute left-0 right-0 top-full mt-1 rounded-[var(--radius-control)] overflow-hidden z-20 flex flex-col"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }}
           >
             {resultados.map(m => {
@@ -1301,7 +1328,7 @@ function CardPorVincular({
   }
 
   return (
-    <div className="rounded-[16px] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-gold)" }}>
+    <div className="rounded-[var(--radius-card)] flex flex-col" style={{ background: "var(--color-surface)", border: "1px solid var(--color-gold)" }}>
       <button type="button" className="flex justify-between items-center gap-2 p-5 text-left w-full" onClick={() => setOpen(o => !o)}>
         <div className="flex items-center gap-2">
           <h2 className="font-bold text-[15px]" style={{ color: "var(--color-ink)" }}>Por vincular</h2>

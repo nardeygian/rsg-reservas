@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
-// Verde profundo del logo (#003B2D aproximado del PNG).
-const BRAND_COLOR = "#003b2d";
+// Forest Green de la marca (RSG Visual Identity Deck).
+const BRAND_COLOR = "#003329";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -18,7 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "es-CO",
     icons: [
       {
-        src: "/icons/icon-512.png",
+        src: "/icons/icon-192.png",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",

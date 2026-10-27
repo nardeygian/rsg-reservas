@@ -110,26 +110,36 @@ Los paquetes de reservas deben respetar las reglas que reservas ya tiene hoy. Si
 
 ## Sistema visual
 
-La referencia es el panel PHP de donaciones (`resurgencia-web/pago/panel/index.html`). Todo el portal debe sentirse así: sobrio, verde profundo, tarjetas limpias, cifras grandes, y cómodo en el celular, que es donde más se usa.
+La referencia es el **RSG Visual Identity Deck** (concepto *Aprendiendo a volver*; tagline "Orgánica. Funcional. Sin prisa."). El portal debe sentirse moderno, cálido y sereno: papel cálido, verde bosque, degradados suaves como el arco del deck, y cómodo en el celular, que es donde más se usa. No usar el verde menta ni Sora/Public Sans del sistema anterior: hacían que la app se viera genérica.
 
-Tipografías: **Sora** (títulos y cifras, 500 a 700) y **Public Sans** (texto, 400 a 700).
+**Tipografía:** **Instrument Sans** (variable, ejes de peso y ancho) para toda la app: títulos, texto y cifras. Sin fuentes cursivas ni serif en la app; Riccione Serial y Compendium quedan para piezas impresas y redes. Cifras con `font-variant-numeric: tabular-nums` (clase `.tabular`).
+
+**Paleta de marca:** Forest Green `#003329`, Light Green `#BDCDC2`, Soft Blue `#B1CAD2`, Pale Yellow `#E5E5CF`, Choco Brown `#342B21`, Dark Grey `#20231F`, papel `#E9E7E2`.
 
 | Token | Claro | Oscuro |
 |---|---|---|
-| bg | #F3F5F4 | #0E1311 |
-| surface | #FFFFFF | #161D1A |
-| surface-2 | #EDF1EF | #1C2521 |
-| ink | #131A17 | #E7EEEA |
-| muted | #5A6661 | #A1AEA8 |
-| faint | #8A9590 | #76837D |
-| line | #DCE3DF | #2A3531 |
-| accent | #0B6E55 | #43C29C |
-| accent-ink | #FFFFFF | #06140F |
-| accent-soft | #DDEFE8 | #193A30 |
-| up | #0B7A3E | #5AD08A |
-| down | #B3261E | #FF8A80 |
-| gold | #9A6B00 | #E3B44C |
+| bg | #E9E7E2 (papel) | #071A15 (bosque profundo) |
+| surface | #F6F5F1 | #0F2620 |
+| surface-2 | #E1DED6 | #15312A |
+| ink | #20231F | #E9E7E2 |
+| muted | #55524A | #AFBDB4 |
+| faint | #858177 | #7D8F86 |
+| line | #D6D2C8 | #20403A |
+| accent | #003329 | #BDCDC2 |
+| accent-ink | #F6F5F1 | #003329 |
+| accent-soft | #D3DED6 | #1B3A32 |
+| up | #1F6B4F | #8CC5A6 |
+| down | #9A3B2E | #E8A094 |
+| gold (pendiente) | #8A7424 sobre #E5E5CF | #E5E5CF sobre #2E2C1D |
+| info (tus reservas) | #2E5A66 sobre #D2E0E5 | #B1CAD2 sobre #17323A |
 
-Radio de tarjetas: 10 px. Números con `font-variant-numeric: tabular-nums`. Patrones a conservar del panel: bloque principal en color acento con la cifra grande, tarjetas plegables, tablas que en el celular se vuelven tarjetas, aviso flotante ("toast") para novedades en vivo y la vista "Hoy" de servicio.
+**Degradados** (en `app/globals.css`):
+- `.brand-hero`: bloque principal con la cifra grande. Arco verde bosque que se abre hacia azul suave (`--grad-hero`), texto claro y mosaicos translúcidos (`.brand-hero-tile`).
+- `.brand-arc`: fondo de pantalla completa con el arco difuminado del deck (login y pantallas de bienvenida).
+- Los degradados son para los momentos importantes. El resto de la interfaz va en colores planos.
+
+**Monograma:** `public/brand/rgs-mark.png` es una máscara; con la clase `.brand-mark` toma el color de `color`. El ícono de la app (`app/icon.png`, `public/icons/`) es el monograma verde bosque sobre degradado verde claro → azul suave, como en el deck.
+
+**Forma:** radios de 4 a 8 px en controles y 12 px en bloques; líneas finas en vez de cajas cuando sea posible. Etiquetas en mayúsculas espaciadas solo donde aportan (fechas, encabezados de bloque), no encima de cada título.
 
 Textos de la interfaz en español, tono cercano e inclusivo, sin guiones largos.

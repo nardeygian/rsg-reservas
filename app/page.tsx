@@ -3,22 +3,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile, getUserCaps } from "@/lib/auth";
 import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
-import { ThemeToggle } from "./_components/ThemeToggle";
 import { getCalendarEvents } from "@/lib/asana";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { donReadData } from "@/app/donaciones/_lib/data";
 import { donantes } from "@/app/donaciones/_lib/don-logic";
 import { svNorm, svServiciosGrupo, svTablaDiscipulos, svEnPeriodo, periodoActual, MESES } from "@/app/servicio/_lib/sv-logic";
-
-const ROLE_LABELS: Record<string, string> = {
-  leader: "Líder",
-  mentor: "Mentor",
-  pastor_ministerio: "Pastor",
-  pastor_sede: "Pastor",
-  admin_casa: "Admin",
-  studio_admin: "Admin Estudio",
-  super_admin: "Admin",
-};
 
 const USE_TYPE_LABELS: Record<string, string> = {
   reunion_departamento: "Reunión de departamento",
@@ -32,11 +21,6 @@ const USE_TYPE_LABELS: Record<string, string> = {
 };
 
 const APPROVER_ROLES = ["pastor_sede", "admin_casa", "super_admin", "pastor_ministerio", "studio_admin"];
-
-function getInitials(name: string | null | undefined): string {
-  if (!name) return "?";
-  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
-}
 
 function formatDateEyebrow(date: Date): string {
   return date.toLocaleDateString("es-CO", {
@@ -135,9 +119,7 @@ export default async function HomePage() {
     getCalendarEvents().catch(() => [] as Awaited<ReturnType<typeof getCalendarEvents>>),
   ]);
 
-  const displayName = profile?.full_name ?? email ?? userId;
   const firstName = profile?.full_name?.split(" ")[0] ?? null;
-  const roleLabel = profile?.role ? (ROLE_LABELS[profile.role] ?? null) : null;
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 
@@ -214,7 +196,7 @@ export default async function HomePage() {
     .slice(0, 4);
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       <div
         style={{
           padding: "28px clamp(16px, 4vw, 40px) 48px",
@@ -260,62 +242,26 @@ export default async function HomePage() {
             </h1>
           </div>
 
-          {/* Chips + controles */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {roleLabel && (
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "4px 10px",
-                  borderRadius: 99,
-                  background: "var(--color-accent-soft)",
-                  color: "var(--color-accent)",
-                }}
-              >
-                {roleLabel}
-              </span>
-            )}
-            {canApprove && (pendingCount ?? 0) > 0 && (
-              <Link
-                href="/aprobaciones"
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "4px 10px",
-                  borderRadius: 99,
-                  background: "var(--color-gold-soft)",
-                  color: "var(--color-gold-text)",
-                  textDecoration: "none",
-                }}
-              >
-                {pendingCount} por aprobar
-              </Link>
-            )}
-            <ThemeToggle />
-            <div
-              className="avatar"
-              style={{ width: 36, height: 36, fontSize: 13, fontWeight: 700, flexShrink: 0 }}
-              aria-label={String(displayName)}
-            >
-              {getInitials(profile?.full_name)}
-            </div>
-          </div>
+          {/* Solo lo accionable: aprobaciones pendientes. Rol, tema y perfil viven en "Tú". */}
+          {canApprove && (pendingCount ?? 0) > 0 && (
+            <Link href="/aprobaciones" prefetch className="chip chip-gold" style={{ textDecoration: "none" }}>
+              {pendingCount} por aprobar
+            </Link>
+          )}
         </header>
 
         {/* ── Bloque Servicio (HOY EN RESURGENCIA) ── */}
         <section
           aria-label="Hoy en Resurgencia"
-          style={{
-            background: "var(--color-accent)",
-            color: "#FFFFFF",
-            borderRadius: 10,
-            padding: 22,
-            display: "flex",
-            flexDirection: "column",
-            gap: 18,
-          }}
+          className="brand-hero"
+          style={{ padding: 24, display: "flex", flexDirection: "column", gap: 22 }}
         >
+          {/* Monograma de fondo, como el arco del deck */}
+          <span
+            aria-hidden
+            className="brand-mark"
+            style={{ position: "absolute", right: -28, top: -36, width: 220, color: "#F6F5F1", opacity: 0.07, zIndex: -1 }}
+          />
           <div
             style={{
               display: "flex",
@@ -340,16 +286,15 @@ export default async function HomePage() {
               <span
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: 44,
-                  fontWeight: 700,
-                  lineHeight: 1.05,
-                  letterSpacing: "-.02em",
-                  opacity: reunionesToday > 0 ? 1 : 0.55,
+                  fontSize: reunionesToday > 0 ? 40 : 26,
+                  fontWeight: 600,
+                  lineHeight: 1.1,
+                  letterSpacing: "-.03em",
                 }}
               >
                 {reunionesToday > 0
-                  ? `${reunionesToday} ${reunionesToday === 1 ? "reunión" : "reuniones"}`
-                  : "Sin reuniones"}
+                  ? `${reunionesToday} ${reunionesToday === 1 ? "reunión hoy" : "reuniones hoy"}`
+                  : "Hoy es un día tranquilo"}
               </span>
               {(bookingsTodayCount ?? 0) > 0 && (
                 <span style={{ fontSize: 15, fontWeight: 500, opacity: 0.8, marginTop: 2 }}>
@@ -361,7 +306,7 @@ export default async function HomePage() {
 
           {/* Donaciones en la franja */}
           {(isAdmin || donTotalMes > 0) && caps?.donaciones !== "none" && (
-            <div style={{ borderRadius: 10, background: "var(--color-accent-dark)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="brand-hero-tile" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", fontWeight: 600, opacity: 0.85, color: "#fff" }}>
                   Recaudado en el mes
@@ -370,7 +315,7 @@ export default async function HomePage() {
                   Ver registro →
                 </Link>
               </div>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 38, fontWeight: 700, letterSpacing: "-.02em", lineHeight: 1.05, color: "#fff" }}>
+              <span className="tabular" style={{ fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, letterSpacing: "-.035em", lineHeight: 1.05, color: "#fff" }}>
                 {donTotalMes > 0 ? fmtCOP(donTotalMes) : "$ —"}
               </span>
               {isAdmin && donCountMes > 0 && (
@@ -382,8 +327,8 @@ export default async function HomePage() {
                       ? `$${(donPromedioMes / 1000000).toFixed(1).replace(".", ",")} M`
                       : `$${Math.round(donPromedioMes / 1000)} mil`, "promedio"],
                   ] as [string, string][]).map(([v, l]) => (
-                    <div key={l} style={{ background: "rgba(255,255,255,.15)", borderRadius: 8, padding: "10px 12px" }}>
-                      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, color: "#fff" }}>{v}</div>
+                    <div key={l} style={{ borderLeft: "1px solid rgba(233,231,226,.22)", padding: "2px 0 2px 12px" }}>
+                      <div className="tabular" style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(16px, 4.6vw, 20px)", letterSpacing: "-.02em", color: "#fff", whiteSpace: "nowrap" }}>{v}</div>
                       <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.75)", marginTop: 2 }}>{l}</div>
                     </div>
                   ))}
@@ -412,7 +357,7 @@ export default async function HomePage() {
                 <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 600 }}>Módulo de Servicio</h2>
                 <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>Listados · asistencia · equipo</span>
               </div>
-              <Link href="/servicio" style={{ fontSize: 12, fontWeight: 700, padding: "10px 16px", border: "1px solid var(--color-line)", borderRadius: 8, flexShrink: 0, color: "var(--color-accent)", textDecoration: "none" }}>
+              <Link href="/servicio" style={{ fontSize: 12, fontWeight: 700, padding: "10px 16px", border: "1px solid var(--color-line)", borderRadius: "var(--radius-control)", flexShrink: 0, color: "var(--color-accent)", textDecoration: "none" }}>
                 Abrir
               </Link>
             </div>
@@ -469,7 +414,7 @@ export default async function HomePage() {
                   ] as [string, string][]).map(([n, l]) => (
                     <div
                       key={l}
-                      style={{ border: "1px solid var(--color-line)", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 2 }}
+                      style={{ border: "1px solid var(--color-line)", borderRadius: "var(--radius-control)", padding: 12, display: "flex", flexDirection: "column", gap: 2 }}
                     >
                       <span style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{n}</span>
                       <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{l}</span>
@@ -607,7 +552,7 @@ export default async function HomePage() {
                           width: 48,
                           flexShrink: 0,
                           textAlign: "center",
-                          borderRadius: 8,
+                          borderRadius: "var(--radius-control)",
                           background: isToday ? "var(--color-accent-soft)" : "var(--color-surface-2)",
                           color: isToday ? "var(--color-accent)" : "#3E4A45",
                           padding: "6px 0",

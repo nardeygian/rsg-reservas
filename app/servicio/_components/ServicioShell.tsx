@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { PeriodPicker, Chevron, type PeriodOption } from "@/app/_components/ui/PeriodPicker";
+import { CommunitySwitch } from "@/app/_components/ui/CommunitySwitch";
+
+import { useState, useTransition, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   svConteo, svEnPeriodo, svFmt, svHoyISO, svNombreLimpio, svTipo, svDiaLargo,
@@ -21,7 +24,7 @@ type Sheet =
   | { type: "servidor"; sid: string }
   | { type: "grupo"; gid: string };
 
-export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: boolean }) {
+export function ServicioShell({ svData, canEdit, showCommunity = false }: { svData: SvData; canEdit: boolean; showCommunity?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
@@ -34,6 +37,7 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
   const [toast, setToast]     = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [showNueva, setShowNueva]       = useState(false);
+  const [showPast, setShowPast]         = useState(false);
   const [nuevaErr, setNuevaErr]         = useState("");
   const [openReuniones, setOpenReuniones] = useState(true);
   const [openServidores, setOpenServidores] = useState(true);
@@ -78,6 +82,14 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
   const reusP       = reuniones.filter(r => svEnPeriodo(r.fecha, per, y, i));
   const reusV       = svTipoF ? reusP.filter(r => svTipo(r) === svTipoF) : reusP;
   const reusHoy     = reuniones.filter(r => r.fecha === hoy).sort((a, b) => svTipo(a).localeCompare(svTipo(b)));
+  // Por defecto solo se ven las reuniones de hoy en adelante; las anteriores quedan
+  // detrás de "Ver reuniones anteriores". Si el periodo ya pasó, se ven todas.
+  const proximas    = reusV.filter(r => r.fecha >= hoy);
+  const anteriores  = reusV.filter(r => r.fecha < hoy).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const ocultaPasadas = proximas.length > 0 && anteriores.length > 0;
+  const reusLista   = !ocultaPasadas ? reusV : showPast ? [...proximas, ...anteriores] : proximas;
+  const primeraPasada = ocultaPasadas && showPast ? anteriores[0]?.id : undefined;
+  const sinListadoPasadas = anteriores.filter(r => !r.cargada).length;
   const contT       = svConteo(reusP);
   const cont        = new Map([...contT].filter(([, x]) => x.u.size));
 
@@ -138,99 +150,84 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
 
   return (
     <div className="flex flex-col" style={{ maxWidth: 1180, margin: "0 auto" }}>
-      {/* Period bar */}
-      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 flex-wrap">
-        {/* Per selector */}
-        <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
-          {(["mes", "trimestre", "semestre", "anio"] as SvPer[]).map(p => (
-            <button
-              key={p}
-              type="button"
-              className="px-3 py-1.5 text-xs font-semibold"
-              style={{
-                background: per === p ? "var(--color-accent)" : "var(--color-surface)",
-                color: per === p ? "var(--color-accent-ink)" : "var(--color-muted)",
-              }}
-              onClick={() => changePer(p)}
-            >
-              {p === "mes" ? "Mes" : p === "trimestre" ? "Trim." : p === "semestre" ? "Sem." : "Año"}
-            </button>
-          ))}
-        </div>
-        {/* Prev / label / next */}
-        <div className="flex items-center gap-2">
-          <button type="button" className="w-8 h-8 flex items-center justify-center rounded-full text-lg" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }} onClick={() => shiftP(-1)}>‹</button>
-          <span className="text-sm font-semibold min-w-[120px] text-center" style={{ color: "var(--color-ink)" }}>{etiqueta(per, y, i)}</span>
-          <button type="button" className="w-8 h-8 flex items-center justify-center rounded-full text-lg" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }} onClick={() => shiftP(1)} disabled={esFuturo(per, ...shiftPeriodo(per, y, i, 1))}>›</button>
-        </div>
-      </div>
+      {/* Encabezado */}
+      <header className="flex flex-col gap-4 px-4 pt-6 pb-3">
+        <h1 className="page-title">{showCommunity ? "Comunidad" : "Servicio"}</h1>
+        {showCommunity && <CommunitySwitch active="servidores" />}
+        <PeriodPicker
+          options={[
+            { id: "mes", label: "Mes" },
+            { id: "trimestre", label: "Trim." },
+            { id: "semestre", label: "Sem." },
+            { id: "anio", label: "Año" },
+          ] as PeriodOption<SvPer>[]}
+          value={per}
+          onChange={changePer}
+          label={etiqueta(per, y, i)}
+          onPrev={() => shiftP(-1)}
+          onNext={() => shiftP(1)}
+          nextDisabled={esFuturo(per, ...shiftPeriodo(per, y, i, 1))}
+        />
+      </header>
 
       <div className="flex flex-col gap-4 px-4 pb-24">
 
         {/* Hoy */}
         <HoyCard reusHoy={reusHoy} hoy={hoy} reuniones={reuniones} onOpen={(rid) => setSheet({ type: "reunion", rid })} canEdit={canEdit} />
 
-        {/* Resumen */}
-        <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
-          <div className="px-4 pt-4 pb-2 border-b" style={{ borderColor: "var(--color-line)" }}>
-            <h2 className="font-bold text-base" style={{ color: "var(--color-ink)" }}>Servicio en {etiquetaCorta(per, y, i)}</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x" style={{ "--tw-divide-opacity": 1 } as React.CSSProperties}>
+        {/* Resumen: bloque de marca, igual que en Inicio y Dar */}
+        <section className="brand-hero p-5 flex flex-col gap-4" aria-label={`Servicio en ${etiquetaCorta(per, y, i)}`}>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-85">Servicio en {etiquetaCorta(per, y, i)}</span>
+          <div className="grid grid-cols-3 gap-2">
             {[
-              { label: "Reuniones de ministerio", val: nMinReus,  sub: `${gente("min")} personas sirvieron · ${listados("min")}`,  color: "var(--color-accent)" },
-              { label: "Servolución",              val: nServReus, sub: `${gente("serv")} personas sirvieron · ${listados("serv")}`, color: "var(--color-gold)" },
-              { label: "Personas que sirvieron",   val: cont.size, sub: `de ${Object.keys(svData.servidores).length} servidores · ${tot("aus")} ${tot("aus") === 1 ? "ausencia" : "ausencias"} · ${reusP.length - pasadas.length} por venir`, color: "var(--color-ink)" },
-            ].map(({ label, val, sub, color }) => (
-              <div key={label} className="px-4 py-3 flex flex-col gap-0.5">
-                <span className="text-xs font-medium" style={{ color: "var(--color-muted)" }}>{label}</span>
-                <span className="text-3xl font-bold leading-none" style={{ color }}>{val}</span>
-                <span className="text-xs" style={{ color: "var(--color-faint)" }}>{sub}</span>
+              { label: "Ministerio",  val: nMinReus,  sub: `${gente("min")} sirvieron` },
+              { label: "Servolución", val: nServReus, sub: `${gente("serv")} sirvieron` },
+              { label: "Servidores",  val: cont.size, sub: `de ${Object.keys(svData.servidores).length}` },
+            ].map(({ label, val, sub }) => (
+              <div key={label} className="brand-hero-tile px-3 py-3 flex flex-col gap-0.5 min-w-0">
+                <span className="text-[28px] font-semibold leading-none tabular tracking-[-0.03em]">{val}</span>
+                <span className="text-[12px] font-medium truncate opacity-90">{label}</span>
+                <span className="text-[11px] truncate opacity-70">{sub}</span>
               </div>
             ))}
           </div>
-        </div>
+          <p className="text-[12px] opacity-75">
+            Listados: {listados("min")} en ministerio · {listados("serv")} en Servolución · {tot("aus")} {tot("aus") === 1 ? "ausencia" : "ausencias"} · {reusP.length - pasadas.length} por venir
+          </p>
+        </section>
 
         {/* Reuniones */}
-        <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+        <div className="rounded-[var(--radius-card)] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
           <div className={`px-4 pt-4 pb-3 flex flex-col gap-2 ${openReuniones ? "border-b" : ""}`} style={{ borderColor: "var(--color-line)" }}>
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <button type="button" className="flex items-center gap-2 font-bold text-base" style={{ color: "var(--color-ink)", background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setOpenReuniones(v => !v)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                  style={{ color: "var(--color-muted)", transform: openReuniones ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-                Reuniones y actividades
+            <div className="flex items-center justify-between gap-2">
+              <button type="button" className="flex items-center gap-2 font-semibold text-[17px] tracking-[-0.01em]" style={{ color: "var(--color-ink)", background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setOpenReuniones(v => !v)} aria-expanded={openReuniones}>
+                Reuniones
+                <span style={{ color: "var(--color-muted)", transform: openReuniones ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s", display: "inline-flex" }}>
+                  <Chevron dir="down" />
+                </span>
               </button>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Type filter */}
-                <div className="flex rounded-[8px] overflow-hidden text-xs" style={{ border: "1px solid var(--color-line)" }}>
-                  {(["", "min", "serv"] as const).map(t => (
-                    <button key={t} type="button"
-                      className="px-2.5 py-1.5 font-semibold"
-                      style={{ background: svTipoF === t ? "var(--color-accent)" : "var(--color-surface)", color: svTipoF === t ? "var(--color-accent-ink)" : "var(--color-muted)" }}
-                      onClick={() => setSvTipoF(t)}
-                    >{t === "" ? "Todas" : t === "min" ? "Ministerio" : "Servolución"}</button>
-                  ))}
+              {canEdit && (
+                <div className="flex items-center gap-2">
+                  <button type="button" className="icon-btn" onClick={handleSync} disabled={syncing} aria-label="Actualizar desde el calendario de Asana" title="Actualizar desde el calendario de Asana">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                      style={syncing ? { animation: "spin 1s linear infinite" } : undefined}>
+                      <path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" />
+                    </svg>
+                  </button>
+                  <button type="button" className="icon-btn icon-btn-accent" onClick={() => setShowNueva(v => !v)} aria-label="Agregar reunión" title="Agregar reunión">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                  </button>
                 </div>
-                {canEdit && (
-                  <>
-                    <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)", display: "flex", alignItems: "center", gap: 6 }} onClick={handleSync} disabled={syncing}>
-                      {syncing && (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-                          style={{ animation: "spin 1s linear infinite" }} aria-hidden="true">
-                          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                        </svg>
-                      )}
-                      {syncing ? "Actualizando…" : "Actualizar calendario"}
-                    </button>
-                    <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px]" style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }} onClick={() => setShowNueva(v => !v)}>
-                      Agregar reunión
-                    </button>
-                  </>
-                )}
-              </div>
+              )}
             </div>
-            <p className="text-xs" style={{ color: svData.sync_error ? "var(--color-down)" : "var(--color-muted)" }}>{estadoSync}</p>
+            <div className="segmented self-start" role="group" aria-label="Tipo de reunión">
+              {(["", "min", "serv"] as const).map(t => (
+                <button key={t} type="button" aria-pressed={svTipoF === t} onClick={() => setSvTipoF(t)}>
+                  {t === "" ? "Todas" : t === "min" ? "Ministerio" : "Servolución"}
+                </button>
+              ))}
+            </div>
+            <p className="text-[12px]" style={{ color: svData.sync_error ? "var(--color-down)" : "var(--color-faint)" }}>{syncing ? "Actualizando…" : estadoSync}</p>
           </div>
 
           {openReuniones && showNueva && (
@@ -252,12 +249,16 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
             <>
               {/* Mobile card list */}
               <div className="block sm:hidden divide-y" style={{ borderColor: "var(--color-line)" }}>
-                {reusV.map(r => {
+                {reusLista.map(r => {
                   const tipo = svTipo(r);
                   const sirv = r.filas.filter(f => !f.aus).length;
                   const aus  = r.filas.filter(f => f.aus).length;
                   return (
-                    <div key={r.id} className="px-4 py-3 flex items-center gap-3 cursor-pointer" style={{ borderColor: "var(--color-line)" }} onClick={() => setSheet({ type: "reunion", rid: r.id })}>
+                    <Fragment key={r.id}>
+                    {r.id === primeraPasada && (
+                      <div className="px-4 pt-4 pb-1.5 text-[12px] font-semibold" style={{ color: "var(--color-muted)" }}>Anteriores</div>
+                    )}
+                    <div className="px-4 py-3 flex items-center gap-3 cursor-pointer" style={{ borderColor: "var(--color-line)" }} onClick={() => setSheet({ type: "reunion", rid: r.id })}>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "var(--color-ink)" }}>{svNombreLimpio(r.nombre)}</p>
                         <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>{svFmt(r.fecha)} · {tipo === "serv" ? "Servolución" : r.seccion || "Ministerio"}</p>
@@ -272,6 +273,7 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
                         )}
                       </div>
                     </div>
+                    </Fragment>
                   );
                 })}
               </div>
@@ -288,12 +290,29 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
                     </tr>
                   </thead>
                   <tbody>
-                    {reusV.map(r => (
-                      <ReuniónRow key={r.id} r={r} hoy={hoy} onOpen={() => setSheet({ type: "reunion", rid: r.id })} canEdit={canEdit} />
+                    {reusLista.map(r => (
+                      <Fragment key={r.id}>
+                        {r.id === primeraPasada && (
+                          <tr><td colSpan={5} className="px-4 pt-4 pb-1.5 text-[12px] font-semibold" style={{ color: "var(--color-muted)" }}>Anteriores</td></tr>
+                        )}
+                        <ReuniónRow r={r} hoy={hoy} onOpen={() => setSheet({ type: "reunion", rid: r.id })} canEdit={canEdit} />
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
               </div>
+              {ocultaPasadas && (
+                <button type="button" onClick={() => setShowPast(v => !v)}
+                  className="w-full px-4 py-3.5 border-t flex items-center justify-center gap-2 text-[14px] font-semibold"
+                  style={{ color: "var(--color-accent)" }} aria-expanded={showPast}>
+                  {showPast
+                    ? "Ocultar reuniones anteriores"
+                    : `Ver reuniones anteriores (${anteriores.length})`}
+                  {!showPast && sinListadoPasadas > 0 && (
+                    <span className="chip chip-gold">{sinListadoPasadas} sin listado</span>
+                  )}
+                </button>
+              )}
             </>
           ) : (
             <div className="px-4 py-8 text-center text-sm" style={{ color: "var(--color-muted)" }}>
@@ -303,7 +322,7 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
         </div>
 
         {/* Servidores */}
-        <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+        <div className="rounded-[var(--radius-card)] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
           <div className={`px-4 pt-4 pb-3 flex items-center gap-3 flex-wrap ${openServidores ? "border-b" : ""}`} style={{ borderColor: "var(--color-line)" }}>
             <button type="button" className="flex items-center gap-2 font-bold text-base" style={{ color: "var(--color-ink)", background: "none", border: "none", padding: 0, cursor: "pointer" }} onClick={() => setOpenServidores(v => !v)}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
@@ -397,7 +416,7 @@ export function ServicioShell({ svData, canEdit }: { svData: SvData; canEdit: bo
 
       {/* Toast */}
       {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[12px] shadow-lg pointer-events-none"
+        <div className="fixed left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[var(--radius-card)] shadow-lg pointer-events-none"
           style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", background: "var(--color-ink)", color: "var(--color-bg)", maxWidth: 340, textAlign: "center" }}>
           {toast}
         </div>
@@ -453,7 +472,7 @@ function HoyCard({ reusHoy, hoy, reuniones, onOpen, canEdit }: {
 
   if (!reusHoy.length) {
     return (
-      <div className="rounded-[16px] p-4 flex items-center justify-between gap-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+      <div className="rounded-[var(--radius-card)] p-4 flex items-center justify-between gap-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>Hoy · {svDiaLargo(hoy)}</p>
           <p className="text-sm mt-0.5" style={{ color: "var(--color-muted)" }}>
@@ -461,7 +480,7 @@ function HoyCard({ reusHoy, hoy, reuniones, onOpen, canEdit }: {
           </p>
         </div>
         {canEdit && (
-          <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px] flex-none whitespace-nowrap"
+          <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)] flex-none whitespace-nowrap"
             style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }}
             onClick={() => { const el = document.querySelector("[data-agregar-reunion]") as HTMLButtonElement; el?.click(); }}>
             Agregar una hoy
@@ -472,7 +491,7 @@ function HoyCard({ reusHoy, hoy, reuniones, onOpen, canEdit }: {
   }
 
   return (
-    <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}>
+    <div className="rounded-[var(--radius-card)] overflow-hidden" style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}>
       <div className="px-4 pt-4 pb-2 flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide opacity-70">Hoy · {svDiaLargo(hoy)}</p>
@@ -491,13 +510,13 @@ function HoyCard({ reusHoy, hoy, reuniones, onOpen, canEdit }: {
           const aus  = r.filas.length - sirv;
           const est  = r.cargada ? `${sirv} ${sirv === 1 ? "sirvió" : "sirvieron"}${aus ? ` · ${aus} ${aus === 1 ? "ausente" : "ausentes"}` : ""}` : "Falta el listado";
           return (
-            <div key={r.id} className="flex items-center justify-between gap-3 rounded-[10px] px-3 py-2.5" style={{ background: "rgba(255,255,255,0.12)" }}>
+            <div key={r.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-control)] px-3 py-2.5" style={{ background: "rgba(255,255,255,0.12)" }}>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{svNombreLimpio(r.nombre)}</p>
                 <p className="text-xs opacity-75">{svTipo(r) === "serv" ? "Servolución" : r.seccion || "Ministerio"} · {est}</p>
               </div>
               {canEdit && (
-                <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px] flex-none"
+                <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)] flex-none"
                   style={{ background: r.cargada ? "rgba(255,255,255,0.15)" : "white", color: r.cargada ? "white" : "var(--color-accent)" }}
                   onClick={() => onOpen(r.id)}>
                   {r.cargada ? "Ver" : "Subir listado"}
@@ -545,7 +564,7 @@ function ReuniónRow({ r, hoy, onOpen, canEdit }: { r: SvReunionUI; hoy: string;
       </td>
       <td className="px-4 py-2.5">
         {canEdit && (
-          <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+          <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
             style={{ background: r.cargada ? "var(--color-surface-2)" : "var(--color-accent)", color: r.cargada ? "var(--color-ink)" : "var(--color-accent-ink)", border: r.cargada ? "1px solid var(--color-line)" : "none" }}
             onClick={e => { e.stopPropagation(); onOpen(); }}>
             {r.cargada ? "Ver" : "Subir listado"}

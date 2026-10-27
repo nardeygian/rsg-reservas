@@ -1,6 +1,8 @@
 # Prototipo del Portal RSG
 
-Estas pantallas son la referencia visual **exacta** del portal. Todo el portal, incluida Reservas, debe verse así: mismos colores, tipografías (Sora y Public Sans), tamaños, espaciados, radios, componentes y jerarquía. El sistema visual anterior de reservas (arena, #003329, Manrope, Riccione, FK) se reemplaza.
+> **Actualización:** los colores y tipografías de estos prototipos (verde menta, Sora y Public Sans) **ya no aplican**. El sistema visual vigente sigue el RSG Visual Identity Deck: paleta de marca, Instrument Sans y degradados de marca. Ver `../00-vision-y-arquitectura.md`, sección Sistema visual.
+
+Estas pantallas siguen siendo la referencia de **estructura**: qué información va en cada pantalla, jerarquía, componentes y flujos.
 
 Ábrelas en el navegador para verlas. Los datos son de ejemplo.
 

@@ -6,18 +6,28 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="fixed inset-0 flex items-center justify-center px-4 overflow-y-auto" style={{ background: "var(--color-bg)" }}>
-      <div className="absolute top-4 right-4">
+    <main className="brand-arc fixed inset-0 overflow-y-auto">
+      <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-sm py-10">
-        <div className="text-center mb-8">
-          <p className="eyebrow">Iglesia RSG</p>
-          <h1 className="font-serif text-3xl mt-2 tracking-[-0.02em]">
-            Panel RSG
-          </h1>
+      <div className="min-h-full flex flex-col items-center justify-center px-5 py-14">
+        <span
+          aria-hidden
+          className="brand-mark"
+          style={{ width: 64, color: "var(--color-accent)" }}
+        />
+        <h1 className="mt-6 text-[28px] font-semibold tracking-[-0.025em] text-center" style={{ color: "var(--color-ink)" }}>
+          Panel Resurgencia
+        </h1>
+        <p className="mt-1.5 text-[15px] text-center" style={{ color: "var(--color-muted)" }}>
+          Reservas, servicio y donaciones en un solo lugar
+        </p>
+        <div className="glass liquid w-full max-w-sm mt-8 rounded-[var(--radius-sheet)] p-6">
+          {children}
         </div>
-        {children}
+        <p className="mt-10 text-[11px] font-medium tracking-[0.2em] uppercase" style={{ color: "var(--color-muted)" }}>
+          Orgánica · Funcional · Sin prisa
+        </p>
       </div>
     </main>
   );

@@ -123,18 +123,18 @@ export function ReservasDayView({
     <>
       {/* View toggle */}
       <div
-        className="flex rounded-[10px] p-[4px] gap-1"
+        className="flex rounded-[var(--radius-control)] p-[4px] gap-1"
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
       >
         <span
-          className="flex-1 text-center text-sm py-1.5 rounded-[7px] font-semibold"
+          className="flex-1 text-center text-sm py-1.5 rounded-[var(--radius-control)] font-semibold"
           style={{ background: "var(--color-accent)", color: "#fff" }}
         >
           Día
         </span>
         <Link
           href={`/reservas?date=${dateParam}&view=mes`}
-          className="flex-1 text-center text-sm py-1.5 rounded-[7px]"
+          className="flex-1 text-center text-sm py-1.5 rounded-[var(--radius-control)]"
           style={{ color: "var(--color-muted)" }}
         >
           Mes
@@ -143,12 +143,12 @@ export function ReservasDayView({
 
       {/* Day navigator */}
       <div
-        className="flex items-center justify-between rounded-[10px] p-[6px]"
+        className="flex items-center justify-between rounded-[var(--radius-control)] p-[6px]"
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
       >
         <Link
           href={`/reservas?date=${prevDate}`}
-          className="w-10 h-10 inline-flex items-center justify-center rounded-[8px] border text-lg"
+          className="w-10 h-10 inline-flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
           style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
           aria-label="Día anterior"
         >
@@ -162,7 +162,7 @@ export function ReservasDayView({
         </span>
         <Link
           href={`/reservas?date=${nextDate}`}
-          className="w-10 h-10 inline-flex items-center justify-center rounded-[8px] border text-lg"
+          className="w-10 h-10 inline-flex items-center justify-center rounded-[var(--radius-control)] border text-lg"
           style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }}
           aria-label="Día siguiente"
         >
@@ -187,7 +187,7 @@ export function ReservasDayView({
             return (
               <div
                 key={space.id}
-                className="rounded-[10px] px-3 py-3 flex items-center gap-[10px]"
+                className="rounded-[var(--radius-control)] px-3 py-3 flex items-center gap-[10px]"
                 style={{
                   background: "var(--color-surface-2)",
                   border: "1px dashed var(--color-line)",
@@ -212,7 +212,7 @@ export function ReservasDayView({
               <div className="flex items-center gap-[10px]">
                 <span className="w-[80px] flex-none font-semibold text-sm">{space.name}</span>
                 <div
-                  className="relative flex-1 rounded-[6px] overflow-hidden"
+                  className="relative flex-1 rounded-[var(--radius-control)] overflow-hidden"
                   style={{ height: "28px", background: "var(--color-surface-2)" }}
                 >
                   {spaceBookings.map((b) => {
@@ -230,7 +230,7 @@ export function ReservasDayView({
                       <button
                         key={b.id}
                         type="button"
-                        className="absolute top-0 bottom-0 rounded-[6px]"
+                        className="absolute top-0 bottom-0 rounded-[var(--radius-control)]"
                         style={{
                           left: `${left}%`,
                           width: `${width}%`,
@@ -282,21 +282,21 @@ export function ReservasDayView({
       <div className="flex gap-3 flex-wrap text-xs mt-1" style={{ color: "#3E4A45" }}>
         <span className="inline-flex items-center gap-[6px]">
           <span
-            className="w-[10px] h-[10px] rounded-[3px] inline-block"
+            className="w-[10px] h-[10px] rounded-full inline-block"
             style={{ background: "var(--color-accent)" }}
           />
           Ministerios
         </span>
         <span className="inline-flex items-center gap-[6px]">
           <span
-            className="w-[10px] h-[10px] rounded-[3px] inline-block"
+            className="w-[10px] h-[10px] rounded-full inline-block"
             style={{ background: "#2F5E9E" }}
           />
           Tus reservas
         </span>
         <span className="inline-flex items-center gap-[6px]">
           <span
-            className="w-[10px] h-[10px] rounded-[3px] inline-block"
+            className="w-[10px] h-[10px] rounded-full inline-block"
             style={{ background: "var(--color-gold)" }}
           />
           Por aprobar
@@ -311,14 +311,14 @@ export function ReservasDayView({
       {selected && (
         <>
           <div
-            className="fixed inset-0 z-[55]"
+            className="fixed inset-0 z-[65]"
             style={{ background: "rgba(0,0,0,0.4)" }}
             onClick={() => setSelectedId(null)}
             aria-hidden
           />
           <div
             ref={sheetRef}
-            className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[20px] flex flex-col"
+            className="glass glass-strong fixed bottom-0 left-0 right-0 z-[70] rounded-t-[var(--radius-sheet)] flex flex-col"
             style={{
               background: "var(--color-surface)",
               boxShadow: "0 -4px 32px rgba(0,0,0,0.18)",

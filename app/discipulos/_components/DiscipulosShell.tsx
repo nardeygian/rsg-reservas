@@ -116,7 +116,7 @@ export function DiscipulosShell({
     <div className="flex flex-col" style={{ maxWidth: 1180, margin: "0 auto" }}>
       {/* Period bar */}
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2 flex-wrap">
-        <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+        <div className="flex rounded-[var(--radius-control)] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
           {(["mes", "trimestre", "semestre", "anio"] as SvPer[]).map(p => (
             <button
               key={p}
@@ -154,7 +154,7 @@ export function DiscipulosShell({
 
       <div className="flex flex-col gap-4 px-4 pb-24">
         {/* Header card */}
-        <div className="rounded-[16px] px-4 py-4 flex items-center gap-3 justify-between" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+        <div className="rounded-[var(--radius-card)] px-4 py-4 flex items-center gap-3 justify-between" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
           <div>
             <p className="eyebrow mb-1">Mis discípulos</p>
             <h1 className="font-bold text-xl leading-tight" style={{ color: "var(--color-ink)", fontFamily: "var(--font-display)" }}>
@@ -165,7 +165,7 @@ export function DiscipulosShell({
             <button
               type="button"
               onClick={() => setAddOpen((v) => !v)}
-              className="text-sm font-semibold px-3 py-2 rounded-[10px] flex-none"
+              className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)] flex-none"
               style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
             >
               + Agregar
@@ -175,7 +175,7 @@ export function DiscipulosShell({
 
         {/* Add disciples form */}
         {canEdit && addOpen && (
-          <form onSubmit={handleAgregar} className="rounded-[16px] px-4 py-4 flex flex-col gap-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+          <form onSubmit={handleAgregar} className="rounded-[var(--radius-card)] px-4 py-4 flex flex-col gap-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
             <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>Un nombre por línea. Los que ya existen se omiten.</p>
             <textarea
               value={nuevosNombres}
@@ -188,7 +188,7 @@ export function DiscipulosShell({
             <div className="flex gap-2">
               <button type="submit" className="btn-primary text-sm px-4 py-2">Agregar</button>
               <button type="button" onClick={() => { setAddOpen(false); setNuevos(""); }}
-                className="text-sm font-semibold px-4 py-2 rounded-[8px]"
+                className="text-sm font-semibold px-4 py-2 rounded-[var(--radius-control)]"
                 style={{ background: "var(--color-surface-2)", color: "var(--color-muted)", border: "1px solid var(--color-line)" }}>
                 Cancelar
               </button>
@@ -227,7 +227,7 @@ export function DiscipulosShell({
         </div>
 
         {/* Disciples list */}
-        <div className="rounded-[16px] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+        <div className="rounded-[var(--radius-card)] overflow-hidden" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
           <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: "var(--color-line)" }}>
             <p className="text-xs" style={{ color: "var(--color-muted)" }}>
               Toca un discípulo para ver el detalle de sus reuniones.
@@ -275,7 +275,7 @@ export function DiscipulosShell({
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[12px] shadow-lg pointer-events-none"
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 text-sm font-semibold px-4 py-2.5 rounded-[var(--radius-card)] shadow-lg pointer-events-none"
           style={{ background: "var(--color-ink)", color: "var(--color-bg)", maxWidth: 320, textAlign: "center" }}>
           {toast}
         </div>
@@ -363,7 +363,7 @@ function DiscipuloRow({
           <button
             type="button"
             onClick={handleRemoveClick}
-            className="flex-none text-xs font-semibold px-2.5 py-1.5 rounded-[8px] transition"
+            className="flex-none text-xs font-semibold px-2.5 py-1.5 rounded-[var(--radius-control)] transition"
             style={{
               background: confirming ? "var(--color-down-soft)" : "var(--color-surface-2)",
               color: confirming ? "var(--color-down)" : "var(--color-faint)",

@@ -174,7 +174,7 @@ export function DeleteUserButton({
       <input type="hidden" name="user_id" value={userId} />
       <button
         type="submit"
-        className="text-sm font-semibold flex-none px-3 rounded-[8px] transition"
+        className="text-sm font-semibold flex-none px-3 rounded-[var(--radius-control)] transition"
         style={{
           height: 32,
           background: "var(--color-down-soft)",
@@ -244,7 +244,7 @@ export function AddRoleForm({
 
       <button
         type="submit"
-        className="text-sm font-semibold flex-none px-3 rounded-[8px] transition"
+        className="text-sm font-semibold flex-none px-3 rounded-[var(--radius-control)] transition"
         style={{ height: 32, background: "var(--color-surface-2)", color: "var(--color-accent)", border: "1px solid var(--color-line)" }}
       >
         + Agregar

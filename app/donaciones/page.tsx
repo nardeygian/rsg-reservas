@@ -62,10 +62,10 @@ export default async function DonacionesPage() {
   }
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       {needsMigration ? (
         <div className="max-w-xl mx-auto px-4 py-16 text-center">
-          <p className="text-sm rounded-[12px] px-4 py-4"
+          <p className="text-sm rounded-[var(--radius-card)] px-4 py-4"
             style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)", border: "1px solid var(--color-gold)" }}>
             El módulo de Donaciones necesita una migración de base de datos.
             Aplica el archivo <code>supabase/migrations/20261010000000_donaciones.sql</code> en el dashboard de Supabase.

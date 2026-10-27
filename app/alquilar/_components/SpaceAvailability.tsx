@@ -68,7 +68,7 @@ export function SpaceAvailability({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <details className="rounded-[14px] border border-line bg-bg-elev">
+    <details className="rounded-[var(--radius-card)] border border-line bg-bg-elev">
       <summary className="cursor-pointer px-3 py-2 text-sm font-medium select-none">
         Ver disponibilidad próximos {DAYS_AHEAD} días
         {loading && (
@@ -101,7 +101,7 @@ export function SpaceAvailability({ spaceId }: { spaceId: string }) {
                   {items.map((s) => (
                     <li
                       key={s.id}
-                      className="text-xs tabular-nums rounded px-2 py-0.5"
+                      className="text-xs tabular-nums rounded-[var(--radius-control)] px-2 py-0.5"
                       style={{
                         background: "#f2e3dd",
                         color: "var(--color-critical)",

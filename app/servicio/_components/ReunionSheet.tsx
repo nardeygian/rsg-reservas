@@ -145,8 +145,8 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
 
   return (
     <>
-      <div className="fixed inset-0 z-40" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose} aria-hidden />
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[20px] flex flex-col" style={{ background: "var(--color-surface)", boxShadow: "0 -4px 32px rgba(0,0,0,0.18)", maxHeight: "90dvh", maxWidth: 640, margin: "0 auto" }}>
+      <div className="fixed inset-0 z-[65]" style={{ background: "rgba(0,0,0,0.4)" }} onClick={onClose} aria-hidden />
+      <div className="glass glass-strong fixed bottom-0 left-0 right-0 z-[70] rounded-t-[var(--radius-sheet)] flex flex-col" style={{ background: "var(--color-surface)", boxShadow: "0 -4px 32px rgba(0,0,0,0.18)", maxHeight: "90dvh", maxWidth: 640, margin: "0 auto" }}>
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-none">
           <div className="w-10 h-1 rounded-full" style={{ background: "var(--color-line)" }} />
@@ -164,7 +164,7 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
             {canEdit && hasListado && (
               <button
                 type="button"
-                className="text-xs font-semibold px-3 py-1.5 rounded-[8px] flex-none self-center"
+                className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)] flex-none self-center"
                 style={{ background: editMode ? "var(--color-surface-2)" : "var(--color-accent)", color: editMode ? "var(--color-ink)" : "var(--color-accent-ink)", border: editMode ? "1px solid var(--color-line)" : "none" }}
                 onClick={() => setEditMode(m => !m)}
               >
@@ -195,7 +195,7 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                 <div className="flex items-center gap-3 flex-wrap">
                   <label
                     htmlFor="svPdf"
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] cursor-pointer font-semibold text-sm transition active:scale-[0.97]"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-control)] cursor-pointer font-semibold text-sm transition active:scale-[0.97]"
                     style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -204,7 +204,7 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                     Subir archivo PDF
                   </label>
                   <input id="svPdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={handlePdf} />
-                  <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={() => setShowPegar(v => !v)}>
+                  <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={() => setShowPegar(v => !v)}>
                     Pegar una lista
                   </button>
                 </div>
@@ -216,7 +216,7 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                   </form>
                 )}
                 {aviso && (
-                  <p className="text-xs rounded-[8px] px-3 py-2" style={{
+                  <p className="text-xs rounded-[var(--radius-control)] px-3 py-2" style={{
                     background: aviso.ok ? "var(--color-up-soft)" : "var(--color-gold-soft)",
                     color: aviso.ok ? "var(--color-up)" : "var(--color-gold-text)",
                   }}>{aviso.msg}</p>
@@ -227,7 +227,7 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>Servidores de esta reunión</h3>
-                  <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[8px]"
+                  <button type="button" className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
                     style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }}
                     onClick={() => {
                       setFilas(prev => [...prev, { nombre: "", roles: "", aus: false, nota: "" }]);
@@ -277,12 +277,12 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
                 </button>
                 <div className="flex gap-2 flex-wrap">
                   {reg && (
-                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleBorrar} disabled={saving}>
+                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleBorrar} disabled={saving}>
                       {confirmBorrar ? "Confirmar: borrar el listado" : "Borrar el listado guardado"}
                     </button>
                   )}
                   {(r.origen === "manual" || r.fuera_de_asana) && (
-                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[8px]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleQuitar} disabled={saving}>
+                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleQuitar} disabled={saving}>
                       {confirmQuitar ? "Confirmar: eliminar la reunión" : "Eliminar esta reunión"}
                     </button>
                   )}
@@ -370,7 +370,7 @@ function ViewDeptos({ reg, svData }: { reg: SvRegistro; svData: SvData }) {
             {hasDeptos && (
               <button
                 type="button"
-                className="flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-[8px] mb-1"
+                className="flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-[var(--radius-control)] mb-1"
                 style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
                 onClick={() => setCollapsed(prev => { const s = new Set(prev); s.has(label) ? s.delete(label) : s.add(label); return s; })}
               >
@@ -447,7 +447,7 @@ function FilasAgrupadas({ filas, collapsedDeptos, onToggleDepto, svEstado, onCha
           <div key={label}>
             <button
               type="button"
-              className="flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-[8px] mb-2"
+              className="flex items-center gap-2 w-full text-left px-2.5 py-1.5 rounded-[var(--radius-control)] mb-2"
               style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}
               onClick={() => onToggleDepto(label)}
             >
@@ -479,7 +479,7 @@ function FilaRow({ f, estado, onChange, onRemove }: {
   onRemove: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-[10px] p-3" style={{ background: f.aus ? "var(--color-down-soft)" : "var(--color-bg)", border: `1px solid ${f.aus ? "var(--color-down)" : "var(--color-line)"}` }}>
+    <div className="flex flex-col gap-1.5 rounded-[var(--radius-control)] p-3" style={{ background: f.aus ? "var(--color-down-soft)" : "var(--color-bg)", border: `1px solid ${f.aus ? "var(--color-down)" : "var(--color-line)"}` }}>
       <div className="flex gap-2">
         <input
           data-nombre
@@ -496,11 +496,11 @@ function FilaRow({ f, estado, onChange, onRemove }: {
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         {/* Attendance toggle */}
-        <div className="flex rounded-[8px] overflow-hidden text-xs" style={{ border: "1px solid var(--color-line)" }}>
+        <div className="flex rounded-[var(--radius-control)] overflow-hidden text-xs" style={{ border: "1px solid var(--color-line)" }}>
           <button type="button" className="px-3 py-1.5 font-semibold" style={{ background: !f.aus ? "var(--color-accent)" : "var(--color-surface)", color: !f.aus ? "var(--color-accent-ink)" : "var(--color-muted)" }} onClick={() => onChange({ aus: false })}>Asistió</button>
           <button type="button" className="px-3 py-1.5 font-semibold" style={{ background: f.aus ? "var(--color-down)" : "var(--color-surface)", color: f.aus ? "white" : "var(--color-muted)" }} onClick={() => onChange({ aus: true })}>Ausente</button>
         </div>
-        <button type="button" className="text-xs font-semibold px-2 py-1.5 rounded-[6px]" style={{ color: "var(--color-down)", background: "var(--color-down-soft)" }} onClick={onRemove}>Quitar</button>
+        <button type="button" className="text-xs font-semibold px-2 py-1.5 rounded-[var(--radius-control)]" style={{ color: "var(--color-down)", background: "var(--color-down-soft)" }} onClick={onRemove}>Quitar</button>
         {estado && <span className="text-xs" style={{ color: estado.color }}>{estado.text}</span>}
       </div>
       {f.aus && (

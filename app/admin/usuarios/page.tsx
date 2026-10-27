@@ -145,7 +145,7 @@ export default async function UsuariosPage({
   const others = rows.filter((r) => !isPending(r));
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       <div className="px-4 pt-6 pb-10 max-w-2xl mx-auto flex flex-col gap-5">
 
         <header className="flex flex-col gap-1">
@@ -156,13 +156,13 @@ export default async function UsuariosPage({
         </header>
 
         {ok && (
-          <p role="status" className="text-sm rounded-[10px] px-4 py-3"
+          <p role="status" className="text-sm rounded-[var(--radius-control)] px-4 py-3"
             style={{ background: "var(--color-up-soft)", color: "var(--color-up)", border: "1px solid var(--color-up)" }}>
             {ok}
           </p>
         )}
         {error && (
-          <p role="alert" className="text-sm rounded-[10px] px-4 py-3"
+          <p role="alert" className="text-sm rounded-[var(--radius-control)] px-4 py-3"
             style={{ background: "var(--color-down-soft)", color: "var(--color-down)", border: "1px solid var(--color-down)" }}>
             {error}
           </p>
@@ -361,7 +361,7 @@ function UserCard({
             </select>
             <button
               type="submit"
-              className="text-sm font-semibold flex-none px-3 rounded-[8px] transition"
+              className="text-sm font-semibold flex-none px-3 rounded-[var(--radius-control)] transition"
               style={{
                 height: 32,
                 background: "var(--color-surface-2)",

@@ -55,24 +55,24 @@ export function ReservasMesView({
   return (
     <>
       {/* View toggle */}
-      <div className="flex rounded-[10px] p-[4px] gap-1" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
-        <Link href={`/reservas?date=${anchorParam}`} className="flex-1 text-center text-sm py-1.5 rounded-[7px]" style={{ color: "var(--color-muted)" }}>
+      <div className="flex rounded-[var(--radius-control)] p-[4px] gap-1" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+        <Link href={`/reservas?date=${anchorParam}`} className="flex-1 text-center text-sm py-1.5 rounded-[var(--radius-control)]" style={{ color: "var(--color-muted)" }}>
           Día
         </Link>
-        <span className="flex-1 text-center text-sm py-1.5 rounded-[7px] font-semibold" style={{ background: "var(--color-accent)", color: "#fff" }}>
+        <span className="flex-1 text-center text-sm py-1.5 rounded-[var(--radius-control)] font-semibold" style={{ background: "var(--color-accent)", color: "#fff" }}>
           Mes
         </span>
       </div>
 
       {/* Month navigator */}
-      <div className="flex items-center justify-between rounded-[10px] p-[6px]" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
-        <Link href={`/reservas?date=${prevMonthParam}&view=mes`} className="w-10 h-10 inline-flex items-center justify-center rounded-[8px] border text-lg" style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }} aria-label="Mes anterior">
+      <div className="flex items-center justify-between rounded-[var(--radius-control)] p-[6px]" style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}>
+        <Link href={`/reservas?date=${prevMonthParam}&view=mes`} className="w-10 h-10 inline-flex items-center justify-center rounded-[var(--radius-control)] border text-lg" style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }} aria-label="Mes anterior">
           ‹
         </Link>
         <span className="font-semibold text-[15px] capitalize" style={{ fontFamily: "var(--font-display)" }}>
           {monthLabel}
         </span>
-        <Link href={`/reservas?date=${nextMonthParam}&view=mes`} className="w-10 h-10 inline-flex items-center justify-center rounded-[8px] border text-lg" style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }} aria-label="Mes siguiente">
+        <Link href={`/reservas?date=${nextMonthParam}&view=mes`} className="w-10 h-10 inline-flex items-center justify-center rounded-[var(--radius-control)] border text-lg" style={{ borderColor: "var(--color-line)", color: "var(--color-muted)" }} aria-label="Mes siguiente">
           ›
         </Link>
       </div>
@@ -96,7 +96,7 @@ export function ReservasMesView({
 
           return (
             <button key={key} type="button" onClick={() => setSelDay(key)}
-              className="flex flex-col items-center py-1.5 gap-[3px] rounded-[8px]"
+              className="flex flex-col items-center py-1.5 gap-[3px] rounded-[var(--radius-control)]"
               style={
                 isToday ? { background: "var(--color-accent)", color: "#fff" }
                 : isSel  ? { background: "var(--color-accent-soft)", color: "var(--color-accent)" }
@@ -174,11 +174,11 @@ export function ReservasMesView({
       {/* Legend */}
       <div className="flex gap-3 flex-wrap text-xs mt-1" style={{ color: "#3E4A45" }}>
         <span className="inline-flex items-center gap-[6px]">
-          <span className="w-[10px] h-[10px] rounded-[3px] inline-block" style={{ background: "var(--color-accent)" }} />
+          <span className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: "var(--color-accent)" }} />
           Aprobadas
         </span>
         <span className="inline-flex items-center gap-[6px]">
-          <span className="w-[10px] h-[10px] rounded-[3px] inline-block" style={{ background: "var(--color-gold)" }} />
+          <span className="w-[10px] h-[10px] rounded-full inline-block" style={{ background: "var(--color-gold)" }} />
           Por aprobar
         </span>
       </div>

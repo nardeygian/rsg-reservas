@@ -106,7 +106,7 @@ export function DiscipulosAdminShell({
 
       {/* Period controls */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex rounded-[10px] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
+        <div className="flex rounded-[var(--radius-control)] overflow-hidden" style={{ border: "1px solid var(--color-line)" }}>
           {(["mes", "trimestre", "semestre", "anio"] as SvPer[]).map((p) => (
             <button
               key={p}
@@ -166,7 +166,7 @@ export function DiscipulosAdminShell({
         return (
           <section
             key={grupo.id}
-            className="rounded-[16px] overflow-hidden"
+            className="rounded-[var(--radius-card)] overflow-hidden"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
           >
             {/* Group header — clickable to collapse */}

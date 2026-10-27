@@ -27,7 +27,7 @@ export default async function ResetPasswordPage({
       </p>
 
       <label className="block">
-        <span className="eyebrow">Nueva contraseña</span>
+        <span className="field-label">Nueva contraseña</span>
         <input
           id="password"
           name="password"
@@ -43,7 +43,7 @@ export default async function ResetPasswordPage({
       </label>
 
       <label className="block">
-        <span className="eyebrow">Repítela</span>
+        <span className="field-label">Repítela</span>
         <input
           id="password_confirm"
           name="password_confirm"
@@ -57,9 +57,9 @@ export default async function ResetPasswordPage({
 
       {error && (
         <p
-          className="text-sm rounded-[14px] px-4 py-3"
+          className="text-sm rounded-[var(--radius-control)] px-4 py-3"
           style={{
-            background: "#f2e3dd",
+            background: "var(--color-down-soft)",
             color: "var(--color-critical)",
           }}
           role="alert"

@@ -54,7 +54,7 @@ export default async function EditItemPage({
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
+          className="text-sm rounded-[var(--radius-card)] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
         >
           {ok}
         </p>
@@ -62,7 +62,7 @@ export default async function EditItemPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-[14px] px-4 py-3"
+          className="text-sm rounded-[var(--radius-card)] px-4 py-3"
           style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
         >
           {error}

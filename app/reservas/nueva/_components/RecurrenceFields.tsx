@@ -80,7 +80,7 @@ export function RecurrenceFields({
                       className="peer sr-only"
                     />
                     <span
-                      className="block rounded-[8px] border py-2 text-sm font-medium transition peer-checked:bg-[var(--color-accent)] peer-checked:text-[var(--color-accent-ink)] peer-checked:border-[var(--color-accent)]"
+                      className="block rounded-[var(--radius-control)] border py-2 text-sm font-medium transition peer-checked:bg-[var(--color-accent)] peer-checked:text-[var(--color-accent-ink)] peer-checked:border-[var(--color-accent)]"
                       style={{ borderColor: "var(--color-line)" }}
                     >
                       {d.label}

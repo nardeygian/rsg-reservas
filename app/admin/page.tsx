@@ -85,7 +85,7 @@ export default async function AdminLandingPage() {
   ];
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       <div className="px-4 pt-6 pb-10 max-w-2xl mx-auto flex flex-col gap-5">
 
         <header className="flex flex-col gap-1">
@@ -110,7 +110,7 @@ export default async function AdminLandingPage() {
               style={{ textDecoration: "none" }}
             >
               <span
-                className="w-10 h-10 rounded-[8px] flex items-center justify-center flex-none"
+                className="w-10 h-10 rounded-[var(--radius-control)] flex items-center justify-center flex-none"
                 style={{
                   background: "var(--color-accent-soft)",
                   color: "var(--color-accent)",

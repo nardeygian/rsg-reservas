@@ -203,7 +203,7 @@ export function RentalForm({
               return (
                 <li
                   key={it.id}
-                  className={`flex items-center gap-3 rounded-md border px-3 py-2 ${
+                  className={`flex items-center gap-3 rounded-[var(--radius-control)] border px-3 py-2 ${
                     sold
                       ? "border-gray-200 dark:border-gray-800 opacity-60"
                       : "border-gray-200 dark:border-gray-800"
@@ -238,7 +238,7 @@ export function RentalForm({
                       }))
                     }
                     disabled={sold}
-                    className="w-20 rounded-[10px] border border-line bg-bg-elev px-2 py-1 text-sm text-right tabular-nums disabled:opacity-50"
+                    className="w-20 rounded-[var(--radius-control)] border border-line bg-bg-elev px-2 py-1 text-sm text-right tabular-nums disabled:opacity-50"
                     aria-label={`Cantidad de ${it.name}`}
                   />
                 </li>
@@ -249,7 +249,7 @@ export function RentalForm({
       )}
 
       <section
-        className="rounded-[22px] px-5 py-4 space-y-1"
+        className="rounded-[var(--radius-sheet)] px-5 py-4 space-y-1"
         style={{
           background: "var(--color-bg-invert)",
           color: "var(--color-fg-invert)",
@@ -281,7 +281,7 @@ export function RentalForm({
         <div className="card !p-4 space-y-3">
           {/* QR */}
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-24 h-24 rounded-[14px] border border-dashed border-line flex items-center justify-center text-xs text-fg3 bg-bg-muted">
+            <div className="flex-shrink-0 w-24 h-24 rounded-[var(--radius-card)] border border-dashed border-line flex items-center justify-center text-xs text-fg3 bg-bg-muted">
               {PAYMENT_INFO.qrImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -305,7 +305,7 @@ export function RentalForm({
           <div className="border-t border-line pt-3">
             <p className="text-xs text-gray-500 mb-1">Llave Bancolombia</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 font-mono text-sm bg-bg-muted rounded px-2 py-1.5">
+              <code className="flex-1 font-mono text-sm bg-bg-muted rounded-[var(--radius-control)] px-2 py-1.5">
                 {PAYMENT_INFO.bancolombiaKey}
               </code>
               <button
@@ -332,7 +332,7 @@ export function RentalForm({
               {PAYMENT_INFO.bancolombiaAccountHolder}
             </p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 font-mono text-sm bg-bg-muted rounded px-2 py-1.5">
+              <code className="flex-1 font-mono text-sm bg-bg-muted rounded-[var(--radius-control)] px-2 py-1.5">
                 {PAYMENT_INFO.bancolombiaAccountNumberDisplay}
               </code>
               <button
@@ -405,7 +405,7 @@ export function RentalForm({
 
         <label
           htmlFor="receipt-input"
-          className={`mt-2 flex flex-col items-center justify-center gap-1 cursor-pointer rounded-[14px] border-2 border-dashed px-4 py-6 text-center transition ${
+          className={`mt-2 flex flex-col items-center justify-center gap-1 cursor-pointer rounded-[var(--radius-card)] border-2 border-dashed px-4 py-6 text-center transition ${
             receiptFile
               ? "border-[color:var(--color-positive)] bg-sage-100"
               : "border-line hover:border-line-strong hover:bg-bg-muted"

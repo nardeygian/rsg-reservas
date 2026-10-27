@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { donReadData, donacionesParaLider } from "@/app/donaciones/_lib/data";
+import { getUserCaps } from "@/lib/auth";
+import { CommunitySwitch } from "@/app/_components/ui/CommunitySwitch";
 import { DiscipulosShell } from "./_components/DiscipulosShell";
 import { DiscipulosAdminShell } from "./_components/DiscipulosAdminShell";
 
@@ -46,8 +48,17 @@ export default async function DiscipulosPage({
     a.nombre.localeCompare(b.nombre, "es")
   );
 
+  const caps = await getUserCaps();
+  const showCommunity = !!caps && caps.servicio !== "none";
+
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
+      {showCommunity && (
+        <header className="flex flex-col gap-4 px-4 pt-6 pb-1" style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <h1 className="page-title">Comunidad</h1>
+          <CommunitySwitch active="discipulados" />
+        </header>
+      )}
       {isAdmin && !previewGroup ? (
         <DiscipulosAdminShell
           grupos={gruposOrdenados}

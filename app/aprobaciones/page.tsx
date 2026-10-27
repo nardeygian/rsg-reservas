@@ -126,7 +126,7 @@ export default async function ApprovalsPage({
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-[14px] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
+          className="text-sm rounded-[var(--radius-card)] px-4 py-3 border border-[color:var(--color-sage-200)] bg-sage-100"
         >
           {ok}
         </p>
@@ -134,7 +134,7 @@ export default async function ApprovalsPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-[14px] px-4 py-3"
+          className="text-sm rounded-[var(--radius-card)] px-4 py-3"
           style={{ background: "#f2e3dd", color: "var(--color-critical)" }}
         >
           {error}
@@ -154,7 +154,7 @@ export default async function ApprovalsPage({
           {(pending ?? []).map((b) => (
             <li
               key={b.id}
-              className={`rounded-[22px] border p-5 space-y-3 ${
+              className={`rounded-[var(--radius-sheet)] border p-5 space-y-3 ${
                 b.is_external
                   ? "border-[color:var(--color-blue-400)] bg-blue-200/30"
                   : "border-[color:#f3ecdc] bg-[#f3ecdc]/30"
@@ -270,14 +270,14 @@ export default async function ApprovalsPage({
                   <button
                     type="submit"
                     formAction={approveBookingAction}
-                    className="rounded-md bg-green-600 text-white px-3 py-1.5 text-sm font-medium"
+                    className="rounded-[var(--radius-control)] bg-green-600 text-white px-3 py-1.5 text-sm font-medium"
                   >
                     ✓ Aprobar
                   </button>
                   <button
                     type="submit"
                     formAction={rejectBookingAction}
-                    className="rounded-md border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-1.5 text-sm font-medium"
+                    className="rounded-[var(--radius-control)] border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-1.5 text-sm font-medium"
                   >
                     ✗ Rechazar
                   </button>

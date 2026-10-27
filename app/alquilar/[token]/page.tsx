@@ -52,7 +52,7 @@ export default async function ExternalStatusPage({
       </div>
 
       <section
-        className={`rounded-[22px] border px-5 py-4 space-y-1 ${
+        className={`rounded-[var(--radius-sheet)] border px-5 py-4 space-y-1 ${
           STATUS_STYLES[data.status] ?? STATUS_STYLES.cancelled
         }`}
       >

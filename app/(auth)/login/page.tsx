@@ -11,7 +11,7 @@ export default async function LoginPage({
   return (
     <form action={loginAction} className="space-y-4">
       <label className="block">
-        <span className="eyebrow">Email</span>
+        <span className="field-label">Email</span>
         <input
           id="email"
           name="email"
@@ -23,7 +23,7 @@ export default async function LoginPage({
       </label>
 
       <label className="block">
-        <span className="eyebrow">Contraseña</span>
+        <span className="field-label">Contraseña</span>
         <input
           id="password"
           name="password"
@@ -37,9 +37,9 @@ export default async function LoginPage({
 
       {error && (
         <p
-          className="text-sm rounded-[14px] px-4 py-3"
+          className="text-sm rounded-[var(--radius-control)] px-4 py-3"
           style={{
-            background: "#f2e3dd",
+            background: "var(--color-down-soft)",
             color: "var(--color-critical)",
           }}
           role="alert"

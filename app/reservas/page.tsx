@@ -107,7 +107,7 @@ export default async function ReservasPage({
     const anchorMonthKey = monthKey(anchor);
 
     return (
-      <main className="min-h-dvh flex flex-col" style={{ background: "var(--color-bg)" }}>
+      <main className="min-h-dvh flex flex-col">
         <div className="flex-1 px-4 pt-5 pb-4 max-w-md mx-auto w-full flex flex-col gap-3">
           <header className="flex flex-col gap-0.5">
             <span className="eyebrow">Reservas de espacios</span>
@@ -185,7 +185,7 @@ export default async function ReservasPage({
     }));
 
   return (
-    <main className="min-h-dvh flex flex-col" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh flex flex-col">
       <div className="flex-1 px-4 pt-5 pb-4 max-w-md mx-auto w-full flex flex-col gap-3">
         <header className="flex flex-col gap-0.5">
           <span className="eyebrow">Reservas de espacios</span>

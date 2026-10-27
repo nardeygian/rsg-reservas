@@ -1,4 +1,5 @@
 "use client";
+import { Chevron as ChevronIcon } from "@/app/_components/ui/PeriodPicker";
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { AsanaEvent } from "@/lib/asana";
@@ -13,14 +14,15 @@ const START_H = 7;
 const END_H   = 23;
 const HOURS   = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
 
+// Colores de categoría en tonos que conviven con la paleta de marca.
 const PALETTE = [
-  { bg: "rgba(0,160,112,0.12)",  color: "#00A070" },
-  { bg: "rgba(47,126,232,0.12)", color: "#2F7EE8" },
-  { bg: "rgba(139,92,246,0.12)", color: "#8B5CF6" },
-  { bg: "rgba(217,119,6,0.12)",  color: "#D97706" },
-  { bg: "rgba(239,68,68,0.12)",  color: "#EF4444" },
-  { bg: "rgba(6,182,212,0.12)",  color: "#06B6D4" },
-  { bg: "rgba(236,72,153,0.12)", color: "#EC4899" },
+  { bg: "rgba(31,107,79,0.14)",   color: "#2E7D5E" },  // bosque
+  { bg: "rgba(63,127,147,0.14)",  color: "#3F7F93" },  // azul suave profundo
+  { bg: "rgba(162,116,45,0.14)",  color: "#A2742D" },  // ocre
+  { bg: "rgba(122,106,168,0.14)", color: "#7A6AA8" },  // lavanda
+  { bg: "rgba(180,87,74,0.14)",   color: "#B4574A" },  // terracota
+  { bg: "rgba(78,143,134,0.14)",  color: "#4E8F86" },  // verde agua
+  { bg: "rgba(140,106,85,0.14)",  color: "#8C6A55" },  // choco claro
 ];
 function hashStr(s: string): number {
   let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff; return h;
@@ -75,6 +77,7 @@ function addDays(d: Date, n: number): Date {
 }
 
 const DOW_SUN = ["Do","Lu","Ma","Mi","Ju","Vi","Sá"];
+const DOW_LETTER = ["D","L","M","M","J","V","S"];
 const MONTHS  = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DNAMES  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 
@@ -99,6 +102,48 @@ function DayEventList({ events, linksByGid, dateStr, onEventClick, compact = fal
     if (ta && tb) return ta.localeCompare(tb);
     return ta ? -1 : tb ? 1 : 0;
   });
+
+  if (compact) {
+    return (
+      <div className="flex flex-col gap-2 pt-4">
+        <span className="px-1 text-[13px] font-semibold" style={{ color: isToday ? "var(--color-accent)" : "var(--color-muted)" }}>
+          {isToday ? `Hoy · ${d.getDate()} de ${MONTHS[d.getMonth()].toLowerCase()}` : label}
+        </span>
+        <div className="card overflow-hidden divide-y">
+          {events.length === 0 ? (
+            <p className="text-[15px] text-center py-6" style={{ color: "var(--color-faint)" }}>No hay eventos</p>
+          ) : sorted.map(e => {
+            const link = linksByGid[e.gid];
+            const { color } = catStyle(e.category);
+            return (
+              <button key={e.gid} type="button" onClick={() => onEventClick(e)}
+                className="flex items-stretch gap-3 w-full text-left px-4 py-3 active:opacity-70 transition-opacity">
+                <span className="w-[4px] rounded-full flex-none" style={{ background: color, opacity: isPast ? 0.5 : 1 }} />
+                <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                  <span className="text-[16px] font-semibold truncate" style={{ color: "var(--color-ink)" }}>{e.name}</span>
+                  {(e.category || link?.space_name) && (
+                    <span className="text-[13px] truncate" style={{ color: "var(--color-muted)" }}>
+                      {[e.category, link?.space_name].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </span>
+                <span className="flex flex-col items-end flex-none text-[13px] tabular" style={{ color: "var(--color-muted)" }}>
+                  {link?.starts_at ? (
+                    <>
+                      <span className="font-medium" style={{ color: "var(--color-ink)" }}>{fmtTime(link.starts_at)}</span>
+                      {link.ends_at && <span>{fmtTime(link.ends_at)}</span>}
+                    </>
+                  ) : (
+                    <span>Todo el día</span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ opacity: isPast ? 0.75 : 1 }}>
@@ -184,7 +229,7 @@ function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
                 return (
                   <button key={e.gid} type="button" onClick={() => onEventClick(e)} style={{
                     display: "block", width: "100%", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                    fontSize: 10.5, fontWeight: 600, color: "var(--color-ink)", background: bg, borderRadius: 4, padding: "2px 5px", cursor: "pointer",
+                    fontSize: 10.5, fontWeight: 600, color: "var(--color-ink)", background: bg, borderRadius: "var(--radius-control)", padding: "2px 5px", cursor: "pointer",
                     borderTop: "none", borderRight: "none", borderBottom: "none",
                     borderLeftWidth: 2, borderLeftStyle: "solid", borderLeftColor: color,
                   }}>
@@ -229,7 +274,7 @@ function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
                   return (
                     <button key={e.gid} type="button" onClick={() => onEventClick(e)} style={{
                       position: "absolute", left: 2, right: 2, top, height,
-                      borderRadius: 5, padding: "2px 5px",
+                      borderRadius: "var(--radius-control)", padding: "2px 5px",
                       background: bg, cursor: "pointer", textAlign: "left", overflow: "hidden", zIndex: 1,
                       borderTop: "none", borderRight: "none", borderBottom: "none",
                       borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: color,
@@ -282,9 +327,9 @@ function MobileMesView({ events, linksByGid, anchor, selDay, setSelDay, onEventC
         onSwipe(dx < 0 ? 1 : -1);
       }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 2 }}>
-        {DOW_SUN.map(l => (
-          <div key={l} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", padding: "0 0 4px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
+        {DOW_LETTER.map((l, i) => (
+          <div key={i} style={{ textAlign: "center", fontSize: 12, fontWeight: 600, color: "var(--color-faint)", padding: "0 0 6px" }}>
             {l}
           </div>
         ))}
@@ -305,30 +350,33 @@ function MobileMesView({ events, linksByGid, anchor, selDay, setSelDay, onEventC
             if (catColors.length >= 3) break;
           }
           return (
-            <div key={idx} onClick={() => setSelDay(ds)}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "2px 0 6px", cursor: "pointer" }}>
-              <span style={{
+            <button key={idx} type="button" onClick={() => setSelDay(ds)}
+              aria-label={`${date.getDate()} de ${MONTHS[date.getMonth()].toLowerCase()}${dayEvs.length ? `, ${dayEvs.length} eventos` : ""}`}
+              aria-pressed={isSel}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "6px 0 8px", cursor: "pointer", borderTop: "1px solid var(--color-line)" }}>
+              <span className="tabular" style={{
                 width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
-                borderRadius: "50%", fontSize: 17, fontWeight: isToday || isSel ? 700 : 400,
-                background: isToday ? "var(--color-accent)" : isSel ? "var(--color-surface-2)" : "transparent",
-                color: isToday ? "var(--color-accent-ink)" : !current ? "var(--color-faint)" : isPast ? "var(--color-muted)" : "var(--color-ink)",
+                borderRadius: "50%", fontSize: 19, fontWeight: isToday || isSel ? 600 : 400,
+                transition: "background 0.15s ease, color 0.15s ease",
+                // Como en Apple: hoy en color de acento; el día elegido con círculo lleno.
+                background: isSel ? (isToday ? "var(--color-accent)" : "var(--color-ink)") : "transparent",
+                color: isSel
+                  ? (isToday ? "var(--color-accent-ink)" : "var(--color-bg)")
+                  : isToday ? "var(--color-accent)"
+                  : !current ? "var(--color-faint)" : "var(--color-ink)",
               }}>
                 {date.getDate()}
               </span>
-              <div style={{ display: "flex", gap: 2, height: 4, marginTop: 2 }}>
+              <span style={{ display: "flex", gap: 3, height: 6 }}>
                 {catColors.map((c, i) => (
-                  <div key={i} style={{ width: 14, height: 4, borderRadius: 2, background: c, opacity: isPast ? 0.35 : 0.85 }} />
+                  <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: c, opacity: isPast || !current ? 0.45 : 1 }} />
                 ))}
-                {/* dot placeholder when no events to keep row height stable */}
-                {catColors.length === 0 && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "transparent" }} />}
-              </div>
-            </div>
+              </span>
+            </button>
           );
         })}
       </div>
-      <div style={{ borderTop: "1px solid var(--color-line)", marginTop: 4 }}>
-        <DayEventList events={selDayEvs} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} compact />
-      </div>
+      <DayEventList events={selDayEvs} linksByGid={linksByGid} dateStr={selDay} onEventClick={onEventClick} compact />
     </div>
   );
 }
@@ -435,29 +483,26 @@ function MobileCalendario({ events, linksByGid, onEventClick }: {
 
   return (
     <div>
-      {/* Period nav (month) — only for mes */}
-      {view === "mes" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <button onClick={prevMonth} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", border: "none", cursor: "pointer", fontSize: 18, color: "var(--color-ink)" }}>‹</button>
-          <span style={{ flex: 1, fontSize: 22, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>
-            {MONTHS[month]}
+      <div className="flex items-end justify-between gap-3 mb-4">
+        <div className="flex flex-col">
+          <span className="text-[15px] font-semibold tabular" style={{ color: "var(--color-accent)" }}>{year}</span>
+          <span className="text-[34px] font-semibold leading-none tracking-[-0.03em]" style={{ color: "var(--color-ink)" }}>
+            {view === "mes" ? MONTHS[month] : "Agenda"}
           </span>
-          <button onClick={goToday} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 8, background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "none", cursor: "pointer" }}>
+        </div>
+        <div className="flex items-center gap-1.5 pb-0.5">
+          {view === "mes" && <button type="button" className="icon-btn" onClick={prevMonth} aria-label="Mes anterior"><ChevronIcon dir="left" /></button>}
+          <button type="button" onClick={goToday} className="h-9 px-3.5 rounded-full text-[14px] font-semibold"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-accent)", boxShadow: "inset 0 1px 0 var(--glass-border)" }}>
             Hoy
           </button>
-          <button onClick={nextMonth} style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", border: "none", cursor: "pointer", fontSize: 18, color: "var(--color-ink)" }}>›</button>
+          {view === "mes" && <button type="button" className="icon-btn" onClick={nextMonth} aria-label="Mes siguiente"><ChevronIcon dir="right" /></button>}
         </div>
-      )}
+      </div>
 
-      {/* Toggle */}
-      <div style={{ display: "flex", borderRadius: 10, padding: 3, gap: 2, background: "var(--color-surface-2)", marginBottom: 12 }}>
+      <div className="segmented w-full mb-4" role="group" aria-label="Vista">
         {MOBILE_VIEWS.map(({ key, label }) => (
-          <button key={key} onClick={() => setView(key)} style={{
-            flex: 1, fontSize: 13, fontWeight: 600, padding: "6px 0", borderRadius: 8, border: "none", cursor: "pointer",
-            background: view === key ? "var(--color-surface)" : "transparent",
-            color:      view === key ? "var(--color-accent)"  : "var(--color-muted)",
-            boxShadow:  view === key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-          }}>
+          <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)} className="flex-1">
             {label}
           </button>
         ))}
@@ -800,13 +845,8 @@ export function CalendarioShell({
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "24px clamp(12px, 3vw, 40px) 80px" }}>
-      {/* Page title */}
-      <div style={{ marginBottom: 20 }}>
-        <span className="eyebrow">Portal RSG</span>
-        <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, lineHeight: 1.2 }}>
-          Calendario
-        </h1>
-      </div>
+      {/* Título (en el celular lo reemplaza el encabezado de año y mes) */}
+      <h1 className="page-title hidden sm:block mb-5">Calendario</h1>
 
       {/* ── Mobile ── */}
       <div className="block sm:hidden">
@@ -816,14 +856,9 @@ export function CalendarioShell({
       {/* ── Desktop ── */}
       <div className="hidden sm:block">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px 24px", marginBottom: 20, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", borderRadius: 10, padding: 3, gap: 2, background: "var(--color-surface-2)" }}>
+          <div className="segmented" role="group" aria-label="Vista">
             {DESKTOP_VIEWS.map(({ key, label }) => (
-              <button key={key} onClick={() => setView(key)} style={{
-                fontSize: 13, fontWeight: 600, padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer",
-                background: view === key ? "var(--color-surface)" : "transparent",
-                color:      view === key ? "var(--color-accent)"  : "var(--color-muted)",
-                boxShadow:  view === key ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              }}>
+              <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>
                 {label}
               </button>
             ))}
@@ -831,15 +866,16 @@ export function CalendarioShell({
         </div>
 
         {view !== "lista" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-            <button onClick={prev} aria-label="Anterior" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>‹</button>
-            <span style={{ flex: 1, fontSize: 20, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--color-ink)", textTransform: "capitalize" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <span style={{ flex: 1, fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--color-ink)", textTransform: "capitalize" }}>
               {periodLabel()}
             </span>
-            <button onClick={goToday} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 8, background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "none", cursor: "pointer" }}>
+            <button type="button" className="icon-btn" onClick={prev} aria-label="Anterior"><ChevronIcon dir="left" /></button>
+            <button type="button" onClick={goToday} className="h-9 px-3.5 rounded-full text-[14px] font-semibold"
+              style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-accent)", boxShadow: "inset 0 1px 0 var(--glass-border)" }}>
               Hoy
             </button>
-            <button onClick={next} aria-label="Siguiente" style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--color-surface-2)", color: "var(--color-ink)", border: "none", cursor: "pointer", fontSize: 18 }}>›</button>
+            <button type="button" className="icon-btn" onClick={next} aria-label="Siguiente"><ChevronIcon dir="right" /></button>
           </div>
         )}
 

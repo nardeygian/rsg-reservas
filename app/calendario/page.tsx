@@ -95,17 +95,17 @@ export default async function CalendarioPage({
     }));
 
   return (
-    <main className="min-h-dvh" style={{ background: "var(--color-bg)" }}>
+    <main className="min-h-dvh">
       {(ok || error) && (
         <div className="px-4 pt-4 max-w-3xl mx-auto">
           {ok && (
-            <p className="text-sm rounded-[10px] px-4 py-3 mb-2"
+            <p className="text-sm rounded-[var(--radius-control)] px-4 py-3 mb-2"
               style={{ background: "var(--color-up-soft)", color: "var(--color-up)", border: "1px solid var(--color-up)" }}>
               {ok}
             </p>
           )}
           {error && (
-            <p className="text-sm rounded-[10px] px-4 py-3 mb-2"
+            <p className="text-sm rounded-[var(--radius-control)] px-4 py-3 mb-2"
               style={{ background: "var(--color-down-soft)", color: "var(--color-down)", border: "1px solid var(--color-down)" }}>
               {error}
             </p>

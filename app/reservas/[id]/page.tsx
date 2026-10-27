@@ -209,7 +209,7 @@ export default async function BookingDetailPage({
   return (
     <main
       className="min-h-dvh flex flex-col gap-3 px-4 pt-5 pb-8 max-w-xl mx-auto"
-      style={{ background: "var(--color-bg)" }}
+     
     >
       {/* Header */}
       <header className="flex items-center justify-between mb-1">
@@ -228,7 +228,7 @@ export default async function BookingDetailPage({
               ? `/reservas?date=${toDateParam(new Date(base.starts_at))}`
               : "/reservas"
           }
-          className="flex items-center gap-1 text-sm font-medium px-3 py-2 rounded-[8px]"
+          className="flex items-center gap-1 text-sm font-medium px-3 py-2 rounded-[var(--radius-control)]"
           style={{
             background: "var(--color-surface)",
             color: "var(--color-muted)",
@@ -243,7 +243,7 @@ export default async function BookingDetailPage({
       {ok && (
         <p
           role="status"
-          className="text-sm rounded-[10px] px-4 py-3 font-medium"
+          className="text-sm rounded-[var(--radius-control)] px-4 py-3 font-medium"
           style={{ background: "var(--color-up-soft)", color: "var(--color-up)" }}
         >
           {ok}
@@ -252,7 +252,7 @@ export default async function BookingDetailPage({
       {error && (
         <p
           role="alert"
-          className="text-sm rounded-[10px] px-4 py-3 font-medium"
+          className="text-sm rounded-[var(--radius-control)] px-4 py-3 font-medium"
           style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
         >
           {error}
@@ -260,7 +260,7 @@ export default async function BookingDetailPage({
       )}
 
       {/* Status hero */}
-      <section className="rounded-[16px] border-2 overflow-hidden" style={heroStyle}>
+      <section className="rounded-[var(--radius-card)] border-2 overflow-hidden" style={heroStyle}>
         <div className="px-5 pt-5 pb-4 flex flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span
@@ -295,7 +295,7 @@ export default async function BookingDetailPage({
 
       {/* Basic info */}
       <section
-        className="rounded-[14px] border overflow-hidden divide-y"
+        className="rounded-[var(--radius-card)] border overflow-hidden divide-y"
         style={{
           borderColor: "var(--color-line)",
           background: "var(--color-surface)",
@@ -328,7 +328,7 @@ export default async function BookingDetailPage({
       {/* Staff detail */}
       {isStaff && detail && (
         <section
-          className="rounded-[14px] border overflow-hidden"
+          className="rounded-[var(--radius-card)] border overflow-hidden"
           style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}
         >
           <div className="px-4 py-3 border-b" style={{ borderColor: "var(--color-line)" }}>
@@ -459,7 +459,7 @@ export default async function BookingDetailPage({
                 <input type="hidden" name="id" value={base.id ?? ""} />
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold active:scale-[0.97] transition"
+                  className="inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 h-11 text-sm font-semibold active:scale-[0.97] transition"
                   style={{ background: "var(--color-up-soft)", color: "var(--color-up)" }}
                 >
                   ✓ Aprobar
@@ -469,7 +469,7 @@ export default async function BookingDetailPage({
                 <input type="hidden" name="id" value={base.id ?? ""} />
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
+                  className="inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
                   style={{ borderColor: "var(--color-down)", color: "var(--color-down)" }}
                 >
                   ✗ Rechazar
@@ -490,7 +490,7 @@ export default async function BookingDetailPage({
               <input type="hidden" name="id" value={base.id ?? ""} />
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-[10px] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
+                className="inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 h-11 text-sm font-semibold border active:scale-[0.97] transition"
                 style={{ borderColor: "var(--color-down)", color: "var(--color-down)" }}
               >
                 Cancelar toda la serie
@@ -503,7 +503,7 @@ export default async function BookingDetailPage({
       {/* Comprobante */}
       {isStaff && detail && base.id && (
         <section
-          className="rounded-[14px] border p-4 flex flex-col gap-3"
+          className="rounded-[var(--radius-card)] border p-4 flex flex-col gap-3"
           style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}
         >
           <span className="eyebrow">Comprobante de pago</span>
@@ -543,7 +543,7 @@ export default async function BookingDetailPage({
       {/* Agregar al calendario */}
       {(isStaff || isCreator) && base.id && (
         <div
-          className="rounded-[14px] border px-4 py-3 flex flex-col gap-1"
+          className="rounded-[var(--radius-card)] border px-4 py-3 flex flex-col gap-1"
           style={{ borderColor: "var(--color-line)", background: "var(--color-surface)" }}
         >
           <a
