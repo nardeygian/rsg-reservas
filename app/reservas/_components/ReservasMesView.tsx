@@ -11,7 +11,7 @@ import { formatTime } from "@/lib/datetime";
 // año en acento + mes grande, cuadrícula con líneas finas y puntos, y la
 // lista del día elegido en una tarjeta de vidrio.
 
-const DOW_LETTER = ["L", "M", "M", "J", "V", "S", "D"]; // la cuadrícula empieza en lunes
+const DOW_LETTER = ["D", "L", "M", "M", "J", "V", "S"]; // la cuadrícula empieza en domingo
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 const USE_TYPE_LABELS: Record<string, string> = {
@@ -110,9 +110,9 @@ export function ReservasMesView({
       {/* Escritorio: misma cuadrícula que el Calendario de eventos */}
       <div className="hidden md:block">
         <MonthGrid
-          weekdays={["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]}
+          weekdays={["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]}
           cells={gridDayKeys.map((key, i): MonthCell => ({
-            key, day: Number(key.slice(8)), inMonth: key.slice(0, 7) === anchorMonthKey, weekend: i % 7 >= 5,
+            key, day: Number(key.slice(8)), inMonth: key.slice(0, 7) === anchorMonthKey, weekend: i % 7 === 0 || i % 7 === 6,
           }))}
           itemsByDay={Object.fromEntries(gridDayKeys.map((key) => [key,
             [...(bookingsByDay[key] ?? [])]

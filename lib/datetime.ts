@@ -13,8 +13,8 @@ import {
 
 export const TZ = "America/Bogota";
 
-// Lunes como inicio de semana (es-CO).
-const WEEK_OPTS = { weekStartsOn: 1 as const };
+// Domingo como inicio de semana, igual que el Calendario de eventos.
+const WEEK_OPTS = { weekStartsOn: 0 as const };
 
 // Convierte una fecha "YYYY-MM-DD" (interpretada como local de Bogotá) a un Date UTC
 // que apunta a las 00:00 de ese día en Bogotá.
@@ -61,7 +61,7 @@ export function endOfMonthBogota(date: Date): Date {
   return fromZonedTime(endOfMonth(toZonedTime(date, TZ)), TZ);
 }
 
-// La cuadrícula del mes empieza el lunes anterior al día 1 y termina el domingo
+// La cuadrícula del mes empieza el domingo anterior al día 1 y termina el sábado
 // posterior al fin de mes; así llenamos exactamente 5 o 6 semanas.
 export function monthGridRangeBogota(anchor: Date): { start: Date; end: Date } {
   return {
