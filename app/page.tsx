@@ -116,7 +116,10 @@ export default async function HomePage() {
       .lt("starts_at", todayEnd.toISOString()),
     svReadData(),
     donReadData(),
-    getCalendarEvents().catch(() => [] as Awaited<ReturnType<typeof getCalendarEvents>>),
+    getCalendarEvents().catch((e: Error) => {
+      console.error("[inicio] Asana:", e.message);
+      return [] as Awaited<ReturnType<typeof getCalendarEvents>>;
+    }),
   ]);
 
   const firstName = profile?.full_name?.split(" ")[0] ?? null;
