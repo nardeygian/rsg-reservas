@@ -95,6 +95,7 @@ export default async function AsignarReunionPage({ params, searchParams }: {
       <header className="flex flex-col gap-1">
         <p className="eyebrow capitalize">{fechaReunion(reunion.meeting_date, reunion.starts_at)}</p>
         <h1 className="page-title">{reunion.name}</h1>
+        <Link href={`/servir/reuniones/${reunion.id}`} className="text-[14px] font-medium self-start" style={{ color: "var(--color-accent)" }}>Ver orden y detalles de la reunión</Link>
         {!editable && <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>Esta reunión está {reunion.status}: ya no se cambian asignaciones.</p>}
       </header>
 

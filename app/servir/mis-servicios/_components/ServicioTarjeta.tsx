@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Icon } from "@/app/_components/ui/Icon";
 import { marcarChecklist, responderAsignacion } from "@/app/servir/equipo/_lib/acciones";
@@ -7,6 +8,7 @@ import { Aviso, EstadoChip, MOMENTO_TEXTO } from "@/app/servir/equipo/_component
 
 export type ServicioFila = {
   id: string;
+  meeting_id: string;
   status: string;
   decline_reason: string | null;
   fecha: string;               // ya formateada en Bogotá
@@ -58,7 +60,9 @@ export function ServicioTarjeta({ s }: { s: ServicioFila }) {
       <header className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium capitalize" style={{ color: "var(--color-muted)" }}>{s.fecha}</p>
-          <h3 className="text-[17px] font-semibold leading-snug" style={{ color: "var(--color-ink)" }}>{s.reunion}</h3>
+          <h3 className="text-[17px] font-semibold leading-snug" style={{ color: "var(--color-ink)" }}>
+            <Link href={`/servir/reuniones/${s.meeting_id}`} className="hover:underline">{s.reunion}</Link>
+          </h3>
           <p className="text-[14px]" style={{ color: "var(--color-ink)" }}>
             {s.posicion} <span style={{ color: "var(--color-muted)" }}>· {s.departamento}</span>
           </p>

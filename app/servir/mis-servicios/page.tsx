@@ -75,6 +75,7 @@ export default async function MisServiciosPage() {
 
   const fila = (a: AsignacionRaw, pasado: boolean): ServicioFila => ({
     id: a.id,
+    meeting_id: a.meeting_id,
     status: a.status,
     decline_reason: a.decline_reason,
     fecha: fechaReunion(a.meetings!.meeting_date, a.meetings!.starts_at),
