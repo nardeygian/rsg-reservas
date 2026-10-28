@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { clienteServir } from "@/app/servir/equipo/_lib/supabase";
-import { fechaCorta, fechaReunion, hoyBogota, misEquipos } from "@/app/servir/equipo/_lib/datos";
-import { SubnavServir } from "@/app/servir/equipo/_components/ui";
+import { fechaCorta, fechaReunion, hoyBogota } from "@/app/servir/equipo/_lib/datos";
 import { ServicioTarjeta, type ServicioFila } from "./_components/ServicioTarjeta";
 import { Bloqueos, type BloqueoFila } from "./_components/Bloqueos";
 
@@ -21,13 +20,11 @@ export default async function MisServiciosPage() {
   const { data: claims } = await db.auth.getClaims();
   if (!claims?.claims.sub) redirect("/login");
 
-  const [{ data: personId }, equipos] = await Promise.all([db.rpc("current_person_id"), misEquipos(db)]);
-  const esLider = equipos.length > 0;
+  const { data: personId } = await db.rpc("current_person_id");
   const hoy = hoyBogota();
 
   const encabezado = (
     <>
-      <SubnavServir actual="mis-servicios" esLider={esLider} />
       <header className="flex flex-col gap-1">
         <p className="eyebrow">Servir</p>
         <h1 className="page-title">Mis servicios</h1>

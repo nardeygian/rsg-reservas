@@ -1,22 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, type ReactNode } from "react";
 import { Icon } from "@/app/_components/ui/Icon";
 
 // Piezas compartidas por Mi equipo y Mis servicios (frente B3).
-
-// Navegación entre las dos pantallas de B3 (el destino "Servir" en la barra
-// lo agrega C2). "Mi equipo" solo aparece para quien puede asignar.
-export function SubnavServir({ actual, esLider }: { actual: "mis-servicios" | "equipo"; esLider: boolean }) {
-  if (!esLider) return null;
-  return (
-    <nav className="segmented self-start" aria-label="Servir">
-      <Link href="/servir/mis-servicios" className="segmented-link" aria-current={actual === "mis-servicios" ? "page" : undefined}>Mis servicios</Link>
-      <Link href="/servir/equipo" className="segmented-link" aria-current={actual === "equipo" ? "page" : undefined}>Mi equipo</Link>
-    </nav>
-  );
-}
 
 // Hoja inferior en celular; en escritorio, panel centrado.
 export function Hoja({ titulo, subtitulo, onClose, children, pie }: {

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCalendarEvents } from "@/lib/asana";
 import { CalendarioShell } from "./_components/CalendarioShell";
+import { EventosEspacios } from "@/app/_components/portal/EventosEspacios";
 import { linkEventAction, unlinkEventAction } from "./actions";
 
 export type LinkInfo = {
@@ -10,6 +11,16 @@ export type LinkInfo = {
   space_name: string | null;
   starts_at: string | null;
   ends_at: string | null;
+};
+
+// La reunión de Servir creada desde el evento (asana_gid), con su orden y su
+// equipo. Sale con la sesión del usuario: un servidor solo ve las reuniones
+// donde sirve; los líderes y Planeación, todas (RLS).
+export type ReunionCal = {
+  id: string;
+  status: string;
+  orden: string[];
+  equipo: { departamento: string; personas: { nombre: string; posicion: string; estado: string }[] }[];
 };
 
 export type BookingOption = {
@@ -69,6 +80,29 @@ export default async function CalendarioPage({
       .limit(300),
   ]);
 
+  const { data: reunionesRaw } = await supabase
+    .from("meetings")
+    .select("id, status, asana_gid, run_items!run_items_meeting_id_fkey(title, sort, kind), assignments(status, people(full_name), positions(name), ministries(name))")
+    .not("asana_gid", "is", null)
+    .neq("status", "cancelada")
+    .gte("meeting_date", new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+  const reunionesByGid: Record<string, ReunionCal> = {};
+  for (const r of reunionesRaw ?? []) {
+    if (!r.asana_gid) continue;
+    const deps = new Map<string, ReunionCal["equipo"][number]["personas"]>();
+    for (const a of r.assignments ?? []) {
+      if (a.status === "cancelada") continue;
+      const dep = a.ministries?.name ?? "";
+      deps.set(dep, [...(deps.get(dep) ?? []), { nombre: a.people?.full_name ?? "—", posicion: a.positions?.name ?? "", estado: a.status }]);
+    }
+    reunionesByGid[r.asana_gid] = {
+      id: r.id,
+      status: r.status,
+      orden: [...(r.run_items ?? [])].sort((x, y) => x.sort - y.sort).filter((i) => i.kind !== "encabezado").map((i) => i.title),
+      equipo: [...deps.entries()].sort(([a], [b]) => a.localeCompare(b, "es")).map(([departamento, personas]) => ({ departamento, personas })),
+    };
+  }
+
   // Mapa booking_id → detalles
   const bookingById = new Map<string, { space_name: string | null; starts_at: string | null; ends_at: string | null }>();
   for (const b of bookingsRaw ?? []) {
@@ -101,6 +135,7 @@ export default async function CalendarioPage({
 
   return (
     <main className="min-h-dvh">
+      <EventosEspacios actual="eventos" />
       {asanaError && (
         <div className="px-4 pt-4 max-w-3xl mx-auto">
           <p role="alert" className="text-sm rounded-[var(--radius-control)] px-4 py-3"
@@ -128,6 +163,7 @@ export default async function CalendarioPage({
       <CalendarioShell
         events={events}
         linksByGid={linksByGid}
+        reunionesByGid={reunionesByGid}
         bookingOptions={bookingOptions}
         canLink={canLink}
         linkAction={linkEventAction}

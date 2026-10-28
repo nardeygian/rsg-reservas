@@ -4,7 +4,7 @@ import { Icon } from "@/app/_components/ui/Icon";
 
 import Link from "next/link";
 import type { AsanaEvent } from "@/lib/asana";
-import type { LinkInfo, BookingOption } from "../page";
+import type { LinkInfo, BookingOption, ReunionCal } from "../page";
 
 const USE_TYPE_LABELS: Record<string, string> = {
   reunion_departamento: "Reunión de departamento",
@@ -64,6 +64,7 @@ function categoryStyle(cat: string | null) {
 export function EventPanel({
   event,
   link,
+  reunion,
   bookingOptions,
   canLink,
   linkAction,
@@ -72,6 +73,7 @@ export function EventPanel({
 }: {
   event: AsanaEvent | null;
   link: LinkInfo | null;
+  reunion: ReunionCal | null;
   bookingOptions: BookingOption[];
   canLink: boolean;
   linkAction: (fd: FormData) => Promise<void>;
@@ -158,6 +160,9 @@ export function EventPanel({
               )}
             </div>
           </div>
+
+          {/* Reunión de Servir */}
+          {reunion && <ReunionServir reunion={reunion} />}
 
           {/* Reserva enlazada */}
           {link ? (
@@ -259,5 +264,44 @@ export function EventPanel({
         </div>
       </div>
     </>
+  );
+}
+
+const ESTADO_ASIG: Record<string, { t: string; c: string }> = {
+  aceptada: { t: "Aceptó", c: "chip-up" },
+  pendiente: { t: "Pendiente", c: "chip-gold" },
+  rechazada: { t: "Rechazó", c: "chip-down" },
+};
+
+function ReunionServir({ reunion }: { reunion: ReunionCal }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="eyebrow">Reunión de Servir</span>
+        <Link href={reunion.status === "en_vivo" ? `/servir/${reunion.id}/vivo` : `/servir/reuniones/${reunion.id}`}
+          className="text-[13px] font-semibold inline-flex items-center gap-1" style={{ color: "var(--color-accent)" }}>
+          {reunion.status === "en_vivo" ? "En vivo" : "Ver reunión"} <Icon name="arrow-right" size={14} />
+        </Link>
+      </div>
+      {reunion.orden.length > 0 && (
+        <ol className="rounded-[var(--radius-card)] px-4 py-3 text-[14px] flex flex-col gap-1" style={{ background: "var(--color-bg)", border: "1px solid var(--color-line)", color: "var(--color-ink)" }}>
+          {reunion.orden.slice(0, 8).map((t, i) => <li key={i} className="truncate"><span className="tabular mr-2" style={{ color: "var(--color-faint)" }}>{i + 1}</span>{t}</li>)}
+          {reunion.orden.length > 8 && <li style={{ color: "var(--color-muted)" }}>y {reunion.orden.length - 8} más</li>}
+        </ol>
+      )}
+      {reunion.equipo.map((d) => (
+        <div key={d.departamento} className="flex flex-col gap-1">
+          <span className="text-[12px] font-semibold" style={{ color: "var(--color-muted)" }}>{d.departamento}</span>
+          <ul className="flex flex-col gap-1">
+            {d.personas.map((p, i) => (
+              <li key={i} className="flex items-center gap-2 text-[14px]" style={{ color: "var(--color-ink)" }}>
+                <span className="flex-1 min-w-0 truncate">{p.nombre} <span style={{ color: "var(--color-muted)" }}>· {p.posicion}</span></span>
+                <span className={`chip ${ESTADO_ASIG[p.estado]?.c ?? "chip-muted"} flex-none`}>{ESTADO_ASIG[p.estado]?.t ?? p.estado}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }

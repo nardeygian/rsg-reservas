@@ -13,6 +13,8 @@ const VALID_ROLES = [
   "admin_casa",
   "studio_admin",
   "planeacion",
+  "fundador",
+  "servidor",
   "super_admin",
 ] as const;
 
@@ -116,7 +118,10 @@ async function clearRequestIfGranted(
     .in("requested_role", matches);
 }
 
-const VALID_EXTRA_ROLES = ["lider_departamento", "pastor_ministerio", "pastor_sede", "lider_discipulado"] as const;
+const VALID_EXTRA_ROLES = [
+  "lider_departamento", "pastor_ministerio", "pastor_sede", "lider_discipulado",
+  "lider_area", "servidor_planeacion",
+] as const;
 type ExtraRole = (typeof VALID_EXTRA_ROLES)[number];
 function isExtraRole(v: string): v is ExtraRole {
   return (VALID_EXTRA_ROLES as readonly string[]).includes(v);
@@ -128,16 +133,21 @@ export async function addUserRoleAction(formData: FormData) {
   const role      = String(formData.get("role")       ?? "");
   const ministryId = String(formData.get("ministry_id") ?? "").trim() || null;
   const grupoId   = String(formData.get("grupo_id")   ?? "").trim() || null;
+  const areaId    = String(formData.get("area_id")    ?? "").trim() || null;
 
-  if (!userId || !isExtraRole(role)) {
+  if (!userId || !isExtraRole(role) || (role === "lider_area" && !areaId)) {
     redirect("/admin/usuarios?error=Datos%20inv%C3%A1lidos");
   }
 
+  // Líder de área: su alcance es el área. Planeación y discipulado: sin
+  // departamento.
+  const sinMinisterio = role === "lider_discipulado" || role === "lider_area" || role === "servidor_planeacion";
   const service = createServiceClient();
   const { error } = await service.from("user_roles").insert({
     user_id: userId,
     role,
-    ministry_id: role === "lider_discipulado" ? null : ministryId,
+    ministry_id: sinMinisterio ? null : ministryId,
+    area_id: role === "lider_area" ? areaId : null,
   });
 
   if (error) {

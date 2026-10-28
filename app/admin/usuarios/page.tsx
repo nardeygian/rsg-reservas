@@ -22,6 +22,8 @@ const ROLES = [
   { value: "admin_casa", label: "Admin de casa" },
   { value: "studio_admin", label: "Admin del Estudio" },
   { value: "planeacion", label: "Planeación" },
+  { value: "fundador", label: "Fundador" },
+  { value: "servidor", label: "Servidor" },
   { value: "super_admin", label: "Super admin" },
 ] as const;
 
@@ -34,6 +36,8 @@ const EXTRA_ROLE_LABELS: Record<string, string> = {
   pastor_ministerio: "Pastor de ministerio",
   pastor_sede: "Pastor de sede",
   lider_discipulado: "Líder de discipulado",
+  lider_area: "Líder de área",
+  servidor_planeacion: "Planeación (Servir)",
 };
 
 const REQUESTED_LABELS: Record<string, string> = {
@@ -57,6 +61,7 @@ type ExtraRole = {
   ministry_id: string | null;
   ministry_name: string | null;
   ministry_type: string | null;
+  area_name: string | null;
 };
 
 type Ministry = { id: string; name: string; type: string };
@@ -110,15 +115,19 @@ export default async function UsuariosPage({
     { data: allUserRoles },
     { data: ministries },
     svData,
+    { data: areas },
   ] = await Promise.all([
     profileQuery.returns<UserRow[]>(),
     service.auth.admin.listUsers({ perPage: 200 }),
     service
       .from("user_roles")
-      .select("id, user_id, role, ministry_id, ministries(name, type)"),
+      .select("id, user_id, role, ministry_id, ministries(name, type), areas(name)"),
     service.from("ministries").select("id, name, type").order("type").order("name").returns<Ministry[]>(),
     svReadData(),
+    service.from("areas").select("id, name, ministries(name)").order("name"),
   ]);
+  const areaOptions = (areas ?? []).map((a) => ({ id: a.id, name: `${a.ministries?.name ?? ""} · ${a.name}` }))
+    .sort((x, y) => x.name.localeCompare(y.name, "es"));
 
   const grupos: SvGrupo[] = Object.values(svData.grupos ?? {}).sort((a, b) =>
     a.nombre.localeCompare(b.nombre, "es")
@@ -146,6 +155,7 @@ export default async function UsuariosPage({
       ministry_id: r.ministry_id,
       ministry_name: r.ministries?.name ?? null,
       ministry_type: r.ministries?.type ?? null,
+      area_name: r.areas?.name ?? null,
     });
     extraRolesByUser.set(r.user_id, list);
   }
@@ -196,6 +206,7 @@ export default async function UsuariosPage({
                 extraRoles={extraRolesByUser.get(p.id) ?? []}
                 ministries={ministries ?? []}
                 grupos={grupos}
+                areas={areaOptions}
                 grupoActual={grupoByLeader.get(p.id) ?? null}
                 highlight isSelf={p.id === user.id} />
             ))}
@@ -224,6 +235,7 @@ export default async function UsuariosPage({
               extraRoles={extraRolesByUser.get(p.id) ?? []}
               ministries={ministries ?? []}
               grupos={grupos}
+              areas={areaOptions}
               grupoActual={grupoByLeader.get(p.id) ?? null}
               isSelf={p.id === user.id} />
           ))}
@@ -235,13 +247,14 @@ export default async function UsuariosPage({
 }
 
 function UserCard({
-  u, email, extraRoles, ministries, grupos, grupoActual, highlight, isSelf,
+  u, email, extraRoles, ministries, grupos, areas: areaOptions, grupoActual, highlight, isSelf,
 }: {
   u: UserRow;
   email?: string;
   extraRoles: ExtraRole[];
   ministries: Ministry[];
   grupos: SvGrupo[];
+  areas: { id: string; name: string }[];
   grupoActual: SvGrupo | null;
   highlight?: boolean;
   isSelf?: boolean;
@@ -292,6 +305,7 @@ function UserCard({
                 style={{ background: "var(--color-surface-2)", color: "var(--color-ink)" }}>
                 {EXTRA_ROLE_LABELS[er.role] ?? er.role}
                 {er.ministry_name ? ` · ${er.ministry_name}` : ""}
+                {er.area_name ? ` · ${er.area_name}` : ""}
               </span>
               <form action={removeUserRoleAction}>
                 <input type="hidden" name="role_id" value={er.id} />
@@ -312,6 +326,7 @@ function UserCard({
         userId={u.id}
         ministries={ministries}
         grupos={grupos}
+        areas={areaOptions}
         addAction={addUserRoleAction}
       />
 

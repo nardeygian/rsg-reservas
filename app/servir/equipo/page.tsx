@@ -7,7 +7,6 @@ import { EquipoSelector } from "./_components/EquipoSelector";
 import { MiembrosVista } from "./_components/MiembrosVista";
 import { PosicionesVista } from "./_components/PosicionesVista";
 import { SolicitudesVista } from "./_components/SolicitudesVista";
-import { SubnavServir } from "./_components/ui";
 
 const VISTAS = [
   { id: "miembros", texto: "Miembros" },
@@ -38,7 +37,6 @@ export default async function MiEquipoPage({ searchParams }: { searchParams: Pro
 
   return (
     <main className="min-h-dvh px-4 pt-6 max-w-[1180px] mx-auto w-full flex flex-col gap-4" style={{ paddingBottom: "calc(var(--nav-space) + 24px)" }}>
-      <SubnavServir actual="equipo" esLider />
       <header className="flex flex-col gap-1">
         <p className="eyebrow">{equipo.area_name ? `Líder de área · ${equipo.ministry_name}` : "Líder de departamento"}</p>
         <h1 className="page-title">{equipo.area_name ?? equipo.ministry_name}</h1>

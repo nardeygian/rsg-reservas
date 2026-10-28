@@ -6,6 +6,7 @@ import type { Resultado } from "@/lib/servir/contratos";
 import { agregarMiembro, cambiarPosicionPersona, moverMiembro, quitarMiembro } from "../_lib/acciones";
 import type { AreaFila, Equipo, MiembroFila, PersonaOpcion, PosicionFila } from "../_lib/datos";
 import { Aviso, Avatar, Hoja } from "./ui";
+import { InvitarPersona } from "@/lib/cuentas/InvitarPersona";
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -230,6 +231,10 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
             <span key={i} style={{ color: "var(--color-down)" }}>No puede {rango(b.starts_on, b.ends_on)}{b.reason ? ` · ${b.reason}` : ""}</span>
           ))}
         </div>
+
+        {!miembro.tiene_cuenta && (
+          <InvitarPersona personId={miembro.person_id} nombre={miembro.full_name} email={miembro.email} phone={miembro.phone} />
+        )}
       </div>
     </Hoja>
   );

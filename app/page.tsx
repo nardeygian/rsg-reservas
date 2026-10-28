@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile, getUserCaps } from "@/lib/auth";
 import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
 import { getCalendarEvents } from "@/lib/asana";
+import { ServirInicio } from "@/app/_components/portal/ServirInicio";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { donReadData } from "@/app/donaciones/_lib/data";
 import { donantes } from "@/app/donaciones/_lib/don-logic";
@@ -341,6 +342,9 @@ export default async function HomePage() {
             </div>
           )}
         </section>
+
+        {/* ── Servir: próximo servicio, pendientes y en vivo ── */}
+        {caps?.servir && <ServirInicio />}
 
         {/* ── Grid de módulos ── */}
         <div

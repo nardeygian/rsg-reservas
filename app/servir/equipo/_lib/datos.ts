@@ -84,6 +84,8 @@ export type MiembroFila = {
   person_id: string;
   full_name: string;
   tiene_cuenta: boolean;
+  email: string | null;
+  phone: string | null;
   area_id: string | null;
   posiciones: string[];              // ids de positions del equipo
   bloqueos: { starts_on: string; ends_on: string; reason: string | null }[];
@@ -97,7 +99,7 @@ export async function datosEquipo(db: ClienteServir, equipo: Equipo) {
   const hoy = hoyBogota();
   const [mesDesde, mesHasta] = bordesDelMes(hoy);
 
-  let miembrosQ = db.from("team_members").select("id, person_id, area_id, people(full_name, profile_id, active)")
+  let miembrosQ = db.from("team_members").select("id, person_id, area_id, people(full_name, profile_id, active, email, phone)")
     .eq("ministry_id", equipo.ministry_id).eq("active", true);
   if (equipo.area_id) miembrosQ = miembrosQ.eq("area_id", equipo.area_id);
   let posicionesQ = db.from("positions").select("id, name, description, area_id, active, sort")
@@ -113,7 +115,7 @@ export async function datosEquipo(db: ClienteServir, equipo: Equipo) {
 
   const posiciones = posicionesR.data ?? [];
   const posIds = posiciones.map((p) => p.id);
-  type MiembroRaw = { id: string; person_id: string; area_id: string | null; people: { full_name: string; profile_id: string | null; active: boolean } | null };
+  type MiembroRaw = { id: string; person_id: string; area_id: string | null; people: { full_name: string; profile_id: string | null; active: boolean; email: string | null; phone: string | null } | null };
   const miembrosRaw = ((miembrosR.data ?? []) as MiembroRaw[]).filter((m) => m.people?.active !== false);
   const personIds = [...new Set(miembrosRaw.map((m) => m.person_id))];
 
@@ -147,6 +149,8 @@ export async function datosEquipo(db: ClienteServir, equipo: Equipo) {
     person_id: m.person_id,
     full_name: m.people?.full_name ?? "—",
     tiene_cuenta: !!m.people?.profile_id,
+    email: m.people?.email ?? null,
+    phone: m.people?.phone ?? null,
     area_id: m.area_id,
     posiciones: ((sabenR.data ?? []) as { person_id: string; position_id: string }[]).filter((s) => s.person_id === m.person_id).map((s) => s.position_id),
     bloqueos: ((bloqueosR.data ?? []) as { person_id: string; starts_on: string; ends_on: string; reason: string | null }[])

@@ -6,7 +6,7 @@ import { MonthGrid, type MonthCell, type MonthItem } from "@/app/_components/ui/
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { AsanaEvent } from "@/lib/asana";
-import type { LinkInfo, BookingOption } from "../page";
+import type { LinkInfo, BookingOption, ReunionCal } from "../page";
 import { EventPanel } from "./EventPanel";
 
 type DesktopView = "lista" | "dia" | "semana" | "mes";
@@ -750,10 +750,11 @@ function ListaView({ events, linksByGid, onEventClick }: {
 
 // ── Main shell ────────────────────────────────────────────────────────────────
 export function CalendarioShell({
-  events, linksByGid, bookingOptions, canLink, linkAction, unlinkAction,
+  events, linksByGid, reunionesByGid, bookingOptions, canLink, linkAction, unlinkAction,
 }: {
   events: AsanaEvent[];
   linksByGid: Record<string, LinkInfo>;
+  reunionesByGid: Record<string, ReunionCal>;
   bookingOptions: BookingOption[];
   canLink: boolean;
   linkAction: (fd: FormData) => Promise<void>;
@@ -855,6 +856,7 @@ export function CalendarioShell({
         <EventPanel
           event={selectedEvent}
           link={selectedLink}
+          reunion={reunionesByGid[selectedEvent.gid] ?? null}
           bookingOptions={bookingOptions}
           canLink={canLink}
           linkAction={linkAction}
