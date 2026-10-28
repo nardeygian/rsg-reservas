@@ -9,6 +9,88 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string | null
+          expires_at: string
+          id: string
+          invited_by: string | null
+          person_id: string
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          person_id: string
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          person_id?: string
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_invitations_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_invitations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_provider_tokens: {
+        Row: {
+          provider: string
+          refresh_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          provider: string
+          refresh_token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          provider?: string
+          refresh_token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       areas: {
         Row: {
           created_at: string
@@ -2250,6 +2332,7 @@ export type Database = {
       }
     }
     Functions: {
+      aceptar_invitacion: { Args: { p_token: string }; Returns: string }
       broadcast_recipients: {
         Args: { p_audience: string; p_scope_id: string }
         Returns: string[]
@@ -2258,10 +2341,27 @@ export type Database = {
         Args: { p_area_id: string; p_ministry_id: string }
         Returns: boolean
       }
+      can_invite_person: { Args: { p_person_id: string }; Returns: boolean }
       can_see_meeting: { Args: { p_meeting_id: string }; Returns: boolean }
       can_see_person_stats: { Args: { p_person_id: string }; Returns: boolean }
+      crear_invitacion: {
+        Args: { p_email?: string; p_person_id: string }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          token: string
+        }[]
+      }
+      cuenta_bloqueos_eliminacion: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
       current_person_id: { Args: never; Returns: string }
       current_role_is: { Args: { roles: string[] }; Returns: boolean }
+      eliminar_datos_personales: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       has_global_permission: {
         Args: { p_permission: string }
         Returns: boolean
@@ -2274,6 +2374,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      invitation_token_hash: { Args: { p_token: string }; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
       items_available: {
         Args: { _ends: string; _exclude_booking?: string; _starts: string }
@@ -2363,6 +2464,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      revocar_invitacion: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
+      }
       toggle_checklist_item: {
         Args: { p_done: boolean; p_item_id: string }
         Returns: {
@@ -2381,6 +2486,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      ver_invitacion: {
+        Args: { p_token: string }
+        Returns: {
+          es_mia: boolean
+          expires_at: string
+          first_name: string
+          invited_by_name: string
+          status: string
+        }[]
       }
     }
     Enums: {

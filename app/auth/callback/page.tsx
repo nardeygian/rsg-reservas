@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { guardarTokenApple } from "@/lib/cuentas/acciones";
 
 function translateAuthError(msg: string): string {
   const m = msg.toLowerCase();
@@ -55,10 +56,16 @@ function AuthCallbackInner() {
 
     // 1. PKCE flow (code in query params)
     if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         router.replace(`/login?error=${encodeURIComponent(translateAuthError(error.message))}`);
         return;
+      }
+      // Entrar con Apple: guardar su token para revocarlo si la persona
+      // elimina su cuenta (App Store 5.1.1(v)). Si falla, la sesión sigue.
+      const appleToken = data.session?.provider_refresh_token;
+      if (searchParams.get("proveedor") === "apple" && appleToken) {
+        await guardarTokenApple(appleToken).catch(() => undefined);
       }
       router.replace(isRecoveryNext);
       return;

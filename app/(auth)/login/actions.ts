@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { rutaSegura } from "@/lib/cuentas/db";
 
 function translateAuthError(msg: string): string {
   const l = msg.toLowerCase();
@@ -19,17 +20,19 @@ function translateAuthError(msg: string): string {
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = rutaSegura(formData.get("next"));
+  const conNext = next === "/" ? "" : `&next=${encodeURIComponent(next)}`;
 
   if (!email || !password) {
-    redirect("/login?error=Email%20y%20contrase%C3%B1a%20son%20obligatorios");
+    redirect(`/login?error=Email%20y%20contrase%C3%B1a%20son%20obligatorios${conNext}`);
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(translateAuthError(error.message))}`);
+    redirect(`/login?error=${encodeURIComponent(translateAuthError(error.message))}${conNext}`);
   }
 
-  redirect("/");
+  redirect(next);
 }

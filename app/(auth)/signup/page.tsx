@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signupAction } from "./actions";
+import { BotonesProveedor } from "../_components/BotonesProveedor";
 
 const ROLE_OPTIONS = [
   { value: "lider_departamento", label: "Líder de departamento" },
@@ -11,9 +12,25 @@ const ROLE_OPTIONS = [
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; next?: string }>;
 }) {
-  const { error, ok } = await searchParams;
+  const { error, ok, next } = await searchParams;
+  const destino = next?.startsWith("/") && !next.startsWith("//") ? next : undefined;
+  const qsNext = destino ? `?next=${encodeURIComponent(destino)}` : "";
+  const porInvitacion = destino?.startsWith("/auth/invitacion/") ?? false;
+
+  if (ok && porInvitacion) {
+    return (
+      <div className="space-y-4 text-center">
+        <p className="font-serif text-xl">
+          Listo. Te enviamos un correo para confirmar tu cuenta.
+        </p>
+        <p className="text-sm text-fg2">
+          Ábrelo desde este mismo teléfono y te llevamos a tu invitación.
+        </p>
+      </div>
+    );
+  }
 
   if (ok) {
     return (
@@ -33,94 +50,100 @@ export default async function SignupPage({
   }
 
   return (
-    <form action={signupAction} className="space-y-4">
-      <label className="block">
-        <span className="field-label">Nombre completo</span>
-        <input
-          id="full_name"
-          name="full_name"
-          type="text"
-          autoComplete="name"
-          required
-          className="input mt-2"
-        />
-      </label>
+    <div className="space-y-4">
+      <BotonesProveedor next={destino} back={`/signup${qsNext}`} />
+      <form action={signupAction} className="space-y-4">
+        {destino && <input type="hidden" name="next" value={destino} />}
+        <label className="block">
+          <span className="field-label">Nombre completo</span>
+          <input
+            id="full_name"
+            name="full_name"
+            type="text"
+            autoComplete="name"
+            required
+            className="input mt-2"
+          />
+        </label>
 
-      <label className="block">
-        <span className="field-label">Email</span>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          className="input mt-2"
-        />
-      </label>
+        <label className="block">
+          <span className="field-label">Email</span>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="input mt-2"
+          />
+        </label>
 
-      <label className="block">
-        <span className="field-label">Contraseña</span>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={6}
-          className="input mt-2"
-        />
-        <span className="block text-xs text-fg3 mt-1">
-          Mínimo 6 caracteres.
-        </span>
-      </label>
+        <label className="block">
+          <span className="field-label">Contraseña</span>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={6}
+            className="input mt-2"
+          />
+          <span className="block text-xs text-fg3 mt-1">
+            Mínimo 6 caracteres.
+          </span>
+        </label>
 
-      <fieldset>
-        <legend className="eyebrow">Yo en RSG soy</legend>
-        <div className="space-y-2 mt-2">
-          {ROLE_OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <input
-                type="radio"
-                name="requested_role"
-                value={opt.value}
-                required
-                className="accent-[var(--color-forest)]"
-              />
-              <span className="text-sm">{opt.label}</span>
-            </label>
-          ))}
-        </div>
-        <p className="text-xs text-fg3 mt-2">
-          Solo se usa para que el administrador te asigne el rol correcto.
+        {!porInvitacion && (
+          <fieldset>
+            <legend className="eyebrow">Yo en RSG soy</legend>
+            <div className="space-y-2 mt-2">
+              {ROLE_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="requested_role"
+                    value={opt.value}
+                    required
+                    className="accent-[var(--color-forest)]"
+                  />
+                  <span className="text-sm">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-fg3 mt-2">
+              Solo se usa para que el administrador te asigne el rol correcto.
+            </p>
+          </fieldset>
+        )}
+
+        {error && (
+          <p
+            className="text-sm rounded-[var(--radius-control)] px-4 py-3"
+            style={{
+              background: "var(--color-down-soft)",
+              color: "var(--color-critical)",
+            }}
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
+
+        <button type="submit" className="btn-primary w-full">
+          Crear cuenta
+        </button>
+
+        <p className="text-sm text-center text-fg2">
+          ¿Ya tienes cuenta?{" "}
+          <Link href={`/login${qsNext}`} className="underline">
+            Entra
+          </Link>
         </p>
-      </fieldset>
-
-      {error && (
-        <p
-          className="text-sm rounded-[var(--radius-control)] px-4 py-3"
-          style={{
-            background: "var(--color-down-soft)",
-            color: "var(--color-critical)",
-          }}
-          role="alert"
-        >
-          {error}
-        </p>
-      )}
-
-      <button type="submit" className="btn-primary w-full">
-        Crear cuenta
-      </button>
-
-      <p className="text-sm text-center text-fg2">
-        ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="underline">
-          Entra
-        </Link>
-      </p>
-    </form>
+      </form>
+    </div>
   );
 }
