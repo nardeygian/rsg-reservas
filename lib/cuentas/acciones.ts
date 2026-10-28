@@ -203,26 +203,29 @@ export async function desvincularIdentidad(formData: FormData) {
 
 // ── Eliminar mi cuenta ───────────────────────────────────────────────────
 
-const BLOQUEOS: Record<string, string> = {
-  reservas: "tienes reservas registradas",
-  historial_reservas: "apareces en el historial de reservas",
-  lider_de_ministerio: "figuras como líder de un ministerio",
-};
+export type ResumenEliminacion = { reservas: number; reservas_futuras: number; ministerios_que_lidera: number };
+
+// Lo que se va con la cuenta, para la pregunta de confirmación.
+export async function resumenEliminacion(): Promise<ResumenEliminacion> {
+  const supabase = await cuentasClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const vacio = { reservas: 0, reservas_futuras: 0, ministerios_que_lidera: 0 };
+  if (!user) return vacio;
+  const { data, error } = await cuentasServiceClient().rpc("cuenta_resumen_eliminacion", { p_user_id: user.id });
+  if (error) console.error("[cuentas] resumen de eliminación", error.message);
+  return data?.[0] ?? vacio;
+}
 
 // Borra la cuenta de verdad (auth.users y, en cascada, perfil, roles,
-// permisos, notificaciones y dispositivos), quita correo y teléfono de su
-// registro de persona y revoca Apple si la cuenta lo usa.
+// permisos, notificaciones y dispositivos), y con ella las reservas a su
+// nombre (decisión de Gian: se pregunta antes). Quita correo y teléfono de
+// su registro de persona y revoca Apple si la cuenta lo usa.
 export const eliminarMiCuenta: AccionesCuentas["eliminarMiCuenta"] = async () => {
   const supabase = await cuentasClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return fallo(MENSAJES.sin_sesion);
 
   const admin = cuentasServiceClient();
-  const { data: bloqueos, error: eB } = await admin.rpc("cuenta_bloqueos_eliminacion", { p_user_id: user.id });
-  if (eB) return fallo(`No se pudo revisar la cuenta: ${eB.message}`);
-  if (bloqueos && bloqueos.length > 0) {
-    return fallo(`No podemos borrarla desde aquí porque ${bloqueos.map((b) => BLOQUEOS[b] ?? b).join(" y ")}. Escríbele a un administrador y la eliminamos por ti.`);
-  }
 
   if (user.identities?.some((i) => i.provider === "apple")) {
     const { data: tok } = await admin.from("account_provider_tokens").select("refresh_token")

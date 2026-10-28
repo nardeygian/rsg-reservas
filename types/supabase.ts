@@ -1945,6 +1945,7 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_note: string | null
+          full_name: string
           id: string
           message: string | null
           ministry_id: string
@@ -1957,6 +1958,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          full_name: string
           id?: string
           message?: string | null
           ministry_id: string
@@ -1969,6 +1971,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          full_name?: string
           id?: string
           message?: string | null
           ministry_id?: string

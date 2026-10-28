@@ -79,6 +79,7 @@ create table if not exists public.team_join_requests (
   id            uuid primary key default gen_random_uuid(),
   profile_id    uuid not null references public.profiles(id) on delete cascade,
   ministry_id   uuid not null references public.ministries(id) on delete cascade,
+  full_name     text not null,        -- nombre al pedir: los líderes no leen profiles
   message       text,
   status        text not null default 'pendiente'
                   check (status in ('pendiente', 'aprobada', 'rechazada', 'cancelada')),
@@ -143,8 +144,9 @@ begin
     raise exception 'ya_es_miembro' using errcode = 'P0001';
   end if;
 
-  insert into public.team_join_requests (profile_id, ministry_id, message)
-  values (v_uid, p_ministry_id, nullif(left(trim(p_message), 500), ''))
+  select full_name into v_nombre from public.profiles where id = v_uid;
+  insert into public.team_join_requests (profile_id, ministry_id, full_name, message)
+  values (v_uid, p_ministry_id, coalesce(v_nombre, 'Sin nombre'), nullif(left(trim(p_message), 500), ''))
   on conflict (profile_id, ministry_id) where status = 'pendiente'
   do update set message = excluded.message
   returning id, (xmax = 0) into v_id, v_nueva;
@@ -154,12 +156,11 @@ begin
   if not v_nueva then
     return v_id;
   end if;
-  select full_name into v_nombre from public.profiles where id = v_uid;
   insert into public.notifications (user_id, kind, title, body, link)
   select distinct ur.user_id, 'solicitud_equipo',
          'Solicitud para unirse a ' || v_dep.name,
          coalesce(v_nombre, 'Alguien') || ' quiere servir en ' || v_dep.name || '.',
-         '/servir/equipo?dep=' || v_dep.id || '&vista=solicitudes'
+         '/servir/equipo?equipo=d:' || v_dep.id || '&vista=solicitudes'
     from public.user_roles ur
    where ur.role = 'lider_departamento' and ur.ministry_id = p_ministry_id and ur.user_id <> v_uid;
 

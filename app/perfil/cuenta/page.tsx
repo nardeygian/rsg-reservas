@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/app/_components/ui/Icon";
-import { desvincularIdentidad, vincularProveedor } from "@/lib/cuentas/acciones";
+import { desvincularIdentidad, resumenEliminacion, vincularProveedor } from "@/lib/cuentas/acciones";
 import { cuentasClient } from "@/lib/cuentas/db";
 import { PROVEEDORES, proveedoresActivos } from "@/lib/cuentas/proveedores";
 import { Fila, Grupo, Inicial, Mensaje, Pagina } from "@/lib/cuentas/ui";
@@ -24,10 +24,11 @@ export default async function CuentaPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/perfil/cuenta");
 
-  const [activos, { data: puedeInvitar }, { data: persona }] = await Promise.all([
+  const [activos, { data: puedeInvitar }, { data: persona }, resumen] = await Promise.all([
     proveedoresActivos(),
     supabase.rpc("has_permission", { p_permission: "servir.asignar" }),
     supabase.from("people").select("full_name").eq("profile_id", user.id).maybeSingle(),
+    resumenEliminacion(),
   ]);
 
   const identidades = user.identities ?? [];
@@ -85,13 +86,23 @@ export default async function CuentaPage({
 
       <Grupo
         title="Servir"
-        footer={persona ? undefined : "Tu cuenta todavía no está unida a tu registro de servidor. Pide a tu líder tu enlace de invitación."}
+        footer={persona ? undefined : "Tu cuenta todavía no está unida a tu registro de servidor. Escoge tu departamento o abre la invitación de tu líder."}
       >
         <Fila
           icon={<Inicial texto={persona ? persona.full_name.trim()[0]?.toUpperCase() ?? "·" : "·"} />}
           label={persona ? persona.full_name : "Sin unir"}
           detail={persona ? "Tu cuenta está unida a este registro" : "Sin registro de servidor"}
         />
+        {!persona && (
+          <Link href="/servir/unirme" className="block">
+            <Fila
+              icon={<span className="w-8 h-8 rounded-[10px] flex items-center justify-center" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)" }}><Icon name="plus" size={17} /></span>}
+              label="Unirme a un departamento"
+              detail="Tu líder aprueba la solicitud"
+              trailing={<Icon name="chevron-right" size={16} style={{ color: "var(--color-faint)" }} />}
+            />
+          </Link>
+        )}
         {puedeInvitar && (
           <Link href="/perfil/cuenta/invitar" className="block">
             <Fila
@@ -104,7 +115,7 @@ export default async function CuentaPage({
         )}
       </Grupo>
 
-      <EliminarCuenta />
+      <EliminarCuenta resumen={resumen} />
     </Pagina>
   );
 }

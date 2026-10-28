@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { clienteServir } from "@/app/servir/equipo/_lib/supabase";
 import { fechaCorta, fechaReunion, hoyBogota, misEquipos } from "@/app/servir/equipo/_lib/datos";
@@ -42,9 +43,12 @@ export default async function MisServiciosPage() {
 
   if (!personId) {
     return marco(
-      <p className="card px-4 py-5 text-[14px]" style={{ color: "var(--color-muted)" }}>
-        Tu cuenta aún no está unida a tu registro de servidor. Pídele a tu líder la invitación del portal; cuando la abras, aquí verás tus servicios.
-      </p>,
+      <div className="card px-4 py-5 flex flex-col gap-3">
+        <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+          Tu cuenta aún no está en un equipo. Escoge tu departamento y tu líder aprobará tu solicitud. Si tu líder te mandó una invitación, ábrela y quedará unida.
+        </p>
+        <Link href="/servir/unirme" className="btn-primary self-start">Unirme a un departamento</Link>
+      </div>,
     );
   }
 
@@ -118,6 +122,10 @@ export default async function MisServiciosPage() {
       </section>
 
       <Bloqueos bloqueos={bloqueos} hoy={hoy} />
+
+      <Link href="/servir/unirme" className="text-[14px] font-semibold px-1 self-start" style={{ color: "var(--color-accent)" }}>
+        Unirme a otro departamento
+      </Link>
 
       {pasadas.length > 0 && (
         <section className="flex flex-col gap-2">
