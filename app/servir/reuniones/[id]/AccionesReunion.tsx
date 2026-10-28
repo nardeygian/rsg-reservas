@@ -137,7 +137,7 @@ export function AccionesReunion({
             e.preventDefault();
             const starts = nuevaHora ? instanteBogota(nuevaFecha, nuevaHora) : null;
             correr(() => reprogramarReunion(reunion.id, nuevaFecha, starts, motivo),
-              () => { setPanel(null); setMotivo(""); setAviso("Reprogramada. Se avisó a los servidores asignados."); router.refresh(); });
+              () => { setPanel(null); setMotivo(""); setAviso("Reprogramada. El equipo asignado recibe el aviso."); router.refresh(); });
           }}>
           <div>
             <label htmlFor="r-fecha" className="field-label block mb-1.5">Nueva fecha</label>
@@ -160,7 +160,7 @@ export function AccionesReunion({
           onSubmit={(e) => {
             e.preventDefault();
             correr(() => cancelarReunion(reunion.id, motivo),
-              () => { setPanel(null); setMotivo(""); setAviso("Cancelada. Se avisó a los servidores asignados."); router.refresh(); });
+              () => { setPanel(null); setMotivo(""); setAviso("Cancelada. El equipo asignado recibe el aviso."); router.refresh(); });
           }}>
           <p className="text-[14px]">La reunión queda cancelada en el historial y en las estadísticas. Puedes restaurarla después.</p>
           <div>

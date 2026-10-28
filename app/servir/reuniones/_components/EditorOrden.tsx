@@ -156,53 +156,56 @@ export function EditorOrden({
               </div>
 
               {editable ? (
-                <div className="flex-1 min-w-0 grid gap-2 md:grid-cols-[140px_minmax(0,1fr)_88px] md:items-center">
-                  <select
-                    aria-label="Tipo de ítem"
-                    value={f.kind}
-                    onChange={(e) => actualizar(f.key, { kind: e.target.value as TipoItemOrden })}
-                    className="input filter-select"
-                  >
-                    {TIPOS_ITEM.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
-                  <div className="flex flex-col gap-2 min-w-0">
-                    <input
-                      aria-label="Título"
-                      value={f.title}
-                      placeholder={esEncabezado ? "Sección (p. ej. Alabanza)" : "Título"}
-                      onChange={(e) => actualizar(f.key, { title: e.target.value })}
-                      className="input"
-                      style={esEncabezado ? { fontWeight: 600 } : undefined}
-                    />
-                    {f.kind === "cancion" && canciones.length > 0 && (
-                      <select
-                        aria-label="Canción de la biblioteca"
-                        value={f.song_id ?? ""}
-                        onChange={(e) => {
-                          const song = canciones.find((c) => c.id === e.target.value);
-                          actualizar(f.key, { song_id: song?.id ?? null, title: song && !f.title.trim() ? song.title : f.title });
-                        }}
-                        className="input filter-select"
-                      >
-                        <option value="">Sin canción de la biblioteca</option>
-                        {canciones.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                      </select>
-                    )}
-                  </div>
+                <div className="flex-1 min-w-0 flex flex-col gap-2">
                   <input
-                    aria-label="Duración en minutos"
-                    inputMode="numeric"
-                    placeholder="min"
-                    value={textos[f.key] ?? ""}
-                    onChange={(e) => {
-                      const txt = e.target.value;
-                      setTextos((t) => ({ ...t, [f.key]: txt }));
-                      const seg = leerDuracion(txt);
-                      if (seg !== null) actualizar(f.key, { duration_sec: seg });
-                      else { setSucio(true); }
-                    }}
-                    className="input tabular text-right"
+                    aria-label="Título"
+                    value={f.title}
+                    placeholder={esEncabezado ? "Sección (p. ej. Alabanza)" : "Título"}
+                    onChange={(e) => actualizar(f.key, { title: e.target.value })}
+                    className="input"
+                    style={esEncabezado ? { fontWeight: 600 } : undefined}
                   />
+                  <div className="flex gap-2">
+                    <select
+                      aria-label="Tipo de ítem"
+                      value={f.kind}
+                      onChange={(e) => actualizar(f.key, { kind: e.target.value as TipoItemOrden })}
+                      className="input filter-select flex-1 min-w-0"
+                    >
+                      {TIPOS_ITEM.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                    <label className="flex items-center gap-1.5 flex-none text-[13px]" style={{ color: "var(--color-muted)" }}>
+                      <input
+                        aria-label="Duración en minutos"
+                        inputMode="numeric"
+                        placeholder="0"
+                        value={textos[f.key] ?? ""}
+                        onChange={(e) => {
+                          const txt = e.target.value;
+                          setTextos((t) => ({ ...t, [f.key]: txt }));
+                          const seg = leerDuracion(txt);
+                          if (seg !== null) actualizar(f.key, { duration_sec: seg });
+                          else { setSucio(true); }
+                        }}
+                        className="input filter-select tabular text-right w-[72px] px-2"
+                      />
+                      min
+                    </label>
+                  </div>
+                  {f.kind === "cancion" && canciones.length > 0 && (
+                    <select
+                      aria-label="Canción de la biblioteca"
+                      value={f.song_id ?? ""}
+                      onChange={(e) => {
+                        const song = canciones.find((c) => c.id === e.target.value);
+                        actualizar(f.key, { song_id: song?.id ?? null, title: song && !f.title.trim() ? song.title : f.title });
+                      }}
+                      className="input filter-select"
+                    >
+                      <option value="">Sin canción de la biblioteca</option>
+                      {canciones.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                    </select>
+                  )}
                 </div>
               ) : (
                 <div className="flex-1 min-w-0 pt-1.5 flex items-baseline justify-between gap-3">

@@ -1,6 +1,8 @@
 "use server";
 
 // B1 · Planeación — implementa AccionesPlaneacion (lib/servir/contratos.ts).
+// Los avisos a los asignados al reprogramar, cancelar o restaurar los manda
+// un trigger de B4 sobre meeting_changes: aquí basta con registrar el cambio.
 // Cada acción valida la entrada y deja que RLS decida: crear y editar
 // reuniones exige servir.planear en la base. Ninguna usa service_role.
 
@@ -15,7 +17,7 @@ import type {
   TipoItemOrden,
 } from "@/lib/servir/contratos";
 import { servirClient, usuarioActual, type ServirClient } from "./_lib/db";
-import { esFecha, fechaLarga, horaBogota, instanteBogota, moverAFecha } from "./_lib/fechas";
+import { esFecha, fechaLarga, instanteBogota, moverAFecha } from "./_lib/fechas";
 
 const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "otro"];
 const MAX_SERIE = 60;
@@ -363,21 +365,6 @@ export async function publicarReunion(id: string): Promise<Resultado> {
   return { ok: true, data: undefined };
 }
 
-// Avisa a los servidores asignados con un envío a la reunión; el
-// despachador (B4) lo reparte. RLS exige servir.planear para esa audiencia.
-async function avisarAsignados(supabase: ServirClient, userId: string, meetingId: string, title: string, body: string) {
-  const { count } = await supabase
-    .from("assignments")
-    .select("id", { count: "exact", head: true })
-    .eq("meeting_id", meetingId)
-    .in("status", ["pendiente", "aceptada"]);
-  if (!count) return;
-  await supabase.from("broadcasts").insert({
-    author_id: userId, audience: "reunion", scope_id: meetingId,
-    title, body, link: `/servir/reuniones/${meetingId}`,
-  });
-}
-
 async function motivoSinCambio(supabase: ServirClient, id: string, porEstado: string): Promise<string> {
   const { data } = await supabase.from("meetings").select("id").eq("id", id).maybeSingle();
   if (!data) return "No encontramos la reunión.";
@@ -421,8 +408,6 @@ export async function reprogramarReunion(
   });
   if (e2) return fallo(`Se cambió la fecha, pero no quedó en el historial: ${e2.message}`);
 
-  const cuando = `${fechaLarga(nueva_fecha)}${nuevoInicio ? `, ${horaBogota(nuevoInicio)}` : ""}`;
-  await avisarAsignados(supabase, userId, id, `Cambio de fecha: ${m.name}`, `Ahora es el ${cuando}.${reason ? ` ${reason}` : ""}`);
   revalidar(id);
   return { ok: true, data: undefined };
 }
@@ -444,8 +429,6 @@ export async function cancelarReunion(id: string, motivo?: string): Promise<Resu
   });
   if (e2) return fallo(`Se canceló, pero no quedó en el historial: ${e2.message}`);
 
-  await avisarAsignados(supabase, userId, id, `Reunión cancelada: ${m.name}`,
-    `La reunión del ${fechaLarga(m.meeting_date)} se canceló.${reason ? ` ${reason}` : ""}`);
   revalidar(id);
   return { ok: true, data: undefined };
 }

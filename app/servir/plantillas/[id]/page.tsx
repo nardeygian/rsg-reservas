@@ -14,7 +14,7 @@ export default async function PlantillaPage({ params }: { params: Promise<{ id: 
 
   const { data: t } = await supabase
     .from("meeting_templates")
-    .select("id, name, version, run_sheet, meeting_type_id, created_from_meeting_id, meeting_types(id, name, default_template_id)")
+    .select("id, name, version, run_sheet, meeting_type_id, created_from_meeting_id, meeting_types!meeting_templates_meeting_type_id_fkey(id, name, default_template_id)")
     .eq("id", id)
     .maybeSingle();
   if (!t) notFound();

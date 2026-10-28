@@ -91,6 +91,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
       {puede.planear && (
         <AccionesReunion
+          key={`${m.meeting_date}|${m.starts_at}|${m.ends_at}|${m.status}|${m.name}`}
           reunion={{
             id: m.id, name: m.name, status: m.status, meeting_date: m.meeting_date,
             starts_at: m.starts_at, ends_at: m.ends_at, notes: m.notes,
