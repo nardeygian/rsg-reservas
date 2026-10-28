@@ -4,7 +4,7 @@ import type { TipoItemOrden } from "@/lib/servir/contratos";
 import { guardarOrden } from "../actions";
 import { permisos, servirClient, usuarioActual } from "../_lib/db";
 import { fechaLarga, horaBogota } from "../_lib/fechas";
-import { Encabezado, EstadoChip, Pagina, PuntoColor } from "../_components/ui";
+import { BotonEnlace, Encabezado, EstadoChip, Pagina, PuntoColor } from "../_components/ui";
 import { EditorOrden } from "../_components/EditorOrden";
 import { AccionesReunion } from "./AccionesReunion";
 
@@ -73,6 +73,11 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         }
       >
         <EstadoChip status={m.status} />
+        {(m.status === "publicada" || m.status === "en_vivo" || m.status === "cerrada") && (
+          <BotonEnlace href={`/servir/${m.id}/vivo`} primario={m.status === "en_vivo"}>
+            {m.status === "cerrada" ? "Asistencia" : "En vivo"}
+          </BotonEnlace>
+        )}
       </Encabezado>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px]" style={{ color: "var(--color-muted)" }}>

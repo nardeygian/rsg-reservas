@@ -87,6 +87,7 @@ export default async function MisServiciosPage() {
     posicion: a.positions?.name ?? "—",
     departamento: a.ministries?.name ?? "",
     pasado,
+    enVivo: !pasado && (a.meetings!.status === "en_vivo" || a.meetings!.meeting_date === hoy),
     checklist: (itemsR.data ?? []).filter((i) => i.assignment_id === a.id)
       .map((i) => ({ id: i.id, moment: i.moment, text: i.text, done: !!i.done_at })),
     orden: pasado ? [] : (ordenR.data ?? []).filter((o) => o.meeting_id === a.meeting_id)

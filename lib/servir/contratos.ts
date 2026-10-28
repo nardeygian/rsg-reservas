@@ -142,17 +142,19 @@ export type AccionesVivo = {
   avanzarItem(meetingId: string, itemId: string | null): Promise<Resultado>;
   terminarReunion(id: string): Promise<Resultado>;
   // Una fila por persona: varios roles en la misma reunión = un servicio.
-  confirmarAsistencia(meetingId: string, filas: { person_id: string; status: EstadoAsistencia; roles: string[]; note?: string }[]): Promise<Resultado>;
+  // Planeación confirma a todos y puede cerrar (opciones.cerrar); el líder de
+  // departamento confirma a su gente mientras no esté cerrada (decisión de Gian).
+  confirmarAsistencia(
+    meetingId: string,
+    filas: { person_id: string; status: EstadoAsistencia; roles: string[]; note?: string }[],
+    opciones?: { cerrar?: boolean },
+  ): Promise<Resultado>;
 };
 
 // ── C3 · Estadísticas (app/servir/estadisticas) ──────────────────────────
 export type Semaforo = "sano" | "sobrecargado" | "alejandose" | "inactivo";
-export type SaludServidor = {
-  person_id: string;
-  full_name: string;
-  min_mes: number;
-  serv_mes: number;
-  ausencias_mes: number;
-  ultima_fecha: string | null;
-  semaforo: Semaforo;
-};
+// Una fila de salud_servidores(): la ventana (30 días por defecto) y los
+// umbrales salen de servir_ajustes.
+export type SaludServidor = Database["public"]["Functions"]["salud_servidores"]["Returns"][number] & { semaforo: Semaforo };
+export type EstadisticaReunion = Database["public"]["Functions"]["estadisticas_reuniones"]["Returns"][number];
+export type AjustesSalud = Fila<"servir_ajustes">;
