@@ -49,4 +49,4 @@ Actualiza esta tabla al cerrar cada punto.
 | 2 | Por empezar | |
 | 3 | Por empezar | |
 | 4 | Por empezar | |
-| 5 | En curso · Fase A lista | Fundación en la rama `etapa5/fundacion`: migraciones, RLS (35 pruebas), migración de servicio_data probada en local (conteos iguales), tipos y contratos. Sigue la Fase B. Nada aplicado en producción. |
+| 5 | En curso · Fases A y B listas | Todo en la rama `etapa5/fundacion`: fundación (Fase A) y los frentes B1 a B5 unidos (PRs 4 a 9), 109 pruebas de base en verde. Sigue la Fase C (en vivo, estadísticas e integración), con plan propuesto en `docs/portal/estado-etapa5.md`. Nada aplicado en producción. |
