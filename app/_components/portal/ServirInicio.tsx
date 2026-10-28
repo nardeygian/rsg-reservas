@@ -7,7 +7,7 @@ import { fechaReunion, hoyBogota, sumarDias } from "@/app/servir/equipo/_lib/dat
 // pendientes por responder, posiciones sin cubrir para líderes y "Abrir en
 // vivo" para Planeación el día de la reunión. Todo con la sesión del
 // usuario: lo que RLS no deja ver no aparece.
-export async function ServirInicio() {
+export async function ServirInicio({ invitarAUnirse }: { invitarAUnirse: boolean }) {
   const db = await createClient();
   const hoy = hoyBogota();
   const tiene = async (p: string) => (await db.rpc("has_permission", { p_permission: p })).data === true;
@@ -55,12 +55,13 @@ export async function ServirInicio() {
   const solicitudes = solicitudesR.count ?? 0;
   const reunionesHoy = hoyR.data ?? [];
 
+  const unirse = !personId && invitarAUnirse;
   const nada = !proxima && !reunionesHoy.length && !sinResponder && !rechazadas && !solicitudes;
-  if (nada && personId) return null;
+  if (nada && !unirse) return null;
 
   return (
     <section aria-label="Servir" className="grid gap-3 md:grid-cols-2">
-      {!personId && (
+      {unirse && (
         <Link href="/servir/unirme" className="card card-hover px-5 py-4 flex items-center gap-3 min-h-[72px]">
           <span className="flex-1">
             <span className="eyebrow block">Servir</span>

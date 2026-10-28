@@ -344,7 +344,7 @@ export default async function HomePage() {
         </section>
 
         {/* ── Servir: próximo servicio, pendientes y en vivo ── */}
-        {caps?.servir && <ServirInicio />}
+        {caps?.servir && <ServirInicio invitarAUnirse={profile?.role === "servidor"} />}
 
         {/* ── Grid de módulos ── */}
         <div

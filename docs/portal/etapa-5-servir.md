@@ -1,6 +1,6 @@
 # Etapa 5: Servir (reuniones, equipos y servicio en vivo)
 
-> **Estado: plan propuesto, pendiente de aprobación de Gian.** No se escribe código ni se corre ninguna migración hasta que se apruebe y se respondan las decisiones abiertas (al final).
+> **Estado: aprobado y en construcción.** Fases A, B y C construidas; avance en `estado-etapa5.md`. Respuestas de Gian a las decisiones abiertas al final.
 
 Objetivo: que Planeación arme cada reunión de punta a punta, que pastores y líderes midan cómo están sus reuniones y la salud de sus servidores, y que todo quede listo para publicarse como app en Google Play y App Store. En detalle: que Planeación arme cada reunión de punta a punta, que cada líder asigne a su gente, que cada servidor sepa qué hace, lo acepte y lo cumpla en vivo con su checklist, y que todo quede conectado con Discipulados, el Calendario, Reservas y las estadísticas de Servicio que ya existen. Referencia de producto: Planning de WorshipTools (orden del culto con tiempos, canciones, equipos por rol, aceptar/rechazar con un toque, recordatorios).
 
@@ -311,6 +311,15 @@ El trabajo se divide en **frentes con dueños de carpetas distintas**, para que 
 8. **Quién edita las plantillas.** Recomendado: Planeación edita todas y cada pastor de ministerio las de su ministerio. ¿Los líderes de departamento pueden ajustar las posiciones que su departamento aporta a una plantilla?
 9. **Umbrales de salud del servidor.** Recomendado para empezar: sobrecargado con más de 4 servicios al mes, alejándose si baja a la mitad frente a su promedio de 3 meses, inactivo tras 6 semanas sin servir. Planeación los ajusta después.
 10. **Apps.** Inicio de sesión **decidido: Google y Apple** (además del correo actual). Falta confirmar Capacitor y que las cuentas de desarrollador sean a nombre de la iglesia (organización, con D-U-N-S).
+
+### Respuestas de Gian (28 oct 2026)
+
+- **1 · Cuentas:** quien entra con Google o Apple sin invitación recibe el rol básico `servidor`, escoge su departamento y el líder de departamento, un pastor de sede o un super admin aprueba si se une.
+- **3 · Navegación:** Servir va como destino nuevo.
+- **4 · Asistencia:** los líderes de departamento también confirman la de su gente; Planeación cierra.
+- **5 · Fundadores:** Gian preguntó a qué se refiere; queda abierto (ver `estado-etapa5.md`).
+- **9 · Umbrales:** "3 es mucho, 1 es poco". Se configuró así: sobrecargado con 3 o más en 30 días; alejándose con 1 o menos; inactivo tras 6 semanas. Falta que Gian confirme esta lectura.
+- **Eliminar cuenta con reservas:** se pregunta y se borran también las reservas a su nombre.
 
 ## Terminado cuando
 
