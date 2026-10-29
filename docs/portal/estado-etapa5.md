@@ -154,6 +154,14 @@ Supabase local (CLI 2.107) con `npm run supabase:reset`, 210/210 pruebas de base
 
 **Push en iPhone probado (29 oct):** con la app agregada a inicio desde Safari, como `qa.pastor.sede`, llegaron 4 avisos de prueba enviados uno por minuto con la app cerrada (`notifications` → `notificador_disparar()` → `notificador` → web push VAPID). Google en el preview falla con `redirect_uri_mismatch` hasta registrar `https://hhjikugnxvffkwcnqijl.supabase.co/auth/v1/callback` en Google Cloud, activar Google en el proyecto de pruebas y agregar `https://*-nardeygians-projects.vercel.app/auth/callback**` en sus Redirect URLs.
 
+**Ambiente de pruebas armado (29 oct):** `node --env-file=.env.pruebas.local scripts/semilla-ambiente-pruebas.ts` (se puede repetir; rehace las reuniones `prueba-…` desde hoy). Deja los 8 departamentos con 2–3 roles y su checklist, roles generales VIO, Escenario y Predicador, un líder y dos servidores con cuenta por departamento (`<depto>.lider`, `<depto>.1`, `<depto>.2` @rsg.test), 12 canciones de prueba y 6 reuniones en dos semanas (domingo Reunión Central, miércoles Jóvenes, jueves Estudio Bíblico) con orden, canciones, espacios reservados con montaje y ~110 asignaciones (casi todas aceptadas con checklist, algunas pendientes y rechazadas). La última queda en borrador para probar publicar. Los avisos que genera la semilla quedan en la bandeja sin mandar push.
+
+**Ajustes de Gian (29 oct, tarde):**
+- Campanita en el Inicio (arriba a la derecha) con los avisos sin leer; abre la bandeja.
+- Servicio oculto sin borrarlo con `NEXT_PUBLIC_OCULTAR_SERVICIO=1` (activo solo en el Preview de esta rama): el menú queda como "Discípulos" y desaparecen la tarjeta del Inicio y la pestaña Servidores. `/servicio` sigue existiendo hasta la Fase D.
+- Pastores (fundador, de sede, de ministerio): la base les crea su ficha (`20261029160000_servir_pastores.sql`), salen como candidatos de los roles generales (VIO, Escenario, Predicador) y en Mis servicios no ven "Unirme a un departamento".
+- Orden de la reunión en celular: la hora y los botones van arriba y los campos usan todo el ancho.
+
 ## Pendientes
 
 | Pendiente | Por qué | Quién |

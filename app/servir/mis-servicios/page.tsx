@@ -20,7 +20,7 @@ export default async function MisServiciosPage() {
   const { data: claims } = await db.auth.getClaims();
   if (!claims?.claims.sub) redirect("/login");
 
-  const { data: personId } = await db.rpc("current_person_id");
+  const [{ data: personId }, { data: esPastor }] = await Promise.all([db.rpc("current_person_id"), db.rpc("soy_pastor")]);
   const hoy = hoyBogota();
 
   const encabezado = (
@@ -37,6 +37,16 @@ export default async function MisServiciosPage() {
       {children}
     </main>
   );
+
+  // Un pastor no se une a un departamento: Planeación lo asigna a predicar
+  // o a un rol general (VIO, Escenario).
+  if (!personId && esPastor) {
+    return marco(
+      <p className="card px-4 py-5 text-[14px]" style={{ color: "var(--color-muted)" }}>
+        Aquí verás las reuniones donde predicas o sirves en VIO o Escenario, cuando Planeación te asigne.
+      </p>,
+    );
+  }
 
   if (!personId) {
     return marco(
@@ -110,7 +120,9 @@ export default async function MisServiciosPage() {
         <h2 className="eyebrow px-1">Próximos</h2>
         {proximas.length === 0 ? (
           <p className="card px-4 py-5 text-[14px]" style={{ color: "var(--color-muted)" }}>
-            No tienes servicios próximos. Cuando tu líder te asigne, aparecerán aquí para que aceptes.
+            {esPastor
+              ? "No tienes servicios próximos. Cuando Planeación te asigne a predicar, VIO o Escenario, aparecerán aquí."
+              : "No tienes servicios próximos. Cuando tu líder te asigne, aparecerán aquí para que aceptes."}
           </p>
         ) : (
           <div className="flex flex-col gap-3">
@@ -121,9 +133,11 @@ export default async function MisServiciosPage() {
 
       <Bloqueos bloqueos={bloqueos} hoy={hoy} />
 
-      <Link href="/servir/unirme" className="text-[14px] font-semibold px-1 self-start" style={{ color: "var(--color-accent)" }}>
-        Unirme a otro departamento
-      </Link>
+      {!esPastor && (
+        <Link href="/servir/unirme" className="text-[14px] font-semibold px-1 self-start" style={{ color: "var(--color-accent)" }}>
+          Unirme a otro departamento
+        </Link>
+      )}
 
       {pasadas.length > 0 && (
         <section className="flex flex-col gap-2">

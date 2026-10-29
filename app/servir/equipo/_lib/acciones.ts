@@ -56,10 +56,12 @@ export async function sugerirServidores(meetingId: string, positionId: string): 
 
   let ids: string[];
   if (pos.ministry_id === null) {
-    // Rol general (VIO, Escenario): cualquier servidor de cualquier departamento.
-    const dir = await db.rpc("directorio_personas");
+    // Rol general (VIO, Escenario, Predicador): cualquier servidor de
+    // cualquier departamento, y los pastores aunque no estén en uno.
+    const [dir, pastores] = await Promise.all([db.rpc("directorio_personas"), db.rpc("pastores_asignables")]);
     if (dir.error) return fallo(dir.error, "leer el directorio");
-    ids = dir.data.filter((p) => p.departamentos.length > 0).map((p) => p.id);
+    if (pastores.error) return fallo(pastores.error, "leer los pastores");
+    ids = [...new Set([...dir.data.filter((p) => p.departamentos.length > 0).map((p) => p.id), ...pastores.data.map((p) => p.id)])];
   } else {
     let miembrosQ = db.from("team_members").select("person_id").eq("ministry_id", pos.ministry_id).eq("active", true);
     if (pos.area_id) miembrosQ = miembrosQ.eq("area_id", pos.area_id);

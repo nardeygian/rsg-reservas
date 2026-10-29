@@ -2703,6 +2703,10 @@ export type Database = {
         }
       }
       armar_reporte_reunion: { Args: { p_meeting_id: string }; Returns: Json }
+      asegurar_persona_pastor: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       asistencia_sugerida: {
         Args: { p_meeting_id: string }
         Returns: {
@@ -2802,6 +2806,10 @@ export type Database = {
         Args: { p_cuerpo: string; p_meeting_id: string; p_titulo: string }
         Returns: undefined
       }
+      avisar_reporte_reunion: {
+        Args: { p_meeting_id: string }
+        Returns: undefined
+      }
       avisar_reserva_reunion: {
         Args: {
           b: Database["public"]["Tables"]["bookings"]["Row"]
@@ -2897,6 +2905,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      es_pastor: { Args: { p_user_id: string }; Returns: boolean }
       es_solo_servidor: { Args: never; Returns: boolean }
       estadisticas_reuniones: {
         Args: {
@@ -3031,6 +3040,13 @@ export type Database = {
         }[]
       }
       notificador_procesar: { Args: never; Returns: Json }
+      pastores_asignables: {
+        Args: never
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
       permission_scopes: {
         Args: { p_permission: string }
         Returns: {
@@ -3193,6 +3209,7 @@ export type Database = {
         Args: { p_message?: string; p_ministry_id: string }
         Returns: string
       }
+      soy_pastor: { Args: never; Returns: boolean }
       terminar_reunion: {
         Args: { p_meeting_id: string }
         Returns: {

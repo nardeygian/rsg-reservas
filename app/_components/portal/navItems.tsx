@@ -1,5 +1,6 @@
 import type { ReactElement, SVGProps } from "react";
 import type { NavCaps } from "@/lib/auth";
+import { SERVICIO_OCULTO } from "@/lib/portal/modulos";
 
 // Una sola lista de destinos para el menú lateral (escritorio) y la barra
 // inferior (celular): mismos nombres, mismo orden, mismos permisos.
@@ -55,12 +56,12 @@ function todos(caps: NavCaps): Destination[] {
   }
   // Comunidad: Discipulados y Servidores (todos los que sirven), como vistas separadas.
   // Abre en Discipulados cuando la persona tiene acceso.
-  const servicio = caps.servicio !== "none";
+  const servicio = caps.servicio !== "none" && !SERVICIO_OCULTO;
   if (servicio || caps.discipulos) {
     out.push({
       id: "comunidad",
       href: caps.discipulos ? "/discipulos" : "/servicio",
-      label: servicio && caps.discipulos ? "Comunidad" : caps.discipulos ? (caps.disciGrupoId ? "Mis discípulos" : "Discipulados") : "Servicio",
+      label: servicio && caps.discipulos ? "Comunidad" : caps.discipulos ? (SERVICIO_OCULTO ? "Discípulos" : caps.disciGrupoId ? "Mis discípulos" : "Discipulados") : "Servicio",
       match: (p) => p.startsWith("/servicio") || p.startsWith("/discipulos"),
       icon: svg(<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" /></>),
     });
