@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       account_invitations: {
@@ -128,7 +153,7 @@ export type Database = {
           decline_reason: string | null
           id: string
           meeting_id: string
-          ministry_id: string
+          ministry_id: string | null
           person_id: string
           position_id: string
           responded_at: string | null
@@ -142,7 +167,7 @@ export type Database = {
           decline_reason?: string | null
           id?: string
           meeting_id: string
-          ministry_id: string
+          ministry_id?: string | null
           person_id: string
           position_id: string
           responded_at?: string | null
@@ -156,7 +181,7 @@ export type Database = {
           decline_reason?: string | null
           id?: string
           meeting_id?: string
-          ministry_id?: string
+          ministry_id?: string | null
           person_id?: string
           position_id?: string
           responded_at?: string | null
@@ -936,6 +961,68 @@ export type Database = {
           },
         ]
       }
+      meeting_live_changes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          item_title: string | null
+          kind: string
+          meeting_id: string
+          minutes: number | null
+          run_item_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_title?: string | null
+          kind: string
+          meeting_id: string
+          minutes?: number | null
+          run_item_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_title?: string | null
+          kind?: string
+          meeting_id?: string
+          minutes?: number | null
+          run_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_live_changes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_live_changes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_live_changes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "service_units"
+            referencedColumns: ["meeting_id"]
+          },
+          {
+            foreignKeyName: "meeting_live_changes_run_item_id_fkey"
+            columns: ["run_item_id"]
+            isOneToOne: false
+            referencedRelation: "run_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_spaces: {
         Row: {
           created_at: string
@@ -1155,6 +1242,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_item_id: string | null
+          delay_minutes: number
           ends_at: string | null
           id: string
           kind: string
@@ -1166,6 +1254,7 @@ export type Database = {
           notes: string | null
           origin: string
           outside_asana: boolean
+          report: Json | null
           section: string | null
           setup_minutes: number
           starts_at: string | null
@@ -1184,6 +1273,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_item_id?: string | null
+          delay_minutes?: number
           ends_at?: string | null
           id?: string
           kind?: string
@@ -1195,6 +1285,7 @@ export type Database = {
           notes?: string | null
           origin?: string
           outside_asana?: boolean
+          report?: Json | null
           section?: string | null
           setup_minutes?: number
           starts_at?: string | null
@@ -1213,6 +1304,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           current_item_id?: string | null
+          delay_minutes?: number
           ends_at?: string | null
           id?: string
           kind?: string
@@ -1224,6 +1316,7 @@ export type Database = {
           notes?: string | null
           origin?: string
           outside_asana?: boolean
+          report?: Json | null
           section?: string | null
           setup_minutes?: number
           starts_at?: string | null
@@ -1560,7 +1653,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
-          ministry_id: string
+          ministry_id: string | null
           name: string
           sort: number
         }
@@ -1570,7 +1663,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          ministry_id: string
+          ministry_id?: string | null
           name: string
           sort?: number
         }
@@ -1580,7 +1673,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          ministry_id?: string
+          ministry_id?: string | null
           name?: string
           sort?: number
         }
@@ -1788,6 +1881,8 @@ export type Database = {
           kind: string
           meeting_id: string
           notes: string | null
+          planned_duration_sec: number | null
+          removed_at: string | null
           responsible_position_id: string | null
           song_id: string | null
           song_key: string | null
@@ -1803,6 +1898,8 @@ export type Database = {
           kind?: string
           meeting_id: string
           notes?: string | null
+          planned_duration_sec?: number | null
+          removed_at?: string | null
           responsible_position_id?: string | null
           song_id?: string | null
           song_key?: string | null
@@ -1818,6 +1915,8 @@ export type Database = {
           kind?: string
           meeting_id?: string
           notes?: string | null
+          planned_duration_sec?: number | null
+          removed_at?: string | null
           responsible_position_id?: string | null
           song_id?: string | null
           song_key?: string | null
@@ -1878,6 +1977,7 @@ export type Database = {
           alejandose_hasta: number
           id: boolean
           inactivo_semanas: number
+          ministerio_musica_id: string | null
           sobrecargado_desde: number
           updated_at: string
           updated_by: string | null
@@ -1887,6 +1987,7 @@ export type Database = {
           alejandose_hasta?: number
           id?: boolean
           inactivo_semanas?: number
+          ministerio_musica_id?: string | null
           sobrecargado_desde?: number
           updated_at?: string
           updated_by?: string | null
@@ -1896,12 +1997,20 @@ export type Database = {
           alejandose_hasta?: number
           id?: boolean
           inactivo_semanas?: number
+          ministerio_musica_id?: string | null
           sobrecargado_desde?: number
           updated_at?: string
           updated_by?: string | null
           ventana_dias?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "servir_ajustes_ministerio_musica_id_fkey"
+            columns: ["ministerio_musica_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "servir_ajustes_updated_by_fkey"
             columns: ["updated_by"]
@@ -2551,6 +2660,49 @@ export type Database = {
     }
     Functions: {
       aceptar_invitacion: { Args: { p_token: string }; Returns: string }
+      agenda_reuniones: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          asignado: boolean
+          ends_at: string
+          id: string
+          meeting_date: string
+          name: string
+          notes: string
+          starts_at: string
+          status: string
+          type_color: string
+          type_name: string
+          ve_detalle: boolean
+        }[]
+      }
+      ajustar_item: {
+        Args: { p_item_id: string; p_minutos: number }
+        Returns: {
+          actual_end: string | null
+          actual_start: string | null
+          created_at: string
+          duration_sec: number
+          id: string
+          kind: string
+          meeting_id: string
+          notes: string | null
+          planned_duration_sec: number | null
+          removed_at: string | null
+          responsible_position_id: string | null
+          song_id: string | null
+          song_key: string | null
+          sort: number
+          title: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "run_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      armar_reporte_reunion: { Args: { p_meeting_id: string }; Returns: Json }
       asistencia_sugerida: {
         Args: { p_meeting_id: string }
         Returns: {
@@ -2566,8 +2718,8 @@ export type Database = {
           suggested: string
         }[]
       }
-      avanzar_item: {
-        Args: { p_item_id: string; p_meeting_id: string }
+      atrasar_reunion: {
+        Args: { p_meeting_id: string; p_minutos: number }
         Returns: {
           actual_end: string | null
           actual_start: string | null
@@ -2578,6 +2730,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_item_id: string | null
+          delay_minutes: number
           ends_at: string | null
           id: string
           kind: string
@@ -2589,6 +2742,7 @@ export type Database = {
           notes: string | null
           origin: string
           outside_asana: boolean
+          report: Json | null
           section: string | null
           setup_minutes: number
           starts_at: string | null
@@ -2603,6 +2757,50 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      avanzar_item: {
+        Args: { p_item_id: string; p_meeting_id: string }
+        Returns: {
+          actual_end: string | null
+          actual_start: string | null
+          asana_gid: string | null
+          attendance_closed_at: string | null
+          attendance_closed_by: string | null
+          booking_id: string | null
+          created_at: string
+          created_by: string | null
+          current_item_id: string | null
+          delay_minutes: number
+          ends_at: string | null
+          id: string
+          kind: string
+          legacy_id: string | null
+          meeting_date: string
+          meeting_type_id: string | null
+          ministry_id: string | null
+          name: string
+          notes: string | null
+          origin: string
+          outside_asana: boolean
+          report: Json | null
+          section: string | null
+          setup_minutes: number
+          starts_at: string | null
+          status: string
+          teardown_minutes: number
+          template_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meetings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      avisar_cambio_vivo: {
+        Args: { p_cuerpo: string; p_meeting_id: string; p_titulo: string }
+        Returns: undefined
       }
       avisar_reserva_reunion: {
         Args: {
@@ -2626,11 +2824,25 @@ export type Database = {
       }
       can_invite_person: { Args: { p_person_id: string }; Returns: boolean }
       can_see_meeting: { Args: { p_meeting_id: string }; Returns: boolean }
+      can_see_person_contact: {
+        Args: { p_person_id: string }
+        Returns: boolean
+      }
       can_see_person_stats: { Args: { p_person_id: string }; Returns: boolean }
       cancelar_solicitud: { Args: { p_request_id: string }; Returns: undefined }
       confirmar_asistencia: {
         Args: { p_cerrar?: boolean; p_filas: Json; p_meeting_id: string }
         Returns: number
+      }
+      contacto_personas: {
+        Args: { p_ids: string[] }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          notes: string
+          phone: string
+        }[]
       }
       crear_invitacion: {
         Args: { p_email?: string; p_person_id: string }
@@ -2654,6 +2866,15 @@ export type Database = {
       }
       current_person_id: { Args: never; Returns: string }
       current_role_is: { Args: { roles: string[] }; Returns: boolean }
+      directorio_personas: {
+        Args: never
+        Returns: {
+          departamentos: string[]
+          full_name: string
+          id: string
+          tiene_cuenta: boolean
+        }[]
+      }
       disponibilidad_espacios: {
         Args: {
           p_ends: string
@@ -2676,6 +2897,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      es_solo_servidor: { Args: never; Returns: boolean }
       estadisticas_reuniones: {
         Args: {
           p_desde: string
@@ -2737,6 +2959,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_item_id: string | null
+          delay_minutes: number
           ends_at: string | null
           id: string
           kind: string
@@ -2748,6 +2971,7 @@ export type Database = {
           notes: string | null
           origin: string
           outside_asana: boolean
+          report: Json | null
           section: string | null
           setup_minutes: number
           starts_at: string | null
@@ -2818,7 +3042,45 @@ export type Database = {
         Args: { new_role: string; target_user_id: string }
         Returns: undefined
       }
+      proyeccion_reunion: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          ends_at: string
+          run_item_id: string
+          starts_at: string
+        }[]
+      }
+      puede_quitar_canciones: {
+        Args: { p_meeting_id: string }
+        Returns: boolean
+      }
       puede_ver_estadisticas: { Args: never; Returns: boolean }
+      quitar_item: {
+        Args: { p_item_id: string; p_quitar?: boolean }
+        Returns: {
+          actual_end: string | null
+          actual_start: string | null
+          created_at: string
+          duration_sec: number
+          id: string
+          kind: string
+          meeting_id: string
+          notes: string | null
+          planned_duration_sec: number | null
+          removed_at: string | null
+          responsible_position_id: string | null
+          song_id: string | null
+          song_key: string | null
+          sort: number
+          title: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "run_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       refrescar_salud_servidor: { Args: never; Returns: undefined }
       refresh_song_last_used: {
         Args: { p_song_ids: string[] }
@@ -2855,7 +3117,7 @@ export type Database = {
           decline_reason: string | null
           id: string
           meeting_id: string
-          ministry_id: string
+          ministry_id: string | null
           person_id: string
           position_id: string
           responded_at: string | null
@@ -2873,6 +3135,7 @@ export type Database = {
         Args: { p_aprobar: boolean; p_nota?: string; p_request_id: string }
         Returns: string
       }
+      resumen_cambio_vivo: { Args: { p_meeting_id: string }; Returns: string }
       revocar_invitacion: {
         Args: { p_invitation_id: string }
         Returns: undefined
@@ -2942,6 +3205,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           current_item_id: string | null
+          delay_minutes: number
           ends_at: string | null
           id: string
           kind: string
@@ -2953,6 +3217,7 @@ export type Database = {
           notes: string | null
           origin: string
           outside_asana: boolean
+          report: Json | null
           section: string | null
           setup_minutes: number
           starts_at: string | null
@@ -3015,12 +3280,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3042,12 +3307,13 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3066,12 +3332,13 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3090,12 +3357,13 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3108,11 +3376,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3122,6 +3390,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

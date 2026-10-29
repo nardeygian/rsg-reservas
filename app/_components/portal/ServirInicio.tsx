@@ -24,7 +24,7 @@ export async function ServirInicio({ invitarAUnirse }: { invitarAUnirse: boolean
       ? db.from("assignments")
           .select("id, status, meeting_id, meetings!inner(name, meeting_date, starts_at, status), positions(name)")
           .eq("person_id", personId).in("status", ["pendiente", "aceptada"])
-          .gte("meetings.meeting_date", hoy).neq("meetings.status", "cancelada")
+          .gte("meetings.meeting_date", hoy).not("meetings.status", "in", "(cancelada,cerrada)")
           .order("meeting_date", { referencedTable: "meetings" }).limit(20)
       : Promise.resolve({ data: [] }),
     puedeVivo
@@ -36,7 +36,7 @@ export async function ServirInicio({ invitarAUnirse }: { invitarAUnirse: boolean
           .select("id, status, ministry_id, area_id, meetings!inner(meeting_date, status)")
           .in("status", ["pendiente", "rechazada"])
           .gte("meetings.meeting_date", hoy).lte("meetings.meeting_date", sumarDias(hoy, 14))
-          .neq("meetings.status", "cancelada")
+          .not("meetings.status", "in", "(cancelada,cerrada)")
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -49,7 +49,7 @@ export async function ServirInicio({ invitarAUnirse }: { invitarAUnirse: boolean
   const global = alcances.some((a) => a.scope_type === null);
   const deps = new Set(alcances.filter((a) => a.scope_type === "departamento").map((a) => a.scope_id));
   const areas = new Set(alcances.filter((a) => a.scope_type === "area").map((a) => a.scope_id));
-  const deMiGente = (equipoR.data ?? []).filter((a) => global || deps.has(a.ministry_id) || (a.area_id && areas.has(a.area_id)));
+  const deMiGente = (equipoR.data ?? []).filter((a) => global || (a.ministry_id && deps.has(a.ministry_id)) || (a.area_id && areas.has(a.area_id)));
   const sinResponder = deMiGente.filter((a) => a.status === "pendiente").length;
   const rechazadas = deMiGente.filter((a) => a.status === "rechazada").length;
   const solicitudes = solicitudesR.count ?? 0;
@@ -60,7 +60,7 @@ export async function ServirInicio({ invitarAUnirse }: { invitarAUnirse: boolean
   if (nada && !unirse) return null;
 
   return (
-    <section aria-label="Servir" className="grid gap-3 md:grid-cols-2">
+    <section aria-label="Servir" className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {unirse && (
         <Link href="/servir/unirme" className="card card-hover px-5 py-4 flex items-center gap-3 min-h-[72px]">
           <span className="flex-1">
@@ -81,8 +81,8 @@ export async function ServirInicio({ invitarAUnirse }: { invitarAUnirse: boolean
             <span className="block text-[16px] font-semibold truncate" style={{ color: "var(--color-ink)" }}>
               {proxima.positions?.name ?? "Servicio"} · {proxima.meetings.name}
             </span>
-            <span className="block text-[13px] capitalize" style={{ color: "var(--color-muted)" }}>
-              {fechaReunion(proxima.meetings.meeting_date, proxima.meetings.starts_at)}
+            <span className="block text-[13px]" style={{ color: "var(--color-muted)" }}>
+              <span className="capitalize">{fechaReunion(proxima.meetings.meeting_date, proxima.meetings.starts_at)}</span>
               {porResponder > 0 ? ` · ${porResponder} por responder` : ""}
             </span>
           </span>

@@ -93,7 +93,7 @@ export default async function FichaServidorPage({ params }: { params: Promise<{ 
 
       {(ficha.posiciones.length > 0 || ficha.bloqueos.length > 0 || ficha.persona.notes) && (
         <section className="card p-4 flex flex-col gap-2 text-[14px]" style={{ color: "var(--color-ink)" }}>
-          {ficha.posiciones.length > 0 && <p><span style={{ color: "var(--color-muted)" }}>Posiciones: </span>{ficha.posiciones.join(", ")}</p>}
+          {ficha.posiciones.length > 0 && <p><span style={{ color: "var(--color-muted)" }}>Roles: </span>{ficha.posiciones.join(", ")}</p>}
           {ficha.bloqueos.length > 0 && (
             <p><span style={{ color: "var(--color-muted)" }}>No puede: </span>
               {ficha.bloqueos.map((b) => `${b.desde === b.hasta ? fechaCorta(b.desde) : `${fechaCorta(b.desde)} – ${fechaCorta(b.hasta)}`}${b.motivo ? ` (${b.motivo})` : ""}`).join(", ")}

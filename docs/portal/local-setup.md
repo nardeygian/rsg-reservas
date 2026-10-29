@@ -53,8 +53,19 @@ SLACK_RESERVAS_CHANNEL_ID=desactivado
 npm run supabase:reset
 ```
 
-Aplica las 28 migraciones en orden + seed.sql. Úsalo cuando quieras volver
+Aplica las migraciones en orden + seed.sql. Úsalo cuando quieras volver
 a un estado limpio.
+
+> `supabase/config.toml` tiene `auto_expose_new_tables = true` para que la base
+> local dé los mismos permisos que producción. Sin eso, `npx supabase test db`
+> falla con "permission denied" en tablas viejas como `spaces` o `bookings`.
+
+Para el módulo Servir hay usuarios de prueba (un rol por usuario; la contraseña
+está en el script):
+
+```bash
+node --env-file=.env.local scripts/semilla-qa-etapa5.ts
+```
 
 ### 5. Arrancar la app
 

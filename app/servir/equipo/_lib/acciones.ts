@@ -47,24 +47,31 @@ export async function sugerirServidores(meetingId: string, positionId: string): 
     db.from("positions").select("id, ministry_id, area_id").eq("id", positionId).maybeSingle(),
   ]);
   if (reunion.error) return fallo(reunion.error, "leer la reunión");
-  if (posicion.error) return fallo(posicion.error, "leer la posición");
+  if (posicion.error) return fallo(posicion.error, "leer el rol");
   if (!reunion.data) return { ok: false, error: "La reunión no existe o no la puedes ver." };
-  if (!posicion.data) return { ok: false, error: "La posición no existe." };
+  if (!posicion.data) return { ok: false, error: "El rol no existe." };
 
   const fecha = reunion.data.meeting_date;
   const pos = posicion.data;
 
-  let miembrosQ = db.from("team_members").select("person_id").eq("ministry_id", pos.ministry_id).eq("active", true);
-  if (pos.area_id) miembrosQ = miembrosQ.eq("area_id", pos.area_id);
-  const [saben, miembros] = await Promise.all([
-    db.from("person_positions").select("person_id").eq("position_id", positionId),
-    miembrosQ,
-  ]);
-  if (saben.error) return fallo(saben.error, "leer quién sabe la posición");
-  if (miembros.error) return fallo(miembros.error, "leer el equipo");
-
-  const delEquipo = new Set(miembros.data.map((m) => m.person_id));
-  const ids = [...new Set(saben.data.map((s) => s.person_id))].filter((id) => delEquipo.has(id));
+  let ids: string[];
+  if (pos.ministry_id === null) {
+    // Rol general (VIO, Escenario): cualquier servidor de cualquier departamento.
+    const dir = await db.rpc("directorio_personas");
+    if (dir.error) return fallo(dir.error, "leer el directorio");
+    ids = dir.data.filter((p) => p.departamentos.length > 0).map((p) => p.id);
+  } else {
+    let miembrosQ = db.from("team_members").select("person_id").eq("ministry_id", pos.ministry_id).eq("active", true);
+    if (pos.area_id) miembrosQ = miembrosQ.eq("area_id", pos.area_id);
+    const [saben, miembros] = await Promise.all([
+      db.from("person_positions").select("person_id").eq("position_id", positionId),
+      miembrosQ,
+    ]);
+    if (saben.error) return fallo(saben.error, "leer quién sabe el rol");
+    if (miembros.error) return fallo(miembros.error, "leer el equipo");
+    const delEquipo = new Set(miembros.data.map((m) => m.person_id));
+    ids = [...new Set(saben.data.map((s) => s.person_id))].filter((id) => delEquipo.has(id));
+  }
   if (ids.length === 0) return { ok: true, data: [] };
 
   const [desde, hasta] = bordesDelMes(fecha);
@@ -118,7 +125,7 @@ export async function asignar(meetingId: string, personId: string, positionId: s
 
   if (previa.data) {
     if (previa.data.status === "pendiente" || previa.data.status === "aceptada") {
-      return { ok: false, error: "Esa persona ya está asignada en esa posición." };
+      return { ok: false, error: "Esa persona ya está asignada en ese rol." };
     }
     const { data, error } = await db.from("assignments")
       .update({ status: "pendiente", responded_at: null, decline_reason: null, assigned_by: uid })
@@ -133,7 +140,7 @@ export async function asignar(meetingId: string, personId: string, positionId: s
   // solo para cumplir el tipo.
   const pos = await db.from("positions").select("ministry_id, area_id").eq("id", positionId).maybeSingle();
   if (pos.error) return fallo(pos.error, "asignar");
-  if (!pos.data) return { ok: false, error: "La posición no existe." };
+  if (!pos.data) return { ok: false, error: "El rol no existe." };
 
   const { data, error } = await db.from("assignments")
     .insert({ meeting_id: meetingId, person_id: personId, position_id: positionId, ministry_id: pos.data.ministry_id, area_id: pos.data.area_id, assigned_by: uid })
@@ -259,7 +266,7 @@ export async function cambiarPosicionPersona(personId: string, positionId: strin
   const { error } = sabe
     ? await db.from("person_positions").upsert({ person_id: personId, position_id: positionId }, { ignoreDuplicates: true })
     : await db.from("person_positions").delete().eq("person_id", personId).eq("position_id", positionId);
-  if (error) return fallo(error, "cambiar las posiciones");
+  if (error) return fallo(error, "cambiar los roles");
   refrescar();
   return { ok: true, data: undefined };
 }
@@ -276,23 +283,24 @@ export async function crearArea(ministryId: string, nombre: string): Promise<Res
   return { ok: true, data: { id: data.id } };
 }
 
-export async function guardarPosicion(input: { id?: string; ministry_id: string; area_id: string | null; name: string; description?: string | null }): Promise<Resultado<{ id: string }>> {
+export async function guardarPosicion(input: { id?: string; ministry_id: string | null; area_id: string | null; name: string; description?: string | null }): Promise<Resultado<{ id: string }>> {
   const name = input.name.trim().slice(0, 80);
-  if (!name) return { ok: false, error: "Escribe el nombre de la posición." };
+  if (!name) return { ok: false, error: "Escribe el nombre del rol." };
   const fila = { ministry_id: input.ministry_id, area_id: input.area_id, name, description: input.description?.trim() || null };
   const db = await clienteServir();
 
   if (input.id) {
     const { data, error } = await db.from("positions").update(fila).eq("id", input.id).select("id");
-    if (error) return fallo(error, "editar esta posición");
-    if (!data.length) return { ok: false, error: "No tienes permiso para editar esta posición." };
+    if (error) return fallo(error, "editar este rol");
+    if (!data.length) return { ok: false, error: "No tienes permiso para editar este rol." };
     refrescar();
     return { ok: true, data: { id: input.id } };
   }
 
-  const { count } = await db.from("positions").select("id", { count: "exact", head: true }).eq("ministry_id", input.ministry_id);
+  const contarQ = db.from("positions").select("id", { count: "exact", head: true });
+  const { count } = await (input.ministry_id ? contarQ.eq("ministry_id", input.ministry_id) : contarQ.is("ministry_id", null));
   const { data, error } = await db.from("positions").insert({ ...fila, sort: (count ?? 0) + 1 }).select("id").single();
-  if (error) return fallo(error, "crear posiciones aquí");
+  if (error) return fallo(error, "crear roles aquí");
   refrescar();
   return { ok: true, data: { id: data.id } };
 }
@@ -301,8 +309,8 @@ export async function guardarPosicion(input: { id?: string; ministry_id: string;
 export async function archivarPosicion(id: string, activa: boolean): Promise<Resultado> {
   const db = await clienteServir();
   const { data, error } = await db.from("positions").update({ active: activa }).eq("id", id).select("id");
-  if (error) return fallo(error, "archivar esta posición");
-  if (!data.length) return { ok: false, error: "No tienes permiso para archivar esta posición." };
+  if (error) return fallo(error, "archivar este rol");
+  if (!data.length) return { ok: false, error: "No tienes permiso para archivar este rol." };
   refrescar();
   return { ok: true, data: undefined };
 }
@@ -315,7 +323,7 @@ export async function agregarPuntoChecklist(positionId: string, moment: MomentoC
   const { count } = await db.from("checklist_templates").select("id", { count: "exact", head: true }).eq("position_id", positionId);
   const { data, error } = await db.from("checklist_templates")
     .insert({ position_id: positionId, moment, text, sort: (count ?? 0) + 1 }).select("id").single();
-  if (error) return fallo(error, "editar el checklist de esta posición");
+  if (error) return fallo(error, "editar el checklist de este rol");
   refrescar();
   return { ok: true, data: { id: data.id } };
 }
@@ -323,7 +331,7 @@ export async function agregarPuntoChecklist(positionId: string, moment: MomentoC
 export async function borrarPuntoChecklist(id: string): Promise<Resultado> {
   const db = await clienteServir();
   const { data, error } = await db.from("checklist_templates").delete().eq("id", id).select("id");
-  if (error) return fallo(error, "editar el checklist de esta posición");
+  if (error) return fallo(error, "editar el checklist de este rol");
   if (!data.length) return { ok: false, error: "No tienes permiso para editar este checklist." };
   refrescar();
   return { ok: true, data: undefined };

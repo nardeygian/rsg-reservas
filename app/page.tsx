@@ -4,7 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile, getUserCaps } from "@/lib/auth";
 import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
-import { getCalendarEvents } from "@/lib/asana";
+import { leerAgenda } from "@/lib/servir/agenda";
 import { ServirInicio } from "@/app/_components/portal/ServirInicio";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { donReadData } from "@/app/donaciones/_lib/data";
@@ -118,10 +118,13 @@ export default async function HomePage() {
       .lt("starts_at", todayEnd.toISOString()),
     svReadData(),
     donReadData(),
-    getCalendarEvents().catch((e: Error) => {
-      console.error("[inicio] Asana:", e.message);
-      return [] as Awaited<ReturnType<typeof getCalendarEvents>>;
-    }),
+    // Agenda de reuniones de RSG (vive en la app, ya no en Asana).
+    leerAgenda(supabase, now.toLocaleDateString("en-CA", { timeZone: "America/Bogota" }),
+      new Date(now.getTime() + 8 * 86400_000).toLocaleDateString("en-CA", { timeZone: "America/Bogota" }))
+      .catch((e: Error) => {
+        console.error("[inicio] agenda:", e.message);
+        return [] as Awaited<ReturnType<typeof leerAgenda>>;
+      }),
   ]);
 
   const firstName = profile?.full_name?.split(" ")[0] ?? null;

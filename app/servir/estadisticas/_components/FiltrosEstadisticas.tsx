@@ -1,13 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
-export const PERIODOS = [
-  { value: "mes", label: "Este mes" },
-  { value: "trimestre", label: "Últimos 3 meses" },
-  { value: "semestre", label: "Últimos 6 meses" },
-  { value: "anio", label: "Último año" },
-] as const;
+import { PERIODOS } from "../_lib/periodos";
 
 // Filtros en una fila sobre el tablero; viven en la URL para poder
 // compartir la vista.

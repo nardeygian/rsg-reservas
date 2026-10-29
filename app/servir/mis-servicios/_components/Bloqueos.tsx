@@ -32,10 +32,10 @@ export function Bloqueos({ bloqueos, hoy }: { bloqueos: BloqueoFila[]; hoy: stri
 
   return (
     <section className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 px-1">
-        <h2 className="eyebrow flex-1">Fechas en que no puedo</h2>
+      <div className="flex flex-col items-start gap-1 px-1">
+        <h2 className="eyebrow">Fechas en que no puedo</h2>
         {!abierto && (
-          <button type="button" className="btn-ghost min-h-[40px] px-3 text-[14px]" style={{ color: "var(--color-accent)" }} onClick={() => setAbierto(true)}>
+          <button type="button" className="btn-ghost min-h-[40px] px-0 text-[14px]" style={{ color: "var(--color-accent)" }} onClick={() => setAbierto(true)}>
             <Icon name="plus" size={14} /> Agregar
           </button>
         )}

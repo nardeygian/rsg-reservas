@@ -1,35 +1,27 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/service";
-import { getCalendarEvents } from "@/lib/asana";
+import { leerAgenda, type EventoAgenda } from "@/lib/servir/agenda";
+import { hoyBogota, sumarDias } from "@/app/servir/equipo/_lib/datos";
 import { CalendarioShell } from "./_components/CalendarioShell";
 import { EventosEspacios } from "@/app/_components/portal/EventosEspacios";
-import { linkEventAction, unlinkEventAction } from "./actions";
 
+// Hora y espacios de la reunión. booking_id solo llega a quien puede abrir
+// la reserva (staff); un servidor no ve espacios.
 export type LinkInfo = {
-  booking_id: string;
+  booking_id: string | null;
   space_name: string | null;
   starts_at: string | null;
   ends_at: string | null;
 };
 
-// La reunión de Servir creada desde el evento (asana_gid), con su orden y su
-// equipo. Sale con la sesión del usuario: un servidor solo ve las reuniones
-// donde sirve; los líderes y Planeación, todas (RLS).
+// El orden y el equipo de la reunión. Sale con la sesión del usuario: un
+// servidor solo ve las reuniones donde sirve; los líderes y Planeación,
+// todas (RLS).
 export type ReunionCal = {
   id: string;
   status: string;
   orden: string[];
   equipo: { departamento: string; personas: { nombre: string; posicion: string; estado: string }[] }[];
-};
-
-export type BookingOption = {
-  id: string;
-  space_name: string | null;
-  starts_at: string;
-  ends_at: string;
-  display_owner: string | null;
-  use_type: string | null;
 };
 
 export default async function CalendarioPage({
@@ -43,104 +35,73 @@ export default async function CalendarioPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const service = createServiceClient();
+  // La agenda de reuniones de RSG (ya no viene de Asana).
+  const hoy = hoyBogota();
+  let agendaError: string | null = null;
+  const events: EventoAgenda[] = await leerAgenda(supabase, sumarDias(hoy, -60), sumarDias(hoy, 365)).catch((e: Error) => {
+    console.error("[calendario] agenda:", e.message);
+    agendaError = e.message;
+    return [];
+  });
+  const conDetalle = events.filter((e) => e.ve_detalle).map((e) => e.gid);
 
-  // Determinar si el usuario puede enlazar reuniones con reservas
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
+  const [{ data: reunionesRaw }, { data: espaciosRaw }, { data: reservasRaw }] = conDetalle.length
+    ? await Promise.all([
+        supabase
+          .from("meetings")
+          .select("id, status, run_items!run_items_meeting_id_fkey(title, sort, kind, removed_at), assignments(status, people(full_name), positions(name), ministries(name))")
+          .in("id", conDetalle),
+        supabase.from("meeting_spaces").select("meeting_id, spaces(name)").in("meeting_id", conDetalle),
+        supabase.from("bookings").select("id, meeting_id").in("meeting_id", conDetalle).neq("status", "cancelled"),
+      ])
+    : [{ data: [] }, { data: [] }, { data: [] }];
 
-  let canLink = ["pastor_sede", "pastor_ministerio", "super_admin"].includes(profile?.role ?? "");
-  if (!canLink) {
-    const { data: extraRoles } = await supabase
-      .from("user_roles")
-      .select("role, ministries(name)")
-      .eq("user_id", user.id);
-    canLink = (extraRoles ?? []).some(
-      (r) =>
-        r.role === "pastor_ministerio" ||
-        (r.role === "lider_departamento" && (r.ministries as { name: string } | null)?.name === "Planeación")
-    );
-  }
-
-  // Eventos de Asana, links actuales y opciones de reserva (en paralelo)
-  let asanaError: string | null = null;
-  const [events, { data: linksRaw }, { data: bookingsRaw }] = await Promise.all([
-    getCalendarEvents().catch((e: Error) => {
-      console.error("[calendario] Asana:", e.message);
-      asanaError = e.message;
-      return [] as Awaited<ReturnType<typeof getCalendarEvents>>;
-    }),
-    service.from("calendar_links").select("asana_gid, booking_id"),
-    service
-      .from("bookings_calendar")
-      .select("id, space_name, starts_at, ends_at, display_owner, use_type")
-      .eq("status", "approved")
-      .gte("starts_at", new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString())
-      .order("starts_at")
-      .limit(300),
-  ]);
-
-  const { data: reunionesRaw } = await supabase
-    .from("meetings")
-    .select("id, status, asana_gid, run_items!run_items_meeting_id_fkey(title, sort, kind), assignments(status, people(full_name), positions(name), ministries(name))")
-    .not("asana_gid", "is", null)
-    .neq("status", "cancelada")
-    .gte("meeting_date", new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
   const reunionesByGid: Record<string, ReunionCal> = {};
   for (const r of reunionesRaw ?? []) {
-    if (!r.asana_gid) continue;
     const deps = new Map<string, ReunionCal["equipo"][number]["personas"]>();
     for (const a of r.assignments ?? []) {
       if (a.status === "cancelada") continue;
-      const dep = a.ministries?.name ?? "";
+      const dep = a.ministries?.name ?? "Roles generales";
       deps.set(dep, [...(deps.get(dep) ?? []), { nombre: a.people?.full_name ?? "—", posicion: a.positions?.name ?? "", estado: a.status }]);
     }
-    reunionesByGid[r.asana_gid] = {
+    reunionesByGid[r.id] = {
       id: r.id,
       status: r.status,
-      orden: [...(r.run_items ?? [])].sort((x, y) => x.sort - y.sort).filter((i) => i.kind !== "encabezado").map((i) => i.title),
+      orden: [...(r.run_items ?? [])].sort((x, y) => x.sort - y.sort).filter((i) => i.kind !== "encabezado" && !i.removed_at).map((i) => i.title),
       equipo: [...deps.entries()].sort(([a], [b]) => a.localeCompare(b, "es")).map(([departamento, personas]) => ({ departamento, personas })),
     };
   }
 
-  // Mapa booking_id → detalles
-  const bookingById = new Map<string, { space_name: string | null; starts_at: string | null; ends_at: string | null }>();
-  for (const b of bookingsRaw ?? []) {
-    if (!b.id) continue;
-    bookingById.set(b.id, { space_name: b.space_name, starts_at: b.starts_at, ends_at: b.ends_at });
+  const espacios = new Map<string, string[]>();
+  for (const e of (espaciosRaw ?? []) as { meeting_id: string; spaces: { name: string } | null }[]) {
+    if (e.spaces?.name) espacios.set(e.meeting_id, [...(espacios.get(e.meeting_id) ?? []), e.spaces.name]);
+  }
+  const reserva = new Map<string, string>();
+  for (const b of (reservasRaw ?? []) as { id: string; meeting_id: string | null }[]) {
+    if (b.meeting_id && !reserva.has(b.meeting_id)) reserva.set(b.meeting_id, b.id);
   }
 
-  // Links por asana_gid
+  // Hora de cada reunión (y sus espacios, si se pueden ver). Sin hora de fin
+  // se muestra de una hora.
   const linksByGid: Record<string, LinkInfo> = {};
-  for (const link of linksRaw ?? []) {
-    const detail = bookingById.get(link.booking_id);
-    linksByGid[link.asana_gid] = {
-      booking_id: link.booking_id,
-      space_name: detail?.space_name ?? null,
-      starts_at: detail?.starts_at ?? null,
-      ends_at: detail?.ends_at ?? null,
+  for (const e of events) {
+    if (!e.starts_at && !espacios.has(e.gid)) continue;
+    linksByGid[e.gid] = {
+      booking_id: reserva.get(e.gid) ?? null,
+      space_name: espacios.get(e.gid)?.sort((a, b) => a.localeCompare(b, "es")).join(" · ") ?? null,
+      starts_at: e.starts_at,
+      ends_at: e.ends_at ?? (e.starts_at ? new Date(Date.parse(e.starts_at) + 3600_000).toISOString() : null),
     };
   }
-
-  const bookingOptions: BookingOption[] = (bookingsRaw ?? [])
-    .filter((b): b is typeof b & { id: string; starts_at: string } => !!b.id && !!b.starts_at)
-    .map((b) => ({
-      id: b.id,
-      space_name: b.space_name,
-      starts_at: b.starts_at,
-      ends_at: b.ends_at ?? "",
-      display_owner: b.display_owner ?? null,
-      use_type: b.use_type ?? null,
-    }));
 
   return (
     <main className="min-h-dvh">
       <EventosEspacios actual="eventos" />
-      {asanaError && (
+      {agendaError && (
         <div className="px-4 pt-4 max-w-3xl mx-auto">
           <p role="alert" className="text-sm rounded-[var(--radius-control)] px-4 py-3"
             style={{ background: "var(--color-down-soft)", color: "var(--color-down)", border: "1px solid var(--color-down)" }}>
-            No se pudieron cargar los eventos del calendario de Asana. {asanaError}
+            No se pudo cargar la agenda de reuniones. {agendaError}
           </p>
         </div>
       )}
@@ -164,10 +125,6 @@ export default async function CalendarioPage({
         events={events}
         linksByGid={linksByGid}
         reunionesByGid={reunionesByGid}
-        bookingOptions={bookingOptions}
-        canLink={canLink}
-        linkAction={linkEventAction}
-        unlinkAction={unlinkEventAction}
       />
     </main>
   );

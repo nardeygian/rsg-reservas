@@ -38,16 +38,28 @@ export function fechaCorta(fecha: string): string {
 // ── Alcances: en qué equipos puede asignar el usuario ───────────────────
 
 export type Equipo = {
-  key: string;               // "d:<ministry_id>" o "a:<area_id>"
-  ministry_id: string;
+  key: string;               // "d:<ministry_id>", "a:<area_id>" o "g" (roles generales)
+  ministry_id: string | null; // null: roles generales (VIO, Escenario), solo Planeación
   ministry_name: string;
   area_id: string | null;    // con valor: líder de área (solo esa área)
   area_name: string | null;
 };
 
+export const EQUIPO_GENERAL: Equipo = { key: "g", ministry_id: null, ministry_name: "Roles generales", area_id: null, area_name: null };
+
+// Filtra una consulta por el departamento del equipo (o por los roles
+// generales, que no tienen departamento).
+export function delEquipo<Q extends { eq: (c: "ministry_id", v: string) => Q; is: (c: "ministry_id", v: null) => Q }>(q: Q, equipo: Equipo): Q {
+  return equipo.ministry_id ? q.eq("ministry_id", equipo.ministry_id) : q.is("ministry_id", null);
+}
+
 export async function misEquipos(db: ClienteServir): Promise<Equipo[]> {
-  const { data: alcances } = await db.rpc("permission_scopes", { p_permission: "servir.asignar" });
-  if (!alcances?.length) return [];
+  const [{ data: alcances }, { data: planea }] = await Promise.all([
+    db.rpc("permission_scopes", { p_permission: "servir.asignar" }),
+    db.rpc("has_permission", { p_permission: "servir.planear" }),
+  ]);
+  const general = planea === true ? [EQUIPO_GENERAL] : [];
+  if (!alcances?.length) return general;
 
   const global = alcances.some((a) => a.scope_type === null);
   const deptIds = alcances.filter((a) => a.scope_type === "departamento").map((a) => a.scope_id);
@@ -68,7 +80,7 @@ export async function misEquipos(db: ClienteServir): Promise<Equipo[]> {
     if (conDepto.has(a.ministry_id)) continue;   // ya lo gestiona entero
     equipos.push({ key: `a:${a.id}`, ministry_id: a.ministry_id, ministry_name: a.ministries?.name ?? "", area_id: a.id, area_name: a.name });
   }
-  return equipos;
+  return [...equipos, ...general];
 }
 
 // ── Mi equipo ───────────────────────────────────────────────────────────
@@ -93,40 +105,45 @@ export type MiembroFila = {
   aceptadas: number;
   rechazadas: number;
 };
-export type PersonaOpcion = { id: string; full_name: string };
+export type PersonaOpcion = { id: string; full_name: string; departamentos: string[] };
 
 export async function datosEquipo(db: ClienteServir, equipo: Equipo) {
   const hoy = hoyBogota();
   const [mesDesde, mesHasta] = bordesDelMes(hoy);
 
-  let miembrosQ = db.from("team_members").select("id, person_id, area_id, people(full_name, profile_id, active, email, phone)")
-    .eq("ministry_id", equipo.ministry_id).eq("active", true);
+  // Los roles generales no tienen miembros ni áreas: solo roles y su checklist.
+  const vacio = Promise.resolve({ data: [] as never[] });
+  let miembrosQ = db.from("team_members").select("id, person_id, area_id, people(full_name, profile_id, active)")
+    .eq("ministry_id", equipo.ministry_id ?? "").eq("active", true);
   if (equipo.area_id) miembrosQ = miembrosQ.eq("area_id", equipo.area_id);
-  let posicionesQ = db.from("positions").select("id, name, description, area_id, active, sort")
-    .eq("ministry_id", equipo.ministry_id).order("sort").order("name");
+  let posicionesQ = delEquipo(db.from("positions").select("id, name, description, area_id, active, sort"), equipo)
+    .order("sort").order("name");
   if (equipo.area_id) posicionesQ = posicionesQ.eq("area_id", equipo.area_id);
 
   const [areasR, posicionesR, miembrosR, personasR] = await Promise.all([
-    db.from("areas").select("id, name").eq("ministry_id", equipo.ministry_id).order("name"),
+    equipo.ministry_id ? db.from("areas").select("id, name").eq("ministry_id", equipo.ministry_id).order("name") : vacio,
     posicionesQ,
-    miembrosQ,
-    db.from("people").select("id, full_name").eq("active", true).order("full_name").limit(2000),
+    equipo.ministry_id ? miembrosQ : vacio,
+    // Directorio: nombre y departamento, nada más (teléfono y correo salen
+    // de contacto_personas solo para la gente de este equipo).
+    equipo.ministry_id ? db.rpc("directorio_personas") : vacio,
   ]);
 
   const posiciones = posicionesR.data ?? [];
   const posIds = posiciones.map((p) => p.id);
-  type MiembroRaw = { id: string; person_id: string; area_id: string | null; people: { full_name: string; profile_id: string | null; active: boolean; email: string | null; phone: string | null } | null };
+  type MiembroRaw = { id: string; person_id: string; area_id: string | null; people: { full_name: string; profile_id: string | null; active: boolean } | null };
   const miembrosRaw = ((miembrosR.data ?? []) as MiembroRaw[]).filter((m) => m.people?.active !== false);
   const personIds = [...new Set(miembrosRaw.map((m) => m.person_id))];
 
-  const vacio = Promise.resolve({ data: [] as never[] });
-  const [checklistR, sabenR, bloqueosR, unidadesR, respuestasR] = await Promise.all([
+  const [checklistR, sabenR, bloqueosR, unidadesR, respuestasR, contactosR] = await Promise.all([
     posIds.length ? db.from("checklist_templates").select("id, position_id, moment, text, sort").in("position_id", posIds).order("sort") : vacio,
     posIds.length && personIds.length ? db.from("person_positions").select("person_id, position_id").in("position_id", posIds).in("person_id", personIds) : vacio,
     personIds.length ? db.from("availability_blocks").select("person_id, starts_on, ends_on, reason").in("person_id", personIds).gte("ends_on", hoy).order("starts_on") : vacio,
     personIds.length ? db.from("service_units").select("person_id").in("person_id", personIds).gte("meeting_date", mesDesde).lte("meeting_date", mesHasta) : vacio,
-    personIds.length ? db.from("assignments").select("person_id, status").in("person_id", personIds).eq("ministry_id", equipo.ministry_id).in("status", ["aceptada", "rechazada"]) : vacio,
+    personIds.length ? db.from("assignments").select("person_id, status").in("person_id", personIds).eq("ministry_id", equipo.ministry_id ?? "").in("status", ["aceptada", "rechazada"]) : vacio,
+    personIds.length ? db.rpc("contacto_personas", { p_ids: personIds }) : vacio,
   ]);
+  const contacto = new Map(((contactosR.data ?? []) as { id: string; email: string | null; phone: string | null }[]).map((c) => [c.id, c]));
 
   const checklistDe = new Map<string, PuntoChecklist[]>();
   for (const c of (checklistR.data ?? []) as { id: string; position_id: string; moment: string; text: string; sort: number }[]) {
@@ -149,8 +166,8 @@ export async function datosEquipo(db: ClienteServir, equipo: Equipo) {
     person_id: m.person_id,
     full_name: m.people?.full_name ?? "—",
     tiene_cuenta: !!m.people?.profile_id,
-    email: m.people?.email ?? null,
-    phone: m.people?.phone ?? null,
+    email: contacto.get(m.person_id)?.email ?? null,
+    phone: contacto.get(m.person_id)?.phone ?? null,
     area_id: m.area_id,
     posiciones: ((sabenR.data ?? []) as { person_id: string; position_id: string }[]).filter((s) => s.person_id === m.person_id).map((s) => s.position_id),
     bloqueos: ((bloqueosR.data ?? []) as { person_id: string; starts_on: string; ends_on: string; reason: string | null }[])
@@ -164,7 +181,8 @@ export async function datosEquipo(db: ClienteServir, equipo: Equipo) {
     areas: (areasR.data ?? []) as AreaFila[],
     posiciones: posiciones.map((p) => ({ ...p, checklist: checklistDe.get(p.id) ?? [] })) as PosicionFila[],
     miembros,
-    personas: (personasR.data ?? []) as PersonaOpcion[],
+    personas: ((personasR.data ?? []) as { id: string; full_name: string; departamentos: string[] }[])
+      .map(({ id, full_name, departamentos }) => ({ id, full_name, departamentos })) as PersonaOpcion[],
   };
 }
 
@@ -182,7 +200,7 @@ export async function reunionesProximas(db: ClienteServir, equipo: Equipo, dias 
     .order("meeting_date").order("starts_at", { nullsFirst: true }).limit(60);
   if (!reuniones?.length) return [];
 
-  let q = db.from("assignments").select("meeting_id, status").in("meeting_id", reuniones.map((r) => r.id)).eq("ministry_id", equipo.ministry_id);
+  let q = delEquipo(db.from("assignments").select("meeting_id, status").in("meeting_id", reuniones.map((r) => r.id)), equipo);
   if (equipo.area_id) q = q.eq("area_id", equipo.area_id);
   const { data: asignaciones } = await q;
 

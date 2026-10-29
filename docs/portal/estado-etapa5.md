@@ -19,7 +19,8 @@ Plan completo: `etapa-5-servir.md`. Fuente de verdad del esquema: `supabase/migr
 | C | C3 Estadísticas | **Lista, sin probar en el navegador** | `20261028190000_c3_estadisticas.sql`, `app/servir/estadisticas` |
 | C | C2 Integración | **Lista, menos Comunidad** (ver abajo) | navegación, Inicio, Calendario, Tú, admin |
 | C | Espacios de la reunión con montaje y desmonte (29 oct) | **Lista, sin probar en el navegador** | `20261029100000_espacios_reunion.sql` |
-| QA | Recorrido completo en el navegador | Pendiente | |
+| C | Ajustes del 29 oct: Roles, botones, directorio, servidor sin Reservas, roles generales, ajustes en vivo y agenda sin Asana | **Listo en base y pantallas** (ver abajo) | `20261029120000`, `20261029130000`, `20261029140000` |
+| QA | Recorrido completo en el navegador (29 oct) | **Hecho, con arreglos** (ver abajo). Falta push en un celular real y Google/Apple | esta sección |
 | E | Apps en tiendas | Por empezar | |
 | D | Paso a producción y piloto | Por empezar | |
 
@@ -72,16 +73,91 @@ Al crear una reunión se pregunta qué espacios de la sede se usan (los mismos d
 - **Tipos:** `types/supabase.ts` se generó con todo el esquema y se quitaron los parches de los frentes. `lib/database.types.ts` ahora solo lo reexporta.
 - **Arreglo de seguridad:** en Supabase las tablas nuevas reciben por defecto todos los permisos para `authenticated`, así que los `grant update (read_at)` de la Fase A no restringían nada. Un usuario podía editar el texto de sus avisos. Ahora `notifications` y `checklist_items` solo permiten lo que se pensó.
 
+## Ajustes pedidos por Gian después del QA (29 oct)
+
+| Pedido | Cómo quedó |
+|---|---|
+| "Posiciones" pasa a "Roles" | Todo el texto visible. La tabla sigue siendo `positions` |
+| Botones de crear o guardar a la izquierda | Encabezados de página (Nueva reunión, Nueva canción, Nuevo tipo), "+ Rol", "Agregar" del equipo, "+ Asignar" (debajo de cada rol) y "Agregar" en fechas bloqueadas |
+| Directorio: solo nombre y departamento | `authenticated` ya no puede leer teléfono, correo ni notas de `people`. `directorio_personas()` da nombre y departamentos; `contacto_personas()` da el contacto solo a la propia persona, Planeación, pastor de sede (y fundador, super admin), el líder de su equipo y el de su discipulado |
+| El servidor no ve Reservas | En la base: `spaces` y `bookings_calendar` no le devuelven nada (`es_solo_servidor()`). Ve la agenda de reuniones y el detalle solo donde está asignado |
+| La agenda vive en la app, no en Asana | `agenda_reuniones()` alimenta el Calendario y el "Esta semana" del Inicio. Se quitó el enlace manual evento–reserva (los espacios se escogen en la reunión) y el Calendario ya no lee reservas con la llave de servicio. `lib/asana.ts` sigue solo para el módulo viejo `/servicio` (va con la Fase D) |
+| Varias asignaciones y roles generales (VIO, Escenario) | Roles sin departamento (`positions.ministry_id` nulo). Los crea, les arma el checklist y los asigna Planeación (*Servir → Roles generales*, o *Mi equipo → Roles generales* si también lidera un equipo). Se le puede asignar a cualquier servidor de cualquier departamento, aunque ya tenga otro rol esa noche; la asistencia lo cuenta una vez |
+| Ajustes en vivo | En *En vivo*: atraso con +5/+10/+15 o la cantidad que se quiera; en cada punto, −5/+5, cantidad libre o quitar (con Deshacer, sin "¿seguro?"). Las horas proyectadas de cada punto y el fin se recalculan. Cada cambio queda en "Cambios en vivo", que ven todos, y avisa a los asignados (si hay varios en un minuto, un solo aviso) |
+| Quién ajusta | Planeación, pastor de sede, fundador y super admin (`servir.vivo`). Las canciones solo las quita la música: el líder del departamento de música (`servir_ajustes.ministerio_musica_id`, por defecto LMRSG) o quien esté asignado esa noche a un rol de ese departamento que empiece por "Director". El super admin también, como salida de emergencia |
+| Reporte automático | Al terminar, `meetings.report` guarda planeado frente a real por punto, atraso al empezar y al terminar, y cada cambio con su hora y quién lo hizo. Se ve en el detalle de la reunión y en En vivo, y les llega un aviso a Planeación y a los pastores de sede |
+
+Pruebas de base: **251/251** (41 nuevas en `supabase/tests/ajustes_servir.test.sql`).
+
+Recorrido en el navegador (29 oct, build de producción): roles generales (crear VIO con checklist, asignarlo a quien ya tiene otro rol, el servidor lo acepta y recibe el checklist), atraso, ajustar, quitar y devolver puntos con las horas recalculadas, la música quita y devuelve canciones (Planeación no puede), el servidor ve la agenda sin espacios y solo el detalle de sus reuniones (las demás dan 404), el directorio con solo nombre y departamento, y el reporte. En celular y escritorio.
+
+Arreglado en el recorrido: cerrar la reunión con "Confirmar y cerrar" la asistencia no generaba el reporte. Ahora lo arma un trigger con cualquier cierre (`20261029150000_servir_reporte_al_cerrar.sql`). Una reunión cerrada ya no muestra horas proyectadas.
+
+Confirmado por Gian (29 oct): el atraso anunciado en vivo alarga el punto que está pasando (antes de empezar corre la hora de inicio), y varios cambios seguidos en menos de un minuto dan un solo aviso.
+
+Más decisiones de Gian (29 oct):
+- **Servidor y reuniones donde no sirve:** en el Calendario ve nombre, fecha y hora, sin "Ver detalle". Donde sirve aparece "Estás asignado" y "Ver detalle". Si abre por URL una reunión que no puede ver, lo lleva al Inicio.
+- **Entrar con Apple** sale de la pantalla hasta configurarlo; queda solo Google. El código de Apple sigue (`lib/cuentas/apple.ts`): para activarlo basta con volver a agregarlo en `PROVEEDORES` (`lib/cuentas/proveedores.ts`).
+
+## QA de la Fase C en el navegador (29 oct)
+
+Supabase local (CLI 2.107) con `npm run supabase:reset`, 210/210 pruebas de base, app en `npm run dev`. Usuarios de prueba con `node --env-file=.env.local scripts/semilla-qa-etapa5.ts` (Planeación, pastor de sede, líder de LMRSG, líder del área Voces, líder de discipulado, servidor, y un líder y un servidor de Protocolo para ver el aislamiento). Recorrido en celular (375 px) y escritorio (1280 px). Nada en producción.
+
+### Qué funcionó
+
+- **Crear la reunión** (Planeación, celular): tipo, hora, duración, Auditorio y Lobby con montaje de 2 h y desmonte de 1 h. Muestra "Ocupa 8:00 a. m. – 1:00 p. m." y qué espacios están libres. En borrador no reserva.
+- **Publicar y Reservas:** al publicar se crearon las dos reservas aprobadas con `time_range` de 8:00 a 13:00 y el pastor de sede recibió los dos avisos. Reservas pinta el montaje y desmonte rayados. Un líder que intenta reservar el Lobby de 12:30 a 13:30 recibe "Ese horario choca con otra reserva (incluyendo buffers de montaje)".
+- **Asignar** (líder de LMRSG): ve solo su equipo, asigna Guitarra, Batería y Voz principal; al servidor le llega "Te asignaron Guitarra eléctrica".
+- **Aceptar** (servidor, celular): Inicio muestra el próximo servicio; en Mis servicios acepta y aparece su checklist. No tiene Reservas en la barra.
+- **En vivo:** Planeación abre en vivo; punto actual con temporizador, tiempo real frente al planeado (13/10, 3/5, 1/10 min), avance del equipo y checklist del servidor con barra. El servidor no puede avanzar puntos ni cerrar asistencia (`sin_permiso`).
+- **Asistencia:** la líder de LMRSG guarda la suya y no ve "Confirmar y cerrar"; Planeación confirma y cierra. Asistencia "prellenada" solo para quien aceptó y completó el checklist, como está definido.
+- **Estadísticas:** tablero (1 realizada, asistencia 67 %, checklists 100 %, 17 de 25 min) y salud del equipo con semáforo.
+- **Cada rol ve lo suyo** (probado en pantalla y con la sesión de cada usuario contra `salud_servidores`, `estadisticas_reuniones`, `ficha_servidor`, `asistencia_sugerida`, `people`, `assignments` y `attendance`):
+
+| Rol | Salud del equipo | Fichas | Notas |
+|---|---|---|---|
+| Planeación, pastor de sede | Todos | Todas | Ven y confirman la asistencia de todos |
+| Líder de LMRSG | Solo LMRSG | Solo LMRSG | Confirma asistencia mientras está abierta; no cierra |
+| Líder del área Voces | Solo Voces | Ninguna fuera de Voces | |
+| Líder de discipulado | Solo su discipulado | Solo su discipulado | Las métricas de reuniones se calculan sobre su gente |
+| Líder de Protocolo | Solo Protocolo | Solo Protocolo | |
+| Servidor | Nada | La suya | Solo se ve a sí mismo en `people`; `/reservas` lo manda a Inicio |
+
+### Lo que falló y se arregló
+
+| Falla | Causa | Arreglo |
+|---|---|---|
+| `supabase test db` daba 188 de 210 (permission denied en `spaces`, `bookings`, `ministries`, `current_role_is`) | La CLI nueva ya no expone a `anon`/`authenticated` lo que se crea en `public`. Producción es un proyecto anterior que sí lo hace, y las migraciones viejas cuentan con eso | `api.auto_expose_new_tables = true` en `supabase/config.toml`, solo para local. **Ojo:** la CLI anuncia que quita esa opción el 30 oct; si se actualiza la CLI hace falta una migración que dé los GRANT explícitos (ver Pendientes) |
+| **Estadísticas se caía** (`PERIODOS.some is not a function`) | La página, de servidor, importaba una constante de un archivo `"use client"` | `PERIODOS` pasó a `app/servir/estadisticas/_lib/periodos.ts` |
+| **En vivo no se actualizaba solo** (ni el punto actual ni los checklists del equipo) | El canal de Realtime se unía antes de que el navegador leyera la sesión, entraba como `anon`, Realtime rechazaba el filtro de `checklist_items` ("invalid column for filter") y se caía toda la suscripción | `lib/supabase/realtime.ts` (`suscribirConSesion`): espera la sesión y le pasa el token a Realtime antes de suscribir. Se usa en En vivo y en la bandeja de avisos, que tenía el mismo problema |
+| La asistencia sugerida no aparecía hasta recargar | El componente tomaba las sugerencias solo al montarse | Las filas que no se han tocado se actualizan con lo que llega; lo marcado a mano se respeta |
+| Un servidor que escribía `/reservas/nueva` veía el formulario (la base sí bloqueaba el insert) | Solo se escondía el enlace | `/reservas` y `/reservas/nueva` mandan a Inicio si el rol principal es `servidor` |
+| Inicio seguía mostrando una reunión ya cerrada como "Tu próximo servicio" y como "2 sin responder" | Las consultas solo excluían canceladas | También excluyen cerradas |
+| `/sw.js` y `/manifest.webmanifest` redirigían a `/login` sin sesión: el service worker no se registraba y la PWA no se podía instalar desde el login (pasa igual en `main`) | El middleware de sesión los atrapaba | Se excluyen del matcher del middleware |
+| La tarjeta "Tu próximo servicio" se salía de la pantalla a 375 px | Celda de grid sin `minmax(0, 1fr)` con un texto `truncate` | `grid-cols-1` |
+| Textos: "1 Por Responder", "Jueves, 29 De Octubre De 2026", "Faltan 1 por marcar" | `capitalize` en toda la frase; plural fijo | Mayúscula solo donde va; "Falta 1" |
+| Un error de red de Auth se mostraba como `{}` en el login | Se mostraba el mensaje crudo | Mensaje genérico cuando no trae texto |
+
+### Observaciones (no se cambiaron)
+
+- ~~Directorio de personas con teléfono y correo de todos~~: resuelto (solo nombre y departamento, ver arriba).
+- Al terminar la reunión, el último punto muestra su tiempo real solo después de recargar.
+- "Terminar reunión" usa el `confirm()` del navegador; funciona, pero no se ve como el resto de la app.
+- El filtro de departamentos de Estadísticas le muestra los 8 departamentos a un líder que solo puede ver el suyo (los demás salen vacíos).
+- Cobertura dice "1 aceptadas de 0 requeridas" cuando la reunión no tiene posiciones requeridas (sin plantilla); "1 ausentes" en plural.
+- En `npm run dev` con la máquina cargada, algunas respuestas tardaron 40–100 s y el botón se quedaba en "Abriendo…". No es del código; conviene repetir el recorrido con `next build && next start` antes del piloto.
+- Las Donaciones (producción) se suscriben a Realtime igual que lo hacían En vivo y la bandeja. No se tocó; revisarlo con el paso a producción.
+
 ## Pendientes
 
 | Pendiente | Por qué | Quién |
 |---|---|---|
-| Recorrido completo en el navegador (crear → asignar → aceptar → en vivo → cerrar → estadísticas) en celular y escritorio | En esta sesión no se pudo levantar Supabase local: Docker no bajó las imágenes por límite del registro y no se permitió correr Auth y PostgREST descargados. Lo probado: SQL con pgTAP, typecheck y build | QA, en una máquina con Docker |
 | Comunidad (`/servicio`, `/discipulos`) leyendo de las tablas nuevas | Hoy leen el JSON `servicio_data` de producción. Cambiarlas antes de migrar ese JSON a tablas en producción dejaría las pantallas vacías. Va con el paso a producción (Fase D, paso 1) | Fase D |
 | Correo de respaldo del `notificador` | Falta escoger el proveedor y su llave | Gian + B4 |
 | Push en un navegador real y FCM | Necesita un celular | QA |
-| Google y Apple de punta a punta | Gian configura los proveedores (lista en el PR #8) | Gian, luego QA |
-| GRANT por defecto que faltaban en la base local de los frentes | En producción Supabase ya los da | Verificar en la Fase D |
+| Google de punta a punta (Apple más adelante) | Gian configura el proveedor (lista en el PR #8). Apple quedó oculto hasta configurarlo | Gian, luego QA |
+| GRANT por defecto que faltaban en la base local de los frentes | En producción Supabase ya los da. En local se resolvió con `auto_expose_new_tables = true`, que la CLI quita el 30 oct: al actualizar la CLI, una migración debe dar los GRANT explícitos que las migraciones viejas suponen | Verificar en la Fase D |
+| Recorrido repetido con build de producción y push en un celular real | El QA del 29 oct se hizo con `next dev` | QA |
 
 ## Nota sobre "fundadores" (resuelta)
 

@@ -3,12 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { Icon } from "@/app/_components/ui/Icon";
 import type { PosicionRequerida } from "@/lib/servir/contratos";
 import { clienteServir } from "../../_lib/supabase";
-import { fechaReunion, misEquipos } from "../../_lib/datos";
+import { delEquipo, fechaReunion, misEquipos } from "../../_lib/datos";
 import { AsignarVista, type AsignadoFila, type PosicionAsignar } from "../../_components/AsignarVista";
 import { Avatar, EstadoChip } from "../../_components/ui";
 
 type AsignacionRaw = {
-  id: string; person_id: string; position_id: string; ministry_id: string; area_id: string | null;
+  id: string; person_id: string; position_id: string; ministry_id: string | null; area_id: string | null;
   status: string; decline_reason: string | null;
   people: { full_name: string } | null;
   positions: { name: string; sort: number } | null;
@@ -32,7 +32,7 @@ export default async function AsignarReunionPage({ params, searchParams }: {
     .select("id, name, meeting_date, starts_at, status, template_id").eq("id", id).maybeSingle();
   if (!reunion) notFound();
 
-  let posQ = db.from("positions").select("id, name, sort").eq("ministry_id", equipo.ministry_id).eq("active", true).order("sort").order("name");
+  let posQ = delEquipo(db.from("positions").select("id, name, sort"), equipo).eq("active", true).order("sort").order("name");
   if (equipo.area_id) posQ = posQ.eq("area_id", equipo.area_id);
 
   const [asignacionesR, posicionesR, plantillaR] = await Promise.all([
@@ -78,9 +78,10 @@ export default async function AsignarReunionPage({ params, searchParams }: {
   // Equipo completo de la reunión, por departamento.
   const porDepto = new Map<string, { nombre: string; filas: AsignacionRaw[] }>();
   for (const a of asignaciones) {
-    const g = porDepto.get(a.ministry_id) ?? { nombre: a.ministries?.name ?? "—", filas: [] };
+    const clave = a.ministry_id ?? "general";
+    const g = porDepto.get(clave) ?? { nombre: a.ministries?.name ?? "Roles generales", filas: [] };
     g.filas.push(a);
-    porDepto.set(a.ministry_id, g);
+    porDepto.set(clave, g);
   }
   const deptos = [...porDepto.values()].sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
   for (const d of deptos) d.filas.sort((x, y) => (x.positions?.sort ?? 0) - (y.positions?.sort ?? 0) || (x.positions?.name ?? "").localeCompare(y.positions?.name ?? "", "es"));

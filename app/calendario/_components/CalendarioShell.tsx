@@ -5,8 +5,8 @@ import { Chevron as ChevronIcon } from "@/app/_components/ui/PeriodPicker";
 import { MonthGrid, type MonthCell, type MonthItem } from "@/app/_components/ui/MonthGrid";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import type { AsanaEvent } from "@/lib/asana";
-import type { LinkInfo, BookingOption, ReunionCal } from "../page";
+import type { EventoAgenda } from "@/lib/servir/agenda";
+import type { LinkInfo, ReunionCal } from "../page";
 import { EventPanel } from "./EventPanel";
 
 type DesktopView = "lista" | "dia" | "semana" | "mes";
@@ -40,7 +40,7 @@ function toDateStr(d: Date): string {
 function todayStr(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 }
-function eventsForDate(events: AsanaEvent[], ds: string): AsanaEvent[] {
+function eventsForDate(events: EventoAgenda[], ds: string): EventoAgenda[] {
   return events.filter(e => e.due_on === ds);
 }
 function fmtTime(iso: string): string {
@@ -86,10 +86,10 @@ const DNAMES  = ["domingo","lunes","martes","miércoles","jueves","viernes","sá
 
 // ── DayEventList ─────────────────────────────────────────────────────────────
 function DayEventList({ events, linksByGid, dateStr, onEventClick, compact = false }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   dateStr: string;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
   compact?: boolean;
 }) {
   const today   = todayStr();
@@ -196,10 +196,10 @@ function DayEventList({ events, linksByGid, dateStr, onEventClick, compact = fal
 
 // ── TimeGrid (Día y Semana desktop / 2-días móvil) ────────────────────────────
 function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   days: Date[];
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
   maxHeight?: string;
 }) {
   const today = todayStr();
@@ -304,12 +304,12 @@ function TimeGrid({ events, linksByGid, days, onEventClick, maxHeight }: {
 
 // ── MobileMesView ─────────────────────────────────────────────────────────────
 function MobileMesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick, onSwipe }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   anchor: Date;
   selDay: string;
   setSelDay: (d: string) => void;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
   onSwipe: (dir: -1 | 1) => void;
 }) {
   const year  = anchor.getFullYear();
@@ -386,10 +386,10 @@ function MobileMesView({ events, linksByGid, anchor, selDay, setSelDay, onEventC
 
 // ── Mobile2DiasView ───────────────────────────────────────────────────────────
 function Mobile2DiasView({ events, linksByGid, initialDay, onEventClick }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   initialDay: string;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
 }) {
   const [pairStart, setPairStart] = useState(() => new Date(initialDay + "T12:00:00"));
   const touchStartX = useRef<number | null>(null);
@@ -464,9 +464,9 @@ function Mobile2DiasView({ events, linksByGid, initialDay, onEventClick }: {
 
 // ── MobileCalendario ──────────────────────────────────────────────────────────
 function MobileCalendario({ events, linksByGid, onEventClick }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
 }) {
   const [view,   setView]   = useState<MobileView>("mes");
   const [anchor, setAnchor] = useState(() => new Date());
@@ -519,21 +519,21 @@ function MobileCalendario({ events, linksByGid, onEventClick }: {
 
 // ── Desktop views ─────────────────────────────────────────────────────────────
 function DiaView({ events, linksByGid, anchor, onEventClick }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   anchor: Date;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
 }) {
   return <TimeGrid events={events} linksByGid={linksByGid} days={[anchor]} onEventClick={onEventClick} />;
 }
 
 function SemanaView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   anchor: Date;
   selDay: string;
   setSelDay: (d: string) => void;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
 }) {
   const weekDays = useMemo(() => getWeekDays(anchor), [anchor]);
   const today    = todayStr();
@@ -575,12 +575,12 @@ function SemanaView({ events, linksByGid, anchor, selDay, setSelDay, onEventClic
 
 
 function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   anchor: Date;
   selDay: string;
   setSelDay: (d: string) => void;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
 }) {
   const year  = anchor.getFullYear();
   const month = anchor.getMonth();
@@ -622,9 +622,9 @@ function MesView({ events, linksByGid, anchor, selDay, setSelDay, onEventClick }
 }
 
 function ListaView({ events, linksByGid, onEventClick }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
-  onEventClick: (e: AsanaEvent) => void;
+  onEventClick: (e: EventoAgenda) => void;
 }) {
   const today = todayStr();
   const curMonthKey = today.slice(0, 7);
@@ -632,7 +632,7 @@ function ListaView({ events, linksByGid, onEventClick }: {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const grouped = useMemo(() => {
-    const map = new Map<string, AsanaEvent[]>();
+    const map = new Map<string, EventoAgenda[]>();
     for (const e of events) {
       const k = e.due_on.slice(0, 7);
       if (!map.has(k)) map.set(k, []);
@@ -647,11 +647,11 @@ function ListaView({ events, linksByGid, onEventClick }: {
   const pastGroups   = grouped.filter(([k]) => k < curMonthKey);
   const futureGroups = grouped.filter(([k]) => k >= curMonthKey);
 
-  function renderMonth([mk, evs]: [string, AsanaEvent[]]) {
+  function renderMonth([mk, evs]: [string, EventoAgenda[]]) {
     const [y, m]      = mk.split("-").map(Number);
     const isPast      = mk < curMonthKey;
     const isCollapsed = collapsed.has(mk);
-    const byDay = new Map<string, AsanaEvent[]>();
+    const byDay = new Map<string, EventoAgenda[]>();
     for (const e of evs) {
       if (!byDay.has(e.due_on)) byDay.set(e.due_on, []);
       byDay.get(e.due_on)!.push(e);
@@ -750,20 +750,16 @@ function ListaView({ events, linksByGid, onEventClick }: {
 
 // ── Main shell ────────────────────────────────────────────────────────────────
 export function CalendarioShell({
-  events, linksByGid, reunionesByGid, bookingOptions, canLink, linkAction, unlinkAction,
+  events, linksByGid, reunionesByGid,
 }: {
-  events: AsanaEvent[];
+  events: EventoAgenda[];
   linksByGid: Record<string, LinkInfo>;
   reunionesByGid: Record<string, ReunionCal>;
-  bookingOptions: BookingOption[];
-  canLink: boolean;
-  linkAction: (fd: FormData) => Promise<void>;
-  unlinkAction: (fd: FormData) => Promise<void>;
 }) {
   const [view,          setView]          = useState<DesktopView>("mes");
   const [anchor,        setAnchor]        = useState(() => new Date());
   const [selDay,        setSelDay]        = useState(() => todayStr());
-  const [selectedEvent, setSelectedEvent] = useState<AsanaEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventoAgenda | null>(null);
 
   const year  = anchor.getFullYear();
   const month = anchor.getMonth();
@@ -857,10 +853,6 @@ export function CalendarioShell({
           event={selectedEvent}
           link={selectedLink}
           reunion={reunionesByGid[selectedEvent.gid] ?? null}
-          bookingOptions={bookingOptions}
-          canLink={canLink}
-          linkAction={linkAction}
-          unlinkAction={unlinkAction}
           onClose={() => setSelectedEvent(null)}
         />
       )}

@@ -10,7 +10,7 @@ import { SolicitudesVista } from "./_components/SolicitudesVista";
 
 const VISTAS = [
   { id: "miembros", texto: "Miembros" },
-  { id: "posiciones", texto: "Posiciones" },
+  { id: "posiciones", texto: "Roles" },
   { id: "reuniones", texto: "Asignar" },
   { id: "solicitudes", texto: "Solicitudes" },
 ] as const;
@@ -27,9 +27,12 @@ export default async function MiEquipoPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const equipo = equipos.find((e) => e.key === params.equipo) ?? equipos[0];
   // Las solicitudes son por departamento: un líder de área no las ve.
-  const vistas = VISTAS.filter((v) => v.id !== "solicitudes" || !equipo.area_id);
-  const vista: Vista = vistas.some((v) => v.id === params.vista) ? (params.vista as Vista) : "miembros";
-  const { count: porResponder } = equipo.area_id
+  // Los roles generales no tienen miembros ni solicitudes: solo roles y asignar.
+  const vistas = equipo.ministry_id
+    ? VISTAS.filter((v) => v.id !== "solicitudes" || !equipo.area_id)
+    : VISTAS.filter((v) => v.id === "posiciones" || v.id === "reuniones");
+  const vista: Vista = vistas.some((v) => v.id === params.vista) ? (params.vista as Vista) : vistas[0].id;
+  const { count: porResponder } = equipo.area_id || !equipo.ministry_id
     ? { count: 0 }
     : await db.from("team_join_requests").select("id", { count: "exact", head: true })
         .eq("ministry_id", equipo.ministry_id).eq("status", "pendiente");
@@ -38,7 +41,7 @@ export default async function MiEquipoPage({ searchParams }: { searchParams: Pro
   return (
     <main className="min-h-dvh px-4 pt-6 max-w-[1180px] mx-auto w-full flex flex-col gap-4" style={{ paddingBottom: "calc(var(--nav-space) + 24px)" }}>
       <header className="flex flex-col gap-1">
-        <p className="eyebrow">{equipo.area_name ? `Líder de área · ${equipo.ministry_name}` : "Líder de departamento"}</p>
+        <p className="eyebrow">{!equipo.ministry_id ? "Planeación · sin departamento" : equipo.area_name ? `Líder de área · ${equipo.ministry_name}` : "Líder de departamento"}</p>
         <h1 className="page-title">{equipo.area_name ?? equipo.ministry_name}</h1>
       </header>
 
@@ -70,7 +73,7 @@ async function EquipoDatos({ db, equipo, vista }: { db: ClienteServir; equipo: E
 async function Solicitudes({ db, equipo }: { db: ClienteServir; equipo: Equipo }) {
   const { data } = await db.from("team_join_requests")
     .select("id, full_name, message, created_at")
-    .eq("ministry_id", equipo.ministry_id).eq("status", "pendiente").order("created_at");
+    .eq("ministry_id", equipo.ministry_id ?? "").eq("status", "pendiente").order("created_at");
   return (
     <SolicitudesVista
       solicitudes={(data ?? []).map((s) => ({

@@ -30,7 +30,7 @@ export function SolicitudesVista({ solicitudes }: { solicitudes: SolicitudFila[]
   if (vista.length === 0) {
     return (
       <p className="card px-4 py-6 text-sm text-center" style={{ color: "var(--color-muted)" }}>
-        No hay solicitudes pendientes. Quien entre al portal con Google o Apple y escoja este departamento aparecerá aquí.
+        No hay solicitudes pendientes. Quien entre al portal con Google y escoja este departamento aparecerá aquí.
       </p>
     );
   }

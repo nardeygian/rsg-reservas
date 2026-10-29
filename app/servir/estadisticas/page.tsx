@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { EstadisticaReunion, SaludServidor, Semaforo } from "@/lib/servir/contratos";
 import { fechaCorta, hoyBogota, sumarDias } from "@/app/servir/reuniones/_lib/fechas";
 import { Encabezado, Pagina, PuntoColor, SinAcceso } from "@/app/servir/reuniones/_components/ui";
-import { FiltrosEstadisticas, PERIODOS } from "./_components/FiltrosEstadisticas";
+import { FiltrosEstadisticas } from "./_components/FiltrosEstadisticas";
+import { PERIODOS } from "./_lib/periodos";
 import { Cifra, SEMAFORO, SemaforoChip, minutos, pct } from "./_components/ui";
 import { Ajustes } from "./_components/Ajustes";
 

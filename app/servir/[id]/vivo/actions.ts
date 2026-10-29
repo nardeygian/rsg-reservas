@@ -15,6 +15,8 @@ const MENSAJES: Record<string, string> = {
   estado_invalido: "La reunión no está en un estado que lo permita.",
   item_invalido: "Ese punto no es de esta reunión.",
   estado_asistencia_invalido: "Escoge asistió, tarde o ausente.",
+  minutos_invalidos: "Escribe entre 1 y 240 minutos.",
+  item_quitado: "Ese punto está quitado. Devuélvelo primero.",
 };
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -84,3 +86,40 @@ export const confirmarAsistencia: AccionesVivo["confirmarAsistencia"] = async (m
   revalidatePath("/servicio");
   return { ok: true, data: undefined } satisfies Resultado;
 };
+
+// ── Ajustes en vivo ─────────────────────────────────────────────────────
+// Cada uno queda en meeting_live_changes y avisa a los asignados (la base
+// lo hace todo en la misma transacción).
+
+function minutosValidos(min: number): boolean {
+  return Number.isInteger(min) && min !== 0 && Math.abs(min) <= 240;
+}
+
+export async function atrasarReunion(meetingId: string, minutos: number): Promise<Resultado> {
+  if (!UUID.test(meetingId)) return { ok: false, error: MENSAJES.no_encontrada };
+  if (!minutosValidos(minutos)) return { ok: false, error: MENSAJES.minutos_invalidos };
+  const db = await createClient();
+  const { error } = await db.rpc("atrasar_reunion", { p_meeting_id: meetingId, p_minutos: minutos });
+  if (error) return fallo(error);
+  refrescar(meetingId);
+  return { ok: true, data: undefined };
+}
+
+export async function ajustarItem(meetingId: string, itemId: string, minutos: number): Promise<Resultado> {
+  if (!UUID.test(meetingId) || !UUID.test(itemId)) return { ok: false, error: MENSAJES.item_invalido };
+  if (!minutosValidos(minutos)) return { ok: false, error: MENSAJES.minutos_invalidos };
+  const db = await createClient();
+  const { error } = await db.rpc("ajustar_item", { p_item_id: itemId, p_minutos: minutos });
+  if (error) return fallo(error);
+  refrescar(meetingId);
+  return { ok: true, data: undefined };
+}
+
+export async function quitarItem(meetingId: string, itemId: string, quitar: boolean): Promise<Resultado> {
+  if (!UUID.test(meetingId) || !UUID.test(itemId)) return { ok: false, error: MENSAJES.item_invalido };
+  const db = await createClient();
+  const { error } = await db.rpc("quitar_item", { p_item_id: itemId, p_quitar: quitar });
+  if (error) return fallo(error);
+  refrescar(meetingId);
+  return { ok: true, data: undefined };
+}

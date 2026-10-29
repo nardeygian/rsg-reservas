@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Icon } from "@/app/_components/ui/Icon";
 import type { TipoItemOrden } from "@/lib/servir/contratos";
 import { guardarOrden } from "../actions";
@@ -8,6 +8,7 @@ import { BotonEnlace, Encabezado, EstadoChip, Pagina, PuntoColor } from "../_com
 import { EditorOrden } from "../_components/EditorOrden";
 import { AccionesReunion } from "./AccionesReunion";
 import { EspaciosReunion } from "./EspaciosReunion";
+import { ReporteReunion, type Reporte } from "../_components/ReporteReunion";
 
 export const metadata = { title: "Reunión · Servir" };
 
@@ -25,17 +26,19 @@ function cuando(iso: string) {
 
 export default async function ReunionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  // Una reunión que no existe o que no puede ver (p. ej. un servidor no
+  // asignado) lleva al Inicio.
+  if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/");
   const supabase = await servirClient();
   if (!(await usuarioActual(supabase))) redirect("/login");
 
   const { data: m } = await supabase
     .from("meetings")
-    .select("id, name, meeting_date, starts_at, ends_at, status, notes, meeting_type_id, template_id, origin, setup_minutes, teardown_minutes, meeting_types(name, color)")
+    .select("id, name, meeting_date, starts_at, ends_at, status, notes, meeting_type_id, template_id, origin, setup_minutes, teardown_minutes, report, meeting_types(name, color)")
     .eq("id", id)
     .maybeSingle();
   // RLS: si no la puede ver, para él no existe.
-  if (!m) notFound();
+  if (!m) redirect("/");
 
   const [{ data: items }, { data: cambios }, { data: canciones }, puede, plantilla, { data: espacios }, { data: escogidos }, { data: reservas }, { data: montajeGlobal }] = await Promise.all([
     supabase
@@ -146,6 +149,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
               <p className="text-[14px] whitespace-pre-line" style={{ color: "var(--color-muted)" }}>{m.notes}</p>
             </section>
           )}
+          {m.report && <ReporteReunion reporte={m.report as unknown as Reporte} />}
           <section className="card p-4 md:p-5 flex flex-col gap-3">
             <h2 className="text-[15px] font-semibold">Historial de cambios</h2>
             {(cambios ?? []).length === 0 ? (

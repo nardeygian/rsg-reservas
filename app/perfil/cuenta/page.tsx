@@ -41,7 +41,7 @@ export default async function CuentaPage({
 
       <Grupo
         title="Formas de entrar"
-        footer="Une Google y Apple a esta misma cuenta para no duplicarte si cambias de teléfono. Debe quedar al menos una."
+        footer="Une Google a esta misma cuenta para no duplicarte si cambias de teléfono. Debe quedar al menos una forma de entrar."
       >
         <Fila
           icon={<Inicial texto="@" />}

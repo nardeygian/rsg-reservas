@@ -14,7 +14,7 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
   const [nuevaArea, setNuevaArea] = useState("");
   const [error, setError] = useState("");
   const [pendiente, start] = useTransition();
-  const esDepto = !equipo.area_id;
+  const esDepto = !!equipo.ministry_id && !equipo.area_id;
 
   // Agrupadas por área (las sin área primero, como "Generales").
   const grupos: { id: string | null; nombre: string; items: PosicionFila[] }[] = [];
@@ -30,6 +30,7 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
     e.preventDefault();
     setError("");
     start(async () => {
+      if (!equipo.ministry_id) return;
       const r = await crearArea(equipo.ministry_id, nuevaArea);
       if (r.ok) setNuevaArea(""); else setError(r.error);
     });
@@ -37,20 +38,20 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-          Cada posición trae su checklist: se copia al servidor cuando acepta.
-        </p>
-        <button type="button" className="btn-primary flex-none" onClick={() => setAbierta("nueva")}>
-          <Icon name="plus" /> Posición
+      <div className="flex flex-col items-start gap-2">
+        <button type="button" className="btn-primary" onClick={() => setAbierta("nueva")}>
+          <Icon name="plus" /> Rol
         </button>
+        <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+          Cada rol trae su checklist: se copia al servidor cuando acepta.
+        </p>
       </div>
 
       {error && <Aviso texto={error} onClose={() => setError("")} />}
 
       {grupos.length === 0 && (
         <p className="card px-4 py-6 text-sm text-center" style={{ color: "var(--color-muted)" }}>
-          Aún no hay posiciones. Crea las del equipo (por ejemplo “Guitarra eléctrica”, “Luces”, “Ujier puerta 1”).
+          {equipo.ministry_id ? "Aún no hay roles. Crea los del equipo (por ejemplo “Guitarra eléctrica”, “Luces”, “Ujier puerta 1”)." : "Aún no hay roles generales. Créalos aquí (por ejemplo “VIO” o “Escenario”): se asignan a cualquier servidor de cualquier departamento."}
         </p>
       )}
 
@@ -58,7 +59,7 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
         <div key={g.id ?? "general"} className="flex flex-col gap-2">
           <h3 className="eyebrow px-1">{g.nombre}</h3>
           {g.items.length === 0 ? (
-            <p className="text-[13px] px-1" style={{ color: "var(--color-faint)" }}>Sin posiciones en esta área.</p>
+            <p className="text-[13px] px-1" style={{ color: "var(--color-faint)" }}>Sin roles en esta área.</p>
           ) : (
             <ul className="grid gap-2 md:grid-cols-2">
               {g.items.map((p) => (
@@ -83,7 +84,7 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
         <form onSubmit={agregarArea} className="card px-4 py-3 flex flex-col gap-2">
           <label className="field-label" htmlFor="nueva-area">Áreas del departamento</label>
           <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-            Un área agrupa posiciones y tiene su propio líder (por ejemplo “Banda” y “Voces”).
+            Un área agrupa roles y tiene su propio líder (por ejemplo “Banda” y “Voces”).
           </p>
           <div className="flex gap-2">
             <input id="nueva-area" className="input flex-1" placeholder="Nueva área" value={nuevaArea} onChange={(e) => setNuevaArea(e.target.value)} />
@@ -140,10 +141,10 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
   }
 
   return (
-    <Hoja titulo={posicion ? posicion.name : "Nueva posición"} subtitulo={equipo.area_name ? `${equipo.ministry_name} · ${equipo.area_name}` : equipo.ministry_name} onClose={onClose}
+    <Hoja titulo={posicion ? posicion.name : "Nuevo rol"} subtitulo={equipo.area_name ? `${equipo.ministry_name} · ${equipo.area_name}` : equipo.ministry_name} onClose={onClose}
       pie={posicion && (
         <button type="button" className="btn-ghost w-full" style={{ color: posicion.active ? "var(--color-down)" : "var(--color-accent)" }} disabled={pendiente} onClick={archivar}>
-          {posicion.active ? "Archivar posición" : "Volver a activar"}
+          {posicion.active ? "Archivar rol" : "Volver a activar"}
         </button>
       )}>
       <div className="flex flex-col gap-5">
@@ -163,7 +164,7 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
             </label>
           )}
           <button type="submit" className="btn-primary" disabled={pendiente || !nombre.trim()}>
-            {posicion ? "Guardar cambios" : "Crear posición"}
+            {posicion ? "Guardar cambios" : "Crear rol"}
           </button>
         </form>
 

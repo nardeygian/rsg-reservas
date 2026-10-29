@@ -56,6 +56,10 @@ export default async function ReservasPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Un servidor no reserva espacios (la base tampoco lo deja): Reservas no le aparece.
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (me?.role === "servidor") redirect("/");
+
   // ── Month view ──────────────────────────────────────────────────────────────
   if (view === "mes") {
     const { start: gridStart, end: gridEnd } = monthGridRangeBogota(anchor);
