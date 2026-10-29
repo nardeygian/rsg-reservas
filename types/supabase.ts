@@ -469,6 +469,7 @@ export type Database = {
           internal_notes: string | null
           is_external: boolean
           is_recurrence_template: boolean
+          meeting_id: string | null
           ministry_id: string | null
           montaje_lock: boolean
           owner_org_id: string
@@ -478,10 +479,12 @@ export type Database = {
           payment_status: string
           recurrence_rule: string | null
           requirements: Json
+          setup_minutes: number | null
           shared_occupancy_allowed: boolean
           space_id: string
           starts_at: string
           status: string
+          teardown_minutes: number | null
           time_range: unknown
           title: string | null
           total_cents: number | null
@@ -502,6 +505,7 @@ export type Database = {
           internal_notes?: string | null
           is_external?: boolean
           is_recurrence_template?: boolean
+          meeting_id?: string | null
           ministry_id?: string | null
           montaje_lock?: boolean
           owner_org_id: string
@@ -511,10 +515,12 @@ export type Database = {
           payment_status?: string
           recurrence_rule?: string | null
           requirements?: Json
+          setup_minutes?: number | null
           shared_occupancy_allowed?: boolean
           space_id: string
           starts_at: string
           status?: string
+          teardown_minutes?: number | null
           time_range?: unknown
           title?: string | null
           total_cents?: number | null
@@ -535,6 +541,7 @@ export type Database = {
           internal_notes?: string | null
           is_external?: boolean
           is_recurrence_template?: boolean
+          meeting_id?: string | null
           ministry_id?: string | null
           montaje_lock?: boolean
           owner_org_id?: string
@@ -544,10 +551,12 @@ export type Database = {
           payment_status?: string
           recurrence_rule?: string | null
           requirements?: Json
+          setup_minutes?: number | null
           shared_occupancy_allowed?: boolean
           space_id?: string
           starts_at?: string
           status?: string
+          teardown_minutes?: number | null
           time_range?: unknown
           title?: string | null
           total_cents?: number | null
@@ -562,6 +571,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "service_units"
+            referencedColumns: ["meeting_id"]
           },
           {
             foreignKeyName: "bookings_ministry_id_fkey"
@@ -913,6 +936,46 @@ export type Database = {
           },
         ]
       }
+      meeting_spaces: {
+        Row: {
+          created_at: string
+          meeting_id: string
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          meeting_id: string
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          meeting_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_spaces_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_spaces_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "service_units"
+            referencedColumns: ["meeting_id"]
+          },
+          {
+            foreignKeyName: "meeting_spaces_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_templates: {
         Row: {
           checklist_extra: Json
@@ -924,6 +987,9 @@ export type Database = {
           name: string
           required_positions: Json
           run_sheet: Json
+          setup_minutes: number | null
+          space_ids: string[] | null
+          teardown_minutes: number | null
           updated_at: string
           version: number
         }
@@ -937,6 +1003,9 @@ export type Database = {
           name: string
           required_positions?: Json
           run_sheet?: Json
+          setup_minutes?: number | null
+          space_ids?: string[] | null
+          teardown_minutes?: number | null
           updated_at?: string
           version?: number
         }
@@ -950,6 +1019,9 @@ export type Database = {
           name?: string
           required_positions?: Json
           run_sheet?: Json
+          setup_minutes?: number | null
+          space_ids?: string[] | null
+          teardown_minutes?: number | null
           updated_at?: string
           version?: number
         }
@@ -997,9 +1069,12 @@ export type Database = {
           kind: string
           ministry_id: string | null
           name: string
+          setup_minutes: number
           sort: number
+          teardown_minutes: number
           updated_at: string
           usual_space_id: string | null
+          usual_space_ids: string[]
           usual_time: string | null
           usual_weekday: number | null
         }
@@ -1015,9 +1090,12 @@ export type Database = {
           kind?: string
           ministry_id?: string | null
           name: string
+          setup_minutes?: number
           sort?: number
+          teardown_minutes?: number
           updated_at?: string
           usual_space_id?: string | null
+          usual_space_ids?: string[]
           usual_time?: string | null
           usual_weekday?: number | null
         }
@@ -1033,9 +1111,12 @@ export type Database = {
           kind?: string
           ministry_id?: string | null
           name?: string
+          setup_minutes?: number
           sort?: number
+          teardown_minutes?: number
           updated_at?: string
           usual_space_id?: string | null
+          usual_space_ids?: string[]
           usual_time?: string | null
           usual_weekday?: number | null
         }
@@ -1086,8 +1167,10 @@ export type Database = {
           origin: string
           outside_asana: boolean
           section: string | null
+          setup_minutes: number
           starts_at: string | null
           status: string
+          teardown_minutes: number
           template_id: string | null
           updated_at: string
         }
@@ -1113,8 +1196,10 @@ export type Database = {
           origin?: string
           outside_asana?: boolean
           section?: string | null
+          setup_minutes?: number
           starts_at?: string | null
           status?: string
+          teardown_minutes?: number
           template_id?: string | null
           updated_at?: string
         }
@@ -1140,8 +1225,10 @@ export type Database = {
           origin?: string
           outside_asana?: boolean
           section?: string | null
+          setup_minutes?: number
           starts_at?: string | null
           status?: string
+          teardown_minutes?: number
           template_id?: string | null
           updated_at?: string
         }
@@ -2165,6 +2252,8 @@ export type Database = {
           ends_at: string | null
           has_montaje_lock: boolean | null
           id: string | null
+          occupied_from: string | null
+          occupied_until: string | null
           parent_booking_id: string | null
           space_id: string | null
           space_name: string | null
@@ -2501,8 +2590,10 @@ export type Database = {
           origin: string
           outside_asana: boolean
           section: string | null
+          setup_minutes: number
           starts_at: string | null
           status: string
+          teardown_minutes: number
           template_id: string | null
           updated_at: string
         }
@@ -2512,6 +2603,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      avisar_reserva_reunion: {
+        Args: {
+          b: Database["public"]["Tables"]["bookings"]["Row"]
+          m: Database["public"]["Tables"]["meetings"]["Row"]
+        }
+        Returns: undefined
       }
       broadcast_recipients: {
         Args: { p_audience: string; p_scope_id: string }
@@ -2556,6 +2654,24 @@ export type Database = {
       }
       current_person_id: { Args: never; Returns: string }
       current_role_is: { Args: { roles: string[] }; Returns: boolean }
+      disponibilidad_espacios: {
+        Args: {
+          p_ends: string
+          p_meeting_id?: string
+          p_setup_minutes?: number
+          p_starts: string
+          p_teardown_minutes?: number
+        }
+        Returns: {
+          booking_policy: string
+          capacity: number
+          libre: boolean
+          name: string
+          ocupado_desde: string
+          ocupado_hasta: string
+          space_id: string
+        }[]
+      }
       eliminar_datos_personales: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -2593,6 +2709,10 @@ export type Database = {
         }[]
       }
       ficha_servidor: { Args: { p_person_id: string }; Returns: Json }
+      franja_bogota: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: string
+      }
       has_global_permission: {
         Args: { p_permission: string }
         Returns: boolean
@@ -2629,8 +2749,10 @@ export type Database = {
           origin: string
           outside_asana: boolean
           section: string | null
+          setup_minutes: number
           starts_at: string | null
           status: string
+          teardown_minutes: number
           template_id: string | null
           updated_at: string
         }
@@ -2790,6 +2912,10 @@ export type Database = {
           ultima_fecha: string
         }[]
       }
+      sincronizar_reservas_reunion: {
+        Args: { p_meeting_id: string }
+        Returns: undefined
+      }
       solicitar_unirse: {
         Args: { p_message?: string; p_ministry_id: string }
         Returns: string
@@ -2818,8 +2944,10 @@ export type Database = {
           origin: string
           outside_asana: boolean
           section: string | null
+          setup_minutes: number
           starts_at: string | null
           status: string
+          teardown_minutes: number
           template_id: string | null
           updated_at: string
         }
