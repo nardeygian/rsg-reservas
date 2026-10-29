@@ -152,13 +152,15 @@ Supabase local (CLI 2.107) con `npm run supabase:reset`, 210/210 pruebas de base
 
 `rsg-portal-pruebas` (ref `hhjikugnxvffkwcnqijl`, São Paulo), aparte de producción. Se preparó con `sh scripts/configurar-pruebas.sh`: 50 migraciones + seed, `notificador` publicado, llaves VAPID y secreto como secretos del proyecto, `notificador_url` y `notificador_secret` en su Vault. En Vercel, las variables de Supabase, la llave VAPID pública y Slack desactivado quedaron en **Preview, solo para la rama `claude/dazzling-cannon-ngvafl`**; Producción no se tocó. Usuarios de QA creados con `node --env-file=.env.pruebas.local scripts/semilla-qa-etapa5.ts` (la contraseña está en ese archivo local, fuera de git). El preview tiene la protección de Vercel: hay que entrar con la cuenta de Vercel o compartir un enlace de acceso.
 
+**Push en iPhone probado (29 oct):** con la app agregada a inicio desde Safari, como `qa.pastor.sede`, llegaron 4 avisos de prueba enviados uno por minuto con la app cerrada (`notifications` → `notificador_disparar()` → `notificador` → web push VAPID). Google en el preview falla con `redirect_uri_mismatch` hasta registrar `https://hhjikugnxvffkwcnqijl.supabase.co/auth/v1/callback` en Google Cloud, activar Google en el proyecto de pruebas y agregar `https://*-nardeygians-projects.vercel.app/auth/callback**` en sus Redirect URLs.
+
 ## Pendientes
 
 | Pendiente | Por qué | Quién |
 |---|---|---|
 | Comunidad (`/discipulos`, Donaciones, Inicio, `/admin`) leyendo de las tablas nuevas, y retirar `/servicio` | Hoy leen el JSON `servicio_data` de producción. Cambiarlas antes de migrar ese JSON a tablas en producción dejaría las pantallas vacías. Gian decidió (29 oct) retirar `/servicio`: es redundante con Servir. Plan en `etapa-5-servir.md`, Fase D, pasos 1 a 3 | Fase D |
 | Correo de respaldo del `notificador` | Falta escoger el proveedor y su llave | Gian + B4 |
-| Push en un navegador real y FCM | Necesita un celular. El proyecto de pruebas ya está listo (ver arriba) | QA |
+| FCM (app nativa) y push en Android | Push web en iPhone ya probado (29 oct, ver arriba). Falta un Android y la app nativa | QA |
 | Google de punta a punta (Apple más adelante) | Gian configura el proveedor (lista en el PR #8). Apple quedó oculto hasta configurarlo | Gian, luego QA |
 | Aplicar `20260622000000_permisos_por_defecto.sql` en producción | Da los permisos por defecto de la Data API que producción ya tiene (resuelve que la CLI nueva no los dé en bases nuevas). En producción no cambia nada; por su fecha se aplica con `supabase db push --include-all` | Fase D, con permiso de Gian |
 | Recorrido repetido con build de producción y push en un celular real | El QA del 29 oct se hizo con `next dev` | QA |
