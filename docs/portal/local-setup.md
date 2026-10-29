@@ -56,9 +56,9 @@ npm run supabase:reset
 Aplica las migraciones en orden + seed.sql. Úsalo cuando quieras volver
 a un estado limpio.
 
-> `supabase/config.toml` tiene `auto_expose_new_tables = true` para que la base
-> local dé los mismos permisos que producción. Sin eso, `npx supabase test db`
-> falla con "permission denied" en tablas viejas como `spaces` o `bookings`.
+> La primera migración (`20260622000000_permisos_por_defecto.sql`) da los mismos
+> permisos por defecto que tiene producción. La CLI está fijada en 2.107.0 en
+> `package.json`; se puede actualizar sin romper la base local.
 
 Para el módulo Servir hay usuarios de prueba (un rol por usuario; la contraseña
 está en el script):

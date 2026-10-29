@@ -21,11 +21,7 @@ max_rows = 1000
 # without explicit GRANTs. When unset, new entities are NOT auto-exposed, matching the new cloud
 # default. Set to `true` to keep the legacy behaviour of auto-exposing new entities; this is
 # deprecated and the field is removed on 2026-10-30 once the always-revoked behaviour is permanent.
-# RSG: producción es un proyecto anterior a este cambio y expone las entidades nuevas; las
-# migraciones viejas (spaces, bookings, ministries, current_role_is…) dependen de eso y luego
-# revocan lo que no quieren. En local se mantiene el comportamiento anterior para que la base se
-# arme igual que producción. Ver docs/portal/estado-etapa5.md (QA de la Fase C).
-auto_expose_new_tables = true
+# RSG: los permisos de producción los da la migración 20260622000000_permisos_por_defecto.sql.
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.

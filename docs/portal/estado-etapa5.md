@@ -156,7 +156,7 @@ Supabase local (CLI 2.107) con `npm run supabase:reset`, 210/210 pruebas de base
 | Correo de respaldo del `notificador` | Falta escoger el proveedor y su llave | Gian + B4 |
 | Push en un navegador real y FCM | Necesita un celular | QA |
 | Google de punta a punta (Apple más adelante) | Gian configura el proveedor (lista en el PR #8). Apple quedó oculto hasta configurarlo | Gian, luego QA |
-| GRANT por defecto que faltaban en la base local de los frentes | En producción Supabase ya los da. En local se resolvió con `auto_expose_new_tables = true`, que la CLI quita el 30 oct: al actualizar la CLI, una migración debe dar los GRANT explícitos que las migraciones viejas suponen | Verificar en la Fase D |
+| Aplicar `20260622000000_permisos_por_defecto.sql` en producción | Da los permisos por defecto de la Data API que producción ya tiene (resuelve que la CLI nueva no los dé en bases nuevas). En producción no cambia nada; por su fecha se aplica con `supabase db push --include-all` | Fase D, con permiso de Gian |
 | Recorrido repetido con build de producción y push en un celular real | El QA del 29 oct se hizo con `next dev` | QA |
 
 ## Nota sobre "fundadores" (resuelta)
