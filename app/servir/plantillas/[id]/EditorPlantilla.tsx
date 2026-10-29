@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ItemOrdenPlantilla } from "@/lib/servir/contratos";
 import { EditorOrden } from "../../reuniones/_components/EditorOrden";
 import { borrarPlantilla, guardarPlantilla, usarPorDefecto } from "../actions";
 
 export function EditorPlantilla({
-  plantilla, editable, canciones, tipo, esPorDefecto,
+  plantilla, editable, canciones, tipo, esPorDefecto, espacios,
 }: {
   plantilla: { id: string; name: string; version: number; run_sheet: ItemOrdenPlantilla[] };
   editable: boolean;
   canciones: { id: string; title: string }[];
   tipo: { id: string; name: string } | null;
   esPorDefecto: boolean;
+  espacios?: ReactNode;
 }) {
   const router = useRouter();
   const [nombre, setNombre] = useState(plantilla.name);
@@ -66,6 +67,8 @@ export function EditorPlantilla({
             </label>
           )}
         </section>
+
+        {espacios}
 
         {editable && tipo && (
           <section className="card p-4 md:p-5 flex flex-col gap-3">

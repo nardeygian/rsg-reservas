@@ -49,4 +49,4 @@ Actualiza esta tabla al cerrar cada punto.
 | 2 | Por empezar | |
 | 3 | Por empezar | |
 | 4 | Por empezar | |
-| 5 | En curso · Fases A, B y C construidas | Fase C (en vivo, estadísticas, integración y las decisiones de cuentas del 28 oct) en la rama `claude/dazzling-cannon-ngvafl`, 180 pruebas de base en verde. Falta el recorrido en el navegador (QA), Comunidad sobre las tablas nuevas (va con el paso a producción), Fase E y Fase D. Detalle en `docs/portal/estado-etapa5.md`. Nada aplicado en producción. |
+| 5 | En curso · Fases A, B y C construidas | Fase C (en vivo, estadísticas, integración, decisiones de cuentas y espacios de la reunión con montaje y desmonte) en la rama `claude/dazzling-cannon-ngvafl`, 210 pruebas de base en verde. Falta el recorrido en el navegador (QA), Comunidad sobre las tablas nuevas (va con el paso a producción), Fase E y Fase D. Detalle en `docs/portal/estado-etapa5.md`. Nada aplicado en producción. |

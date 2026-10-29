@@ -4,7 +4,7 @@
 -- =====================================================================
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(30);
 
 create or replace function pg_temp.como(p_uid text) returns void language sql as $$
   select set_config('role', 'authenticated', true),
@@ -104,6 +104,9 @@ select is((select lower(time_range) from public.prueba_reservas where meeting_id
             and space_id = '00000000-0000-0000-0000-00000000a0e1'), pg_temp.a_las(7, 9) + interval '30 minutes',
           'El cambio de montaje también mueve la reserva del Auditorio');
 
+select is((select string_agg(status, ',') from public.reservas_de_reunion('00000000-0000-0000-0000-00000000a0f1')), 'approved,approved',
+          'Planeación ve el estado de las reservas de su reunión');
+
 -- ── Reprogramar, quitar un espacio, cancelar y restaurar ────────────────
 update public.meetings set starts_at = pg_temp.a_las(8, 10), ends_at = pg_temp.a_las(8, 12),
                            meeting_date = (pg_temp.a_las(8, 10) at time zone 'America/Bogota')::date
@@ -162,6 +165,15 @@ select lives_ok($$ update public.meeting_templates set setup_minutes = 180, tear
                      space_ids = array['00000000-0000-0000-0000-00000000a0e1'::uuid]
                    where id = '00000000-0000-0000-0000-00000000a0c1' $$,
                 'Un pastor de sede ajusta montaje, desmonte y espacios de la plantilla');
+
+select pg_temp.como('00000000-0000-0000-0000-00000000a0a4');
+select lives_ok($$ insert into public.meeting_templates (meeting_type_id, name, version, space_ids, setup_minutes, teardown_minutes)
+                   values ('00000000-0000-0000-0000-00000000a0b1', 'Test Plantilla 10b', 2,
+                           array['00000000-0000-0000-0000-00000000a0e1'::uuid], 180, 90) $$,
+                'El pastor de ministerio crea una versión nueva que copia los espacios y el montaje');
+select throws_ok($$ insert into public.meeting_templates (meeting_type_id, name, version, setup_minutes)
+                    values ('00000000-0000-0000-0000-00000000a0b1', 'Test Plantilla 10b', 3, 5) $$,
+                 '42501', null, 'Pero no una versión con otro montaje');
 
 select * from finish();
 rollback;

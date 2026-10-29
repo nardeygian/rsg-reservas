@@ -7,6 +7,7 @@ import { fechaLarga, horaBogota } from "../_lib/fechas";
 import { BotonEnlace, Encabezado, EstadoChip, Pagina, PuntoColor } from "../_components/ui";
 import { EditorOrden } from "../_components/EditorOrden";
 import { AccionesReunion } from "./AccionesReunion";
+import { EspaciosReunion } from "./EspaciosReunion";
 
 export const metadata = { title: "Reunión · Servir" };
 
@@ -30,13 +31,13 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
   const { data: m } = await supabase
     .from("meetings")
-    .select("id, name, meeting_date, starts_at, ends_at, status, notes, meeting_type_id, template_id, origin, meeting_types(name, color)")
+    .select("id, name, meeting_date, starts_at, ends_at, status, notes, meeting_type_id, template_id, origin, setup_minutes, teardown_minutes, meeting_types(name, color)")
     .eq("id", id)
     .maybeSingle();
   // RLS: si no la puede ver, para él no existe.
   if (!m) notFound();
 
-  const [{ data: items }, { data: cambios }, { data: canciones }, puede, plantilla] = await Promise.all([
+  const [{ data: items }, { data: cambios }, { data: canciones }, puede, plantilla, { data: espacios }, { data: escogidos }, { data: reservas }, { data: montajeGlobal }] = await Promise.all([
     supabase
       .from("run_items")
       .select("id, sort, kind, title, duration_sec, song_id, responsible_position_id")
@@ -52,7 +53,14 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
     m.template_id
       ? supabase.from("meeting_templates").select("name, version").eq("id", m.template_id).maybeSingle().then((r) => r.data)
       : Promise.resolve(null),
+    supabase.from("spaces").select("id, name, capacity, booking_policy, status").neq("status", "external").order("name"),
+    supabase.from("meeting_spaces").select("space_id").eq("meeting_id", id),
+    supabase.rpc("reservas_de_reunion", { p_meeting_id: id }),
+    supabase.rpc("has_global_permission", { p_permission: "servir.planear" }),
   ]);
+  const idsEscogidos = (escogidos ?? []).map((e) => e.space_id);
+  // Activos, más los ya escogidos aunque luego se hayan deshabilitado.
+  const opcionesEspacio = (espacios ?? []).filter((s) => s.status === "active" || idsEscogidos.includes(s.id));
 
   const tipo = m.meeting_types as { name: string; color: string | null } | null;
   const editableOrden = puede.planear && m.status !== "cerrada" && m.status !== "cancelada";
@@ -119,6 +127,19 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         />
 
         <div className="flex flex-col gap-5">
+          {(montajeGlobal || idsEscogidos.length > 0) && (
+            <EspaciosReunion
+              key={`${m.starts_at}|${m.ends_at}|${m.setup_minutes}|${m.teardown_minutes}|${idsEscogidos.join()}`}
+              meetingId={m.id}
+              espacios={opcionesEspacio}
+              inicial={{ space_ids: idsEscogidos, setup_minutes: m.setup_minutes, teardown_minutes: m.teardown_minutes }}
+              inicio={m.starts_at}
+              fin={m.ends_at}
+              status={m.status}
+              reservas={Object.fromEntries((reservas ?? []).map((r) => [r.space_id, r]))}
+              editable={montajeGlobal === true && (m.status === "borrador" || m.status === "publicada")}
+            />
+          )}
           {m.notes && (
             <section className="card p-4 md:p-5 flex flex-col gap-2">
               <h2 className="text-[15px] font-semibold">Notas</h2>

@@ -150,7 +150,13 @@ begin
     return new;
   end if;
   if tg_table_name = 'meeting_templates' then
-    v_cambio := (tg_op = 'INSERT' and (new.space_ids is not null or new.setup_minutes is not null or new.teardown_minutes is not null))
+    -- Una versión nueva puede copiar los de la versión anterior sin cambiarlos.
+    v_cambio := (tg_op = 'INSERT' and (new.space_ids is not null or new.setup_minutes is not null or new.teardown_minutes is not null)
+                 and not exists (select 1 from public.meeting_templates t
+                                  where t.name = new.name and t.meeting_type_id is not distinct from new.meeting_type_id
+                                    and t.space_ids is not distinct from new.space_ids
+                                    and t.setup_minutes is not distinct from new.setup_minutes
+                                    and t.teardown_minutes is not distinct from new.teardown_minutes))
              or (tg_op = 'UPDATE' and (new.space_ids is distinct from old.space_ids
                   or new.setup_minutes is distinct from old.setup_minutes
                   or new.teardown_minutes is distinct from old.teardown_minutes));
@@ -409,3 +415,19 @@ revoke all on function public.meetings_sync_reservas() from public, anon, authen
 revoke all on function public.meeting_spaces_sync_reservas() from public, anon, authenticated;
 revoke all on function public.disponibilidad_espacios(timestamptz, timestamptz, int, int, uuid) from public, anon;
 grant execute on function public.disponibilidad_espacios(timestamptz, timestamptz, int, int, uuid) to authenticated;
+
+-- Estado de las reservas de una reunión, para quien puede verla (Planeación
+-- no lee bookings directo): espacio, estado y franja ocupada.
+create or replace function public.reservas_de_reunion(p_meeting_id uuid)
+returns table (space_id uuid, booking_id uuid, status text, ocupado_desde timestamptz, ocupado_hasta timestamptz)
+language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select distinct on (b.space_id) b.space_id, b.id, b.status, lower(b.time_range), upper(b.time_range)
+    from public.bookings b
+   where b.meeting_id = p_meeting_id and public.can_see_meeting(p_meeting_id)
+   order by b.space_id, (b.status in ('requested', 'approved')) desc, b.created_at desc;
+$$;
+
+revoke all on function public.reservas_de_reunion(uuid) from public, anon;
+grant execute on function public.reservas_de_reunion(uuid) to authenticated;

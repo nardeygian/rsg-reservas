@@ -37,6 +37,8 @@ type BookingRow = {
   display_owner: string | null;
   use_type: string | null;
   title: string | null;
+  occupied_from: string | null;
+  occupied_until: string | null;
 };
 
 export default async function ReservasPage({
@@ -65,7 +67,7 @@ export default async function ReservasPage({
     const [{ data: monthBookings }, { data: spaces }, { data: ownIdsMonth }] = await Promise.all([
       supabase
         .from("bookings_calendar")
-        .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title")
+        .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title, occupied_from, occupied_until")
         .lt("starts_at", gridEnd.toISOString())
         .gte("starts_at", gridStart.toISOString())
         .in("status", ["requested", "approved"]),
@@ -136,7 +138,7 @@ export default async function ReservasPage({
     supabase.from("spaces").select("id, name, status").order("name"),
     supabase
       .from("bookings_calendar")
-      .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title")
+      .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title, occupied_from, occupied_until")
       .lt("starts_at", dayEnd.toISOString())
       .gt("ends_at", dayStart.toISOString())
       .in("status", ["requested", "approved"]),
@@ -173,6 +175,8 @@ export default async function ReservasPage({
       use_type: b.use_type,
       title: b.title,
       isOwn: ownSet.has(b.id),
+      occupied_from: b.occupied_from,
+      occupied_until: b.occupied_until,
     }));
 
   return (

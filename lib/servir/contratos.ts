@@ -76,11 +76,17 @@ export type NuevaReunion = {
   ends_at?: string | null;
   ministry_id?: string | null;
   booking_id?: string | null;
+  // Espacios de la sede (Reservas) y montaje/desmonte en minutos. Sin valor,
+  // llegan de la plantilla o del tipo. Reservan al publicar la reunión.
+  space_ids?: string[];
+  setup_minutes?: number;
+  teardown_minutes?: number;
 };
 export type AccionesPlaneacion = {
   crearReunion(input: NuevaReunion): Promise<Resultado<{ id: string }>>;
   // Crea una reunión por fecha con el mismo tipo/plantilla (fechas YYYY-MM-DD).
-  crearEnSerie(input: Omit<NuevaReunion, "meeting_date">, fechas: string[]): Promise<Resultado<{ ids: string[] }>>;
+  // choques: fechas en que algún espacio ya está ocupado (no se podrán publicar así).
+  crearEnSerie(input: Omit<NuevaReunion, "meeting_date">, fechas: string[]): Promise<Resultado<{ ids: string[]; choques: string[] }>>;
   duplicarReunion(id: string, meeting_date: string): Promise<Resultado<{ id: string }>>;
   guardarComoPlantilla(meetingId: string, nombre: string): Promise<Resultado<{ id: string }>>;
   guardarOrden(meetingId: string, items: (ItemOrdenPlantilla & { id?: string; sort: number })[]): Promise<Resultado>;

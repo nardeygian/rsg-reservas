@@ -317,9 +317,12 @@ El trabajo se divide en **frentes con dueños de carpetas distintas**, para que 
 - **1 · Cuentas:** quien entra con Google o Apple sin invitación recibe el rol básico `servidor`, escoge su departamento y el líder de departamento, un pastor de sede o un super admin aprueba si se une.
 - **3 · Navegación:** Servir va como destino nuevo.
 - **4 · Asistencia:** los líderes de departamento también confirman la de su gente; Planeación cierra.
-- **5 · Fundadores:** Gian preguntó a qué se refiere; queda abierto (ver `estado-etapa5.md`).
-- **9 · Umbrales:** "3 es mucho, 1 es poco". Se configuró así: sobrecargado con 3 o más en 30 días; alejándose con 1 o menos; inactivo tras 6 semanas. Falta que Gian confirme esta lectura.
+- **5 · Fundadores:** hay dos (ver abajo).
+- **9 · Umbrales:** "3 es mucho, 1 es poco". Se configuró así: sobrecargado con 3 o más en 30 días; alejándose con 1 o menos; inactivo tras 6 semanas. Confirmado por Gian (29 oct).
 - **Eliminar cuenta con reservas:** se pregunta y se borran también las reservas a su nombre.
+- **Fundadores (29 oct):** hay dos; se asignan en `/admin` al pasar a producción.
+- **Umbrales (29 oct):** confirmados; ajustables por Planeación (tabla `servir_ajustes`).
+- **Espacios de la reunión (29 oct):** al crear la reunión se escogen los espacios de Reservas, con montaje (2 h) y desmonte (1 h) ajustables por reunión, tipo y plantilla. Bloquea al publicar; reunión de ministerio aprobada directo; un espacio ocupado no se puede escoger; montaje lo editan Planeación, pastor de sede y super admin. Detalle en `estado-etapa5.md`.
 
 ## Terminado cuando
 

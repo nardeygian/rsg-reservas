@@ -2836,6 +2836,16 @@ export type Database = {
         }
         Returns: string
       }
+      reservas_de_reunion: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          booking_id: string
+          ocupado_desde: string
+          ocupado_hasta: string
+          space_id: string
+          status: string
+        }[]
+      }
       respond_assignment: {
         Args: { p_accept: boolean; p_assignment_id: string; p_reason?: string }
         Returns: {
