@@ -25,7 +25,9 @@ const PASSWORD = process.env.QA_PASSWORD ?? "servir-qa-local";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY");
-if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(url)) throw new Error(`${url} no es la base local`);
+// Solo la base local o el proyecto de pruebas (rsg-portal-pruebas). Nunca producción.
+const PRUEBAS = "https://hhjikugnxvffkwcnqijl.supabase.co";
+if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(url) && url !== PRUEBAS) throw new Error(`${url} no es la base local ni la de pruebas`);
 const db = createClient(url, key, { auth: { persistSession: false } });
 
 function ok<T>(r: { data: T; error: { message: string } | null }, que: string): NonNullable<T> {
