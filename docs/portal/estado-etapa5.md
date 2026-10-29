@@ -152,7 +152,7 @@ Supabase local (CLI 2.107) con `npm run supabase:reset`, 210/210 pruebas de base
 
 | Pendiente | Por qué | Quién |
 |---|---|---|
-| Comunidad (`/servicio`, `/discipulos`) leyendo de las tablas nuevas | Hoy leen el JSON `servicio_data` de producción. Cambiarlas antes de migrar ese JSON a tablas en producción dejaría las pantallas vacías. Va con el paso a producción (Fase D, paso 1) | Fase D |
+| Comunidad (`/discipulos`, Donaciones, Inicio, `/admin`) leyendo de las tablas nuevas, y retirar `/servicio` | Hoy leen el JSON `servicio_data` de producción. Cambiarlas antes de migrar ese JSON a tablas en producción dejaría las pantallas vacías. Gian decidió (29 oct) retirar `/servicio`: es redundante con Servir. Plan en `etapa-5-servir.md`, Fase D, pasos 1 a 3 | Fase D |
 | Correo de respaldo del `notificador` | Falta escoger el proveedor y su llave | Gian + B4 |
 | Push en un navegador real y FCM | Necesita un celular | QA |
 | Google de punta a punta (Apple más adelante) | Gian configura el proveedor (lista en el PR #8). Apple quedó oculto hasta configurarlo | Gian, luego QA |

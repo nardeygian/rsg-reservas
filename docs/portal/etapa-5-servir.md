@@ -292,10 +292,20 @@ El trabajo se divide en **frentes con dueños de carpetas distintas**, para que 
 | **E2 Tiendas** | Cuentas de organización, política de privacidad, fichas de privacidad, capturas, prueba interna (TestFlight y prueba cerrada de Google Play) | `docs/apps/**` |
 
 ### Fase D · Paso a producción
-1. Migraciones a producción **con permiso de Gian** y respaldo del día. Migración del histórico.
-2. **Piloto** con un departamento (sugerido: LMRSG o Creativos) durante 2 domingos, en paralelo al listado en PDF.
-3. Comparar conteos: deben coincidir con el método actual.
-4. Abrir a todos los departamentos; el listado en PDF queda como respaldo y después se retira.
+1. Migraciones a producción **con permiso de Gian** y respaldo del día. Migración del histórico: el JSON `servicio_data` pasa a tablas con `scripts/migrar-servicio.ts` (reuniones, servidores → `people`, listados → asistencia histórica, discipulados → `discipleship_groups`).
+2. **Comunidad sobre las tablas nuevas:** `/discipulos`, Donaciones (atribución a discípulos), el Inicio y `/admin` (discipulados, usuarios, vista previa) dejan de leer el JSON.
+3. **Retirar el módulo Servicio (`/servicio`)** (decisión de Gian, 29 oct): todo lo que hace ya está en Servir.
+   - Reuniones de Asana → Reuniones y agenda de la app.
+   - Servidores → directorio, Mi equipo y roles.
+   - Listados → asistencia confirmada en En vivo.
+   - Ausencias → "Fechas en que no puedo" y asistencia "ausente".
+   - Conteos y último servicio → Estadísticas, salud del equipo y ficha del servidor.
+   - Vista del pastor de ministerio → Reuniones y Estadísticas de su ministerio.
+
+   Comunidad queda para Discípulos (y Donaciones del grupo). Durante la transición, Comunidad muestra un enlace a *Servir → Reuniones / Estadísticas* para los líderes y pastores que entraban a Servicio. El JSON queda como respaldo de solo lectura y `lib/asana.ts` se borra.
+4. **Piloto** con un departamento (sugerido: LMRSG o Creativos) durante 2 domingos, en paralelo al listado en PDF.
+5. Comparar conteos: deben coincidir con el método actual.
+6. Abrir a todos los departamentos; el listado en PDF queda como respaldo y después se retira.
 
 ---
 
