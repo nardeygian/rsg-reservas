@@ -4,7 +4,8 @@ import { clienteServir } from "@/app/servir/equipo/_lib/supabase";
 import { fechaCorta, fechaReunion, hoyBogota } from "@/app/servir/equipo/_lib/datos";
 import { ServicioTarjeta, type ServicioFila } from "./_components/ServicioTarjeta";
 import { Bloqueos, type BloqueoFila } from "./_components/Bloqueos";
-import { ActualizarEnVivo, filtroEn } from "@/app/_components/ActualizarEnVivo";
+import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
+import { filtroEn } from "@/lib/supabase/filtros";
 
 type AsignacionRaw = {
   id: string; status: string; decline_reason: string | null; position_id: string; meeting_id: string;

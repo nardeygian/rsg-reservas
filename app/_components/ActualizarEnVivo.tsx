@@ -45,9 +45,3 @@ export function ActualizarEnVivo({ canal, escuchas }: { canal: string; escuchas:
 
   return null;
 }
-
-// Filtro "columna=in.(a,b,c)" (Realtime admite hasta 100 valores).
-export function filtroEn(columna: string, ids: string[]): string | undefined {
-  const lista = [...new Set(ids)].slice(0, 100);
-  return lista.length ? `${columna}=in.(${lista.join(",")})` : undefined;
-}
