@@ -1,7 +1,8 @@
 // Solo servidor: usa NOTIFICADOR_SECRET.
 
 // Pide al `notificador` que despache ya (sin esperar la vuelta de pg_cron).
-// Best-effort: si falla, pg_cron lo recoge en menos de 5 minutos.
+// Best-effort: la base ya lo pide al crear el envío (trigger con pg_net) y
+// pg_cron lo recoge en menos de un minuto si todo falla.
 //
 // NOTIFICADOR_URL:    <SUPABASE_URL>/functions/v1/notificador
 // NOTIFICADOR_SECRET: el mismo secreto que tiene la Edge Function.

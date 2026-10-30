@@ -1,6 +1,6 @@
 # Estado de la Etapa 5: Servir
 
-Corte: 29 de octubre de 2026. Rama de trabajo: `claude/dazzling-cannon-ngvafl`, que sale de `etapa5/fundacion`. **No hay nada aplicado en el Supabase de producción.**
+Corte: 30 de octubre de 2026. Rama de trabajo: `claude/dazzling-cannon-ngvafl`, que sale de `etapa5/fundacion`. **No hay nada aplicado en el Supabase de producción.**
 
 Plan completo: `etapa-5-servir.md`. Fuente de verdad del esquema: `supabase/migrations/20261028*` y `lib/servir/contratos.ts`.
 
@@ -24,7 +24,7 @@ Plan completo: `etapa-5-servir.md`. Fuente de verdad del esquema: `supabase/migr
 | E | Apps en tiendas | Por empezar | |
 | D | Paso a producción y piloto | Por empezar | |
 
-Pruebas de base: **210/210**, aplicando las 45 migraciones desde cero. `npm run typecheck` y `next build` en verde.
+Pruebas de base: **258/258**, aplicando las 52 migraciones desde cero. `npm run typecheck` y `next build` en verde.
 
 ## Decisiones de Gian (28 oct) y cómo quedaron
 
@@ -53,6 +53,17 @@ Al crear una reunión se pregunta qué espacios de la sede se usan (los mismos d
 - **Quién cambia espacios, montaje y desmonte:** Planeación, pastor de sede y super admin (y el fundador, que tiene los mismos permisos que un pastor de sede). Un pastor de ministerio edita sus plantillas, pero no estos datos.
 - **Reservas** muestra la franja de montaje y desmonte rayada alrededor del bloque, y el detalle dice desde cuándo y hasta cuándo está ocupado.
 - **Para Reservas no cambia nada más:** las columnas nuevas de `bookings` aceptan nulos y, vacías, se usan los minutos del espacio como hoy.
+
+## Avisos y cambios al instante (30 oct)
+
+En pruebas, un envío de un pastor a todos tardó de 5 a 7 minutos. El despachador lo llamaba `pg_cron` cada 5 minutos. El portal también lo llamaba después de un envío, pero solo si Vercel tenía `NOTIFICADOR_URL` y `NOTIFICADOR_SECRET`.
+
+- **Avisos:** la migración `20261030100000_notificaciones_inmediatas.sql` hace que la base pida el despacho en cuanto se crea un aviso o un envío (trigger con `pg_net`, una llamada por transacción). Cubre todo: envíos, asignaciones, cambios de fecha, solicitudes y reservas. `pg_cron` queda de respaldo cada minuto.
+- **Pantallas en tiempo real:** además de En vivo, ahora se actualizan solas Mis servicios, el detalle de la reunión, la pantalla de asignar de Mi equipo y la tarjeta de Servir del Inicio.
+- **En producción hay que revisar:**
+  - que existan los secretos `notificador_url` y `notificador_secret` en Vault;
+  - que la extensión `pg_net` esté activa;
+  - que la Edge Function `notificador` esté desplegada.
 
 ## Qué se construyó en la Fase C
 

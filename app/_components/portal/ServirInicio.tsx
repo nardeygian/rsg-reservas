@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/app/_components/ui/Icon";
 import { createClient } from "@/lib/supabase/server";
 import { fechaReunion, hoyBogota, sumarDias } from "@/app/servir/equipo/_lib/datos";
+import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
 
 // Tarjetas de Servir en el Inicio: tu próximo servicio (con aceptar),
 // pendientes por responder, posiciones sin cubrir para líderes y "Abrir en
@@ -57,10 +58,19 @@ export async function ServirInicio({ invitarAUnirse }: { invitarAUnirse: boolean
 
   const unirse = !personId && invitarAUnirse;
   const nada = !proxima && !reunionesHoy.length && !sinResponder && !rechazadas && !solicitudes;
-  if (nada && !unirse) return null;
+  // Sin nada que mostrar, igual se queda escuchando: si llega una
+  // asignación, aparece sin recargar.
+  if (nada && !unirse) {
+    return personId
+      ? <ActualizarEnVivo canal={`inicio-${personId}`} escuchas={[{ tabla: "assignments", filtro: `person_id=eq.${personId}` }]} />
+      : null;
+  }
 
   return (
     <section aria-label="Servir" className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {personId && (
+        <ActualizarEnVivo canal={`inicio-${personId}`} escuchas={[{ tabla: "assignments", filtro: `person_id=eq.${personId}` }]} />
+      )}
       {unirse && (
         <Link href="/servir/unirme" className="card card-hover px-5 py-4 flex items-center gap-3 min-h-[72px]">
           <span className="flex-1">

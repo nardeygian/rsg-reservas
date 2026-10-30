@@ -6,7 +6,8 @@
 //    a cada dispositivo de la persona según su plataforma (web → VAPID,
 //    android/ios → FCM). Las suscripciones vencidas se borran.
 //
-// La llaman pg_cron cada 5 minutos (public.notificador_disparar) y el portal
+// La llama la base en cuanto se crea un aviso o un envío (trigger con
+// pg_net, 20261030100000), pg_cron cada minuto como respaldo y el portal
 // justo después de un envío inmediato. Se protege con el encabezado
 // x-notificador-secret, no con JWT (config.toml: verify_jwt = false).
 //

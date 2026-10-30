@@ -9,6 +9,7 @@ import { EditorOrden } from "../_components/EditorOrden";
 import { AccionesReunion } from "./AccionesReunion";
 import { EspaciosReunion } from "./EspaciosReunion";
 import { ReporteReunion, type Reporte } from "../_components/ReporteReunion";
+import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
 
 export const metadata = { title: "Reunión · Servir" };
 
@@ -71,6 +72,14 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
   return (
     <Pagina>
+      <ActualizarEnVivo
+        canal={`reunion-${id}`}
+        escuchas={[
+          { tabla: "meetings", filtro: `id=eq.${id}` },
+          { tabla: "run_items", filtro: `meeting_id=eq.${id}` },
+          { tabla: "assignments", filtro: `meeting_id=eq.${id}` },
+        ]}
+      />
       <Encabezado
         titulo={m.name}
         volver={{ href: "/servir/reuniones", label: "Reuniones" }}

@@ -4,6 +4,7 @@ import { clienteServir } from "@/app/servir/equipo/_lib/supabase";
 import { fechaCorta, fechaReunion, hoyBogota } from "@/app/servir/equipo/_lib/datos";
 import { ServicioTarjeta, type ServicioFila } from "./_components/ServicioTarjeta";
 import { Bloqueos, type BloqueoFila } from "./_components/Bloqueos";
+import { ActualizarEnVivo, filtroEn } from "@/app/_components/ActualizarEnVivo";
 
 type AsignacionRaw = {
   id: string; status: string; decline_reason: string | null; position_id: string; meeting_id: string;
@@ -110,6 +111,16 @@ export default async function MisServiciosPage() {
 
   return marco(
     <>
+      {/* Nuevas asignaciones, cambios de fecha, orden y checklist llegan sin recargar. */}
+      <ActualizarEnVivo
+        canal={`mis-servicios-${personId}`}
+        escuchas={[
+          { tabla: "assignments", filtro: `person_id=eq.${personId}` },
+          { tabla: "meetings", filtro: filtroEn("id", asignaciones.map((a) => a.meeting_id)) },
+          { tabla: "run_items", filtro: filtroEn("meeting_id", reunionIds) },
+          { tabla: "checklist_items", filtro: filtroEn("assignment_id", aceptadasIds) },
+        ].filter((e) => e.filtro)}
+      />
       {pendientes > 0 && (
         <p className="card px-4 py-3 text-[14px] font-medium" style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)", borderColor: "transparent" }}>
           Tienes {pendientes} {pendientes === 1 ? "asignación" : "asignaciones"} por responder.

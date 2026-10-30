@@ -6,6 +6,7 @@ import { clienteServir } from "../../_lib/supabase";
 import { delEquipo, fechaReunion, misEquipos } from "../../_lib/datos";
 import { AsignarVista, type AsignadoFila, type PosicionAsignar } from "../../_components/AsignarVista";
 import { Avatar, EstadoChip } from "../../_components/ui";
+import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
 
 type AsignacionRaw = {
   id: string; person_id: string; position_id: string; ministry_id: string | null; area_id: string | null;
@@ -90,6 +91,14 @@ export default async function AsignarReunionPage({ params, searchParams }: {
 
   return (
     <main className="min-h-dvh px-4 pt-6 max-w-[1180px] mx-auto w-full flex flex-col gap-5" style={{ paddingBottom: "calc(var(--nav-space) + 24px)" }}>
+      {/* El líder ve al instante quién acepta o rechaza. */}
+      <ActualizarEnVivo
+        canal={`asignar-${reunion.id}`}
+        escuchas={[
+          { tabla: "assignments", filtro: `meeting_id=eq.${reunion.id}` },
+          { tabla: "meetings", filtro: `id=eq.${reunion.id}` },
+        ]}
+      />
       <Link href={`/servir/equipo?equipo=${encodeURIComponent(equipo.key)}&vista=reuniones`} className="btn-ghost self-start -ml-3 px-3 min-h-[40px] text-[14px]">
         <Icon name="chevron-left" /> Reuniones
       </Link>

@@ -221,7 +221,7 @@ Todo con el sistema visual actual (vidrio, radios 12/22/30, Instrument Sans, íc
 - **Bandeja en la app** siempre (toda notificación queda ahí).
 - **Correo** de respaldo para quien no tiene push activo (proveedor transaccional; las llaves van en Vercel/Supabase, nunca en el código).
 - **Slack** sigue para el staff como hoy.
-- **Programación:** en Vercel Hobby los crons corren solo una vez al día, así que los recordatorios los dispara **`pg_cron` de Supabase cada 5 minutos**, que llama a una **Edge Function** `notificador` que lee `recordatorios` y `envios` pendientes y despacha. WhatsApp queda fuera de esta etapa (tiene costo por mensaje); se puede sumar después en el mismo `notificador`.
+- **Programación:** en Vercel Hobby los crons corren solo una vez al día, así que los recordatorios los dispara **`pg_cron` de Supabase cada minuto**, y cada aviso o envío nuevo lo pide **al instante** con un trigger y `pg_net` (cambio del 30 oct: antes tardaba hasta 5 minutos). Ambos llaman a una **Edge Function** `notificador` que lee `recordatorios` y `envios` pendientes y despacha. WhatsApp queda fuera de esta etapa (tiene costo por mensaje); se puede sumar después en el mismo `notificador`.
 
 ---
 
