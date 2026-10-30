@@ -17,6 +17,7 @@
 --   confirma (pg_net la encola dentro de la misma transacción), así que el
 --   push llega en uno o dos segundos y no depende de la configuración de
 --   la app.
+-- * Realtime en broadcasts, para que "Tus envíos" se actualice solo.
 -- * Una sola llamada por transacción: un envío a toda la iglesia crea
 --   cientos de avisos en una sentencia y no dispara cientos de llamadas.
 -- * pg_cron queda como red de seguridad cada minuto (recordatorios
@@ -55,6 +56,17 @@ drop trigger if exists broadcasts_despachar_ya on public.broadcasts;
 create trigger broadcasts_despachar_ya
 after insert on public.broadcasts
 for each statement execute function public.notificador_despachar_ya();
+
+-- Realtime en envíos: la lista "Tus envíos" pasa de "Enviando…" a
+-- "N personas" sola. RLS de broadcasts decide quién recibe cada cambio.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (select 1 from pg_publication_tables
+                      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'broadcasts') then
+    alter publication supabase_realtime add table public.broadcasts;
+  end if;
+end $$;
 
 -- Red de seguridad: cada minuto en vez de cada 5.
 do $$

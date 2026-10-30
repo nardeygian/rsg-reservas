@@ -5,7 +5,7 @@
 -- =====================================================================
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(7);
+select plan(8);
 
 -- La llamada HTTP real no se hace en pruebas: se anota la petición que
 -- recibiría el despachador.
@@ -51,6 +51,9 @@ select lives_ok($$ insert into public.notifications (user_id, kind, title) value
                 'Si la llamada falla, el aviso se guarda igual (lo recoge pg_cron)');
 
 select is((select schedule from cron.job where jobname = 'notificador'), '* * * * *', 'pg_cron queda de respaldo cada minuto');
+
+select ok(exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'broadcasts'),
+          'Los envíos avisan por Realtime cuando terminan');
 
 select * from finish();
 rollback;
