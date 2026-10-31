@@ -14,6 +14,9 @@ function translateAuthError(msg: string): string {
     return "Demasiados intentos. Espera unos minutos";
   if (l.includes("user not found"))
     return "No existe una cuenta con ese email";
+  // Un fallo de red de Auth puede llegar sin texto ("{}"): no se muestra tal cual.
+  if (!/[a-z]/.test(l))
+    return "No se pudo iniciar sesión. Revisa tu conexión e intenta de nuevo";
   return msg;
 }
 

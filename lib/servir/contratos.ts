@@ -50,7 +50,7 @@ export type Plataforma = "web" | "android" | "ios";
 export type Permiso =
   | "servir.ver_todo" | "servir.ver_reuniones" | "servir.planear" | "servir.vivo"
   | "servir.asistencia" | "servir.asignar" | "servir.plantillas" | "servir.estadisticas"
-  | "canciones.editar" | "notificar.enviar";
+  | "canciones.editar" | "notificar.enviar" | "servir.importar";
 
 // Las acciones devuelven esto en vez de lanzar: la UI muestra `error` tal cual.
 export type Resultado<T = void> = { ok: true; data: T } | { ok: false; error: string };
@@ -76,11 +76,17 @@ export type NuevaReunion = {
   ends_at?: string | null;
   ministry_id?: string | null;
   booking_id?: string | null;
+  // Espacios de la sede (Reservas) y montaje/desmonte en minutos. Sin valor,
+  // llegan de la plantilla o del tipo. Reservan al publicar la reunión.
+  space_ids?: string[];
+  setup_minutes?: number;
+  teardown_minutes?: number;
 };
 export type AccionesPlaneacion = {
   crearReunion(input: NuevaReunion): Promise<Resultado<{ id: string }>>;
   // Crea una reunión por fecha con el mismo tipo/plantilla (fechas YYYY-MM-DD).
-  crearEnSerie(input: Omit<NuevaReunion, "meeting_date">, fechas: string[]): Promise<Resultado<{ ids: string[] }>>;
+  // choques: fechas en que algún espacio ya está ocupado (no se podrán publicar así).
+  crearEnSerie(input: Omit<NuevaReunion, "meeting_date">, fechas: string[]): Promise<Resultado<{ ids: string[]; choques: string[] }>>;
   duplicarReunion(id: string, meeting_date: string): Promise<Resultado<{ id: string }>>;
   guardarComoPlantilla(meetingId: string, nombre: string): Promise<Resultado<{ id: string }>>;
   guardarOrden(meetingId: string, items: (ItemOrdenPlantilla & { id?: string; sort: number })[]): Promise<Resultado>;
@@ -142,17 +148,19 @@ export type AccionesVivo = {
   avanzarItem(meetingId: string, itemId: string | null): Promise<Resultado>;
   terminarReunion(id: string): Promise<Resultado>;
   // Una fila por persona: varios roles en la misma reunión = un servicio.
-  confirmarAsistencia(meetingId: string, filas: { person_id: string; status: EstadoAsistencia; roles: string[]; note?: string }[]): Promise<Resultado>;
+  // Planeación confirma a todos y puede cerrar (opciones.cerrar); el líder de
+  // departamento confirma a su gente mientras no esté cerrada (decisión de Gian).
+  confirmarAsistencia(
+    meetingId: string,
+    filas: { person_id: string; status: EstadoAsistencia; roles: string[]; note?: string }[],
+    opciones?: { cerrar?: boolean },
+  ): Promise<Resultado>;
 };
 
 // ── C3 · Estadísticas (app/servir/estadisticas) ──────────────────────────
 export type Semaforo = "sano" | "sobrecargado" | "alejandose" | "inactivo";
-export type SaludServidor = {
-  person_id: string;
-  full_name: string;
-  min_mes: number;
-  serv_mes: number;
-  ausencias_mes: number;
-  ultima_fecha: string | null;
-  semaforo: Semaforo;
-};
+// Una fila de salud_servidores(): la ventana (30 días por defecto) y los
+// umbrales salen de servir_ajustes.
+export type SaludServidor = Database["public"]["Functions"]["salud_servidores"]["Returns"][number] & { semaforo: Semaforo };
+export type EstadisticaReunion = Database["public"]["Functions"]["estadisticas_reuniones"]["Returns"][number];
+export type AjustesSalud = Fila<"servir_ajustes">;

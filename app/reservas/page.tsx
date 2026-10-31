@@ -17,6 +17,7 @@ import {
 import { ReservasDayView } from "./_components/ReservasDayView";
 import type { BookingBlock } from "./_components/ReservasDayView";
 import { ReservasMesView } from "./_components/ReservasMesView";
+import { EventosEspacios } from "@/app/_components/portal/EventosEspacios";
 
 function formatDayLabel(date: Date): string {
   return date.toLocaleDateString("es-CO", {
@@ -36,6 +37,8 @@ type BookingRow = {
   display_owner: string | null;
   use_type: string | null;
   title: string | null;
+  occupied_from: string | null;
+  occupied_until: string | null;
 };
 
 export default async function ReservasPage({
@@ -53,6 +56,10 @@ export default async function ReservasPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Un servidor no reserva espacios (la base tampoco lo deja): Reservas no le aparece.
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (me?.role === "servidor") redirect("/");
+
   // ── Month view ──────────────────────────────────────────────────────────────
   if (view === "mes") {
     const { start: gridStart, end: gridEnd } = monthGridRangeBogota(anchor);
@@ -64,7 +71,7 @@ export default async function ReservasPage({
     const [{ data: monthBookings }, { data: spaces }, { data: ownIdsMonth }] = await Promise.all([
       supabase
         .from("bookings_calendar")
-        .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title")
+        .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title, occupied_from, occupied_until")
         .lt("starts_at", gridEnd.toISOString())
         .gte("starts_at", gridStart.toISOString())
         .in("status", ["requested", "approved"]),
@@ -135,7 +142,7 @@ export default async function ReservasPage({
     supabase.from("spaces").select("id, name, status").order("name"),
     supabase
       .from("bookings_calendar")
-      .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title")
+      .select("id, space_id, starts_at, ends_at, status, display_owner, use_type, title, occupied_from, occupied_until")
       .lt("starts_at", dayEnd.toISOString())
       .gt("ends_at", dayStart.toISOString())
       .in("status", ["requested", "approved"]),
@@ -172,10 +179,13 @@ export default async function ReservasPage({
       use_type: b.use_type,
       title: b.title,
       isOwn: ownSet.has(b.id),
+      occupied_from: b.occupied_from,
+      occupied_until: b.occupied_until,
     }));
 
   return (
     <main className="min-h-dvh flex flex-col">
+      <EventosEspacios actual="espacios" />
       <div className="flex-1 px-4 pt-6 pb-4 max-w-md md:max-w-[1180px] md:px-[clamp(12px,3vw,40px)] mx-auto w-full flex flex-col gap-4">
         <h1 className="page-title md:hidden">Reservas</h1>
         <ReservasDayView

@@ -2,16 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/app/_components/ui/Icon";
 import { clienteServir, type ClienteServir } from "./_lib/supabase";
-import { datosEquipo, fechaReunion, misEquipos, reunionesProximas, type Equipo } from "./_lib/datos";
+import { datosEquipo, fechaCorta, fechaReunion, misEquipos, reunionesProximas, type Equipo } from "./_lib/datos";
 import { EquipoSelector } from "./_components/EquipoSelector";
 import { MiembrosVista } from "./_components/MiembrosVista";
 import { PosicionesVista } from "./_components/PosicionesVista";
-import { SubnavServir } from "./_components/ui";
+import { SolicitudesVista } from "./_components/SolicitudesVista";
 
 const VISTAS = [
   { id: "miembros", texto: "Miembros" },
-  { id: "posiciones", texto: "Posiciones" },
+  { id: "posiciones", texto: "Roles" },
   { id: "reuniones", texto: "Asignar" },
+  { id: "solicitudes", texto: "Solicitudes" },
 ] as const;
 type Vista = (typeof VISTAS)[number]["id"];
 
@@ -25,27 +26,39 @@ export default async function MiEquipoPage({ searchParams }: { searchParams: Pro
 
   const params = await searchParams;
   const equipo = equipos.find((e) => e.key === params.equipo) ?? equipos[0];
-  const vista: Vista = VISTAS.some((v) => v.id === params.vista) ? (params.vista as Vista) : "miembros";
+  // Las solicitudes son por departamento: un líder de área no las ve.
+  // Los roles generales no tienen miembros ni solicitudes: solo roles y asignar.
+  const vistas = equipo.ministry_id
+    ? VISTAS.filter((v) => v.id !== "solicitudes" || !equipo.area_id)
+    : VISTAS.filter((v) => v.id === "posiciones" || v.id === "reuniones");
+  const vista: Vista = vistas.some((v) => v.id === params.vista) ? (params.vista as Vista) : vistas[0].id;
+  const { count: porResponder } = equipo.area_id || !equipo.ministry_id
+    ? { count: 0 }
+    : await db.from("team_join_requests").select("id", { count: "exact", head: true })
+        .eq("ministry_id", equipo.ministry_id).eq("status", "pendiente");
   const qs = (v: Vista) => `/servir/equipo?equipo=${encodeURIComponent(equipo.key)}&vista=${v}`;
 
   return (
     <main className="min-h-dvh px-4 pt-6 max-w-[1180px] mx-auto w-full flex flex-col gap-4" style={{ paddingBottom: "calc(var(--nav-space) + 24px)" }}>
-      <SubnavServir actual="equipo" esLider />
       <header className="flex flex-col gap-1">
-        <p className="eyebrow">{equipo.area_name ? `Líder de área · ${equipo.ministry_name}` : "Líder de departamento"}</p>
+        <p className="eyebrow">{!equipo.ministry_id ? "Planeación · sin departamento" : equipo.area_name ? `Líder de área · ${equipo.ministry_name}` : "Líder de departamento"}</p>
         <h1 className="page-title">{equipo.area_name ?? equipo.ministry_name}</h1>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
         <nav className="segmented" aria-label="Secciones de Mi equipo">
-          {VISTAS.map((v) => (
-            <Link key={v.id} href={qs(v.id)} className="segmented-link" aria-current={vista === v.id ? "page" : undefined}>{v.texto}</Link>
+          {vistas.map((v) => (
+            <Link key={v.id} href={qs(v.id)} className="segmented-link" aria-current={vista === v.id ? "page" : undefined}>
+              {v.texto}{v.id === "solicitudes" && (porResponder ?? 0) > 0 ? ` (${porResponder})` : ""}
+            </Link>
           ))}
         </nav>
         <EquipoSelector equipos={equipos} actual={equipo.key} vista={vista} />
       </div>
 
-      {vista === "reuniones" ? <Reuniones db={db} equipo={equipo} /> : <EquipoDatos db={db} equipo={equipo} vista={vista} />}
+      {vista === "reuniones" ? <Reuniones db={db} equipo={equipo} />
+        : vista === "solicitudes" ? <Solicitudes db={db} equipo={equipo} />
+        : <EquipoDatos db={db} equipo={equipo} vista={vista} />}
     </main>
   );
 }
@@ -55,6 +68,22 @@ async function EquipoDatos({ db, equipo, vista }: { db: ClienteServir; equipo: E
   return vista === "posiciones"
     ? <PosicionesVista equipo={equipo} posiciones={datos.posiciones} areas={datos.areas} />
     : <MiembrosVista equipo={equipo} miembros={datos.miembros} posiciones={datos.posiciones} areas={datos.areas} personas={datos.personas} />;
+}
+
+async function Solicitudes({ db, equipo }: { db: ClienteServir; equipo: Equipo }) {
+  const { data } = await db.from("team_join_requests")
+    .select("id, full_name, message, created_at")
+    .eq("ministry_id", equipo.ministry_id ?? "").eq("status", "pendiente").order("created_at");
+  return (
+    <SolicitudesVista
+      solicitudes={(data ?? []).map((s) => ({
+        id: s.id,
+        nombre: s.full_name,
+        mensaje: s.message,
+        fecha: fechaCorta(s.created_at.slice(0, 10)),
+      }))}
+    />
+  );
 }
 
 async function Reuniones({ db, equipo }: { db: ClienteServir; equipo: Equipo }) {

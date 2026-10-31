@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { eliminarMiCuenta } from "@/lib/cuentas/acciones";
+import { eliminarMiCuenta, type ResumenEliminacion } from "@/lib/cuentas/acciones";
 
 const PALABRA = "ELIMINAR";
 
 // "Eliminar mi cuenta" (App Store 5.1.1(v) y Google Play): borra la cuenta
-// de verdad. Pide escribir la palabra para no hacerlo por accidente.
-export function EliminarCuenta() {
+// de verdad, con sus reservas. Pide escribir la palabra para no hacerlo por
+// accidente.
+export function EliminarCuenta({ resumen }: { resumen: ResumenEliminacion }) {
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +33,15 @@ export function EliminarCuenta() {
             <p className="text-[14px] font-semibold" style={{ color: "var(--color-ink)" }}>¿Eliminar tu cuenta para siempre?</p>
             <ul className="text-[13px] list-disc pl-5 flex flex-col gap-1" style={{ color: "var(--color-muted)" }}>
               <li>Se borran tu cuenta, tus roles, tus avisos y los dispositivos con notificaciones.</li>
+              {resumen.reservas > 0 && (
+                <li style={{ color: "var(--color-down)" }}>
+                  También se borran {resumen.reservas === 1 ? "la reserva" : `las ${resumen.reservas} reservas`} a tu nombre
+                  {resumen.reservas_futuras > 0 ? ` (${resumen.reservas_futuras} ${resumen.reservas_futuras === 1 ? "es próxima" : "son próximas"}: el espacio quedará libre)` : ""}.
+                </li>
+              )}
+              {resumen.ministerios_que_lidera > 0 && (
+                <li>{resumen.ministerios_que_lidera === 1 ? "El ministerio que lideras queda" : "Los ministerios que lideras quedan"} sin líder hasta que un administrador asigne otro.</li>
+              )}
               <li>Tu correo y tu teléfono salen de tu registro de servidor. Tu nombre y tu historia de servicio quedan para la iglesia, sin cuenta.</li>
               <li>Si entraste con Apple, revocamos el permiso que le diste al portal.</li>
               <li>No se puede deshacer.</li>

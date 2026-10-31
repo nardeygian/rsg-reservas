@@ -36,6 +36,12 @@ async function fetchPage(url: string, pat: string): Promise<Response> {
   }
 }
 
+// Sin las variables de Asana (los previews) el calendario se muestra sin sus
+// eventos y sin aviso de error.
+export function asanaConfigurado(): boolean {
+  return !!process.env.ASANA_PAT && !!process.env.ASANA_CALENDAR_PROJECT_GID;
+}
+
 // Lanza error si Asana no responde bien: devolver una lista vacía o a medias
 // haría que el calendario se vea vacío sin explicación y que la sincronización
 // de Servicio tome las reuniones faltantes como borradas en Asana.

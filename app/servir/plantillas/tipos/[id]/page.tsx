@@ -9,8 +9,8 @@ export const metadata = { title: "Tipo de reunión · Servir" };
 
 const VACIO: DatosTipo = {
   name: "", ministry_id: null, counting: "min", kind: "ministerio", color: null,
-  usual_weekday: null, usual_time: null, duration_min: null, usual_space_id: null,
-  default_template_id: null, active: true,
+  usual_weekday: null, usual_time: null, duration_min: null, usual_space_ids: [],
+  setup_minutes: 120, teardown_minutes: 60, default_template_id: null, active: true,
 };
 
 export default async function TipoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,19 +31,20 @@ export default async function TipoPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const [tipoRes, { data: ministerios }, { data: espacios }, { data: plantillas }] = await Promise.all([
+  const [tipoRes, { data: ministerios }, { data: espacios }, { data: plantillas }, { data: puedeMontaje }] = await Promise.all([
     nuevo
       ? Promise.resolve({ data: null })
       : supabase
           .from("meeting_types")
-          .select("id, name, ministry_id, counting, kind, color, usual_weekday, usual_time, duration_min, usual_space_id, default_template_id, active")
+          .select("id, name, ministry_id, counting, kind, color, usual_weekday, usual_time, duration_min, usual_space_ids, setup_minutes, teardown_minutes, default_template_id, active")
           .eq("id", id)
           .maybeSingle(),
     supabase.from("ministries").select("id, name").order("name"),
-    supabase.from("spaces").select("id, name").neq("status", "disabled").order("name"),
+    supabase.from("spaces").select("id, name, capacity, booking_policy").eq("status", "active").order("name"),
     nuevo
       ? Promise.resolve({ data: [] as { id: string; name: string; version: number }[] })
       : supabase.from("meeting_templates").select("id, name, version").eq("meeting_type_id", id).order("name").order("version", { ascending: false }),
+    supabase.rpc("has_global_permission", { p_permission: "servir.planear" }),
   ]);
   const t = tipoRes.data;
   if (!nuevo && !t) notFound();
@@ -63,6 +64,7 @@ export default async function TipoPage({ params }: { params: Promise<{ id: strin
         inicial={inicial}
         ministerios={ministerios ?? []}
         espacios={espacios ?? []}
+        puedeMontaje={puedeMontaje === true}
         plantillas={(plantillas ?? []).map((p) => ({ id: p.id, label: `${p.name} · v${p.version}` }))}
       />
     </Pagina>

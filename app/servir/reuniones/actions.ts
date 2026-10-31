@@ -29,8 +29,10 @@ function fallo(error: string): { ok: false; error: string } {
   return { ok: false, error };
 }
 
-// Traduce los errores de la base a algo que la UI pueda mostrar.
-function errorBase(e: { code?: string; message: string }): string {
+// Traduce los errores de la base a algo que la UI pueda mostrar. Las
+// funciones de espacios explican el choque en el hint.
+function errorBase(e: { code?: string; message: string; hint?: string | null }): string {
+  if (e.hint) return e.hint;
   if (e.code === "42501" || /row-level security/i.test(e.message)) return SIN_PERMISO;
   if (e.code === "23514") return "Algún dato no es válido (revisa horas y duraciones).";
   return `No se pudo guardar: ${e.message}`;
@@ -47,9 +49,12 @@ async function puedePlanear(supabase: ServirClient): Promise<boolean> {
   return data === true;
 }
 
+// Las reuniones publicadas reservan espacios: Reservas y Calendario cambian.
 function revalidar(id?: string) {
   revalidatePath("/servir/reuniones");
   if (id) revalidatePath(`/servir/reuniones/${id}`);
+  revalidatePath("/reservas");
+  revalidatePath("/calendario");
 }
 
 // Normaliza un ítem del orden; null si no sirve.
@@ -76,6 +81,115 @@ function itemsDePlantilla(runSheet: Json, meetingId: string) {
     .map((i, sort) => ({ ...i, duration_sec: i.duration_sec ?? 0, meeting_id: meetingId, sort }));
 }
 
+// ── Espacios ──────────────────────────────────────────────────────────────
+
+const MONTAJE = 120;   // minutos por defecto (decisión de Gian)
+const DESMONTE = 60;
+const UUID = /^[0-9a-f-]{36}$/i;
+
+function limpiarEspacios(ids: string[]): string[] {
+  return [...new Set(ids.filter((id) => typeof id === "string" && UUID.test(id)))].slice(0, 20);
+}
+
+// Minutos válidos (0 a 12 horas) o null si no sirven.
+function minutos(v: number | null | undefined, porDefecto: number): number | null {
+  const n = v ?? porDefecto;
+  return Number.isInteger(n) && n >= 0 && n <= 720 ? n : null;
+}
+
+export type Disponibilidad = {
+  space_id: string; name: string; capacity: number | null; booking_policy: string;
+  libre: boolean; ocupado_desde: string | null; ocupado_hasta: string | null;
+};
+
+// Qué espacios están libres en esa franja con montaje y desmonte. No dice de
+// quién es la otra reserva, solo la franja.
+export async function consultarDisponibilidad(input: {
+  starts_at: string; ends_at: string; setup_minutes: number; teardown_minutes: number; meeting_id?: string | null;
+}): Promise<Resultado<Disponibilidad[]>> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  if (!(Date.parse(input.ends_at) > Date.parse(input.starts_at))) return { ok: true, data: [] };
+  const { data, error } = await ctx.supabase.rpc("disponibilidad_espacios", {
+    p_starts: input.starts_at, p_ends: input.ends_at,
+    p_setup_minutes: minutos(input.setup_minutes, MONTAJE) ?? MONTAJE,
+    p_teardown_minutes: minutos(input.teardown_minutes, DESMONTE) ?? DESMONTE,
+    ...(input.meeting_id && UUID.test(input.meeting_id) ? { p_meeting_id: input.meeting_id } : {}),
+  });
+  if (error) return fallo(errorBase(error));
+  return { ok: true, data: data ?? [] };
+}
+
+// Espacios, montaje y desmonte de una reunión. Si está publicada, la base
+// reserva, mueve o libera en Reservas en el mismo paso; si un espacio está
+// ocupado, no cambia nada y lo dice.
+export async function guardarEspacios(
+  meetingId: string,
+  input: { space_ids: string[]; setup_minutes: number; teardown_minutes: number },
+): Promise<Resultado> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  const { supabase } = ctx;
+  if (!UUID.test(meetingId)) return fallo("No encontramos la reunión.");
+  const montaje = minutos(input.setup_minutes, MONTAJE);
+  const desmonte = minutos(input.teardown_minutes, DESMONTE);
+  if (montaje === null || desmonte === null) return fallo("Montaje y desmonte van de 0 a 12 horas.");
+  const quiere = limpiarEspacios(input.space_ids);
+
+  const { data: m } = await supabase.from("meetings")
+    .select("status, starts_at, ends_at, setup_minutes, teardown_minutes").eq("id", meetingId).maybeSingle();
+  if (!m) return fallo("No encontramos la reunión.");
+  if (!["borrador", "publicada"].includes(m.status)) return fallo("Esta reunión ya no se puede editar.");
+  if (quiere.length && (!m.starts_at || !m.ends_at)) return fallo("Para reservar espacios, la reunión necesita hora de inicio y de fin.");
+
+  const { data: puede } = await supabase.rpc("has_global_permission", { p_permission: "servir.planear" });
+  if (!puede) return fallo("Solo Planeación, un pastor de sede o un super admin cambian espacios, montaje y desmonte.");
+
+  const { data: actuales } = await supabase.from("meeting_spaces").select("space_id").eq("meeting_id", meetingId);
+  const tiene = new Set((actuales ?? []).map((r) => r.space_id));
+  const quitar = [...tiene].filter((id) => !quiere.includes(id));
+  const agregar = quiere.filter((id) => !tiene.has(id));
+
+  // Primero se liberan los que salen y se ajusta el montaje (puede bajar y
+  // dejar caber otro espacio); después se agregan los nuevos.
+  if (quitar.length) {
+    const { error } = await supabase.from("meeting_spaces").delete().eq("meeting_id", meetingId).in("space_id", quitar);
+    if (error) return fallo(errorBase(error));
+  }
+  if (montaje !== m.setup_minutes || desmonte !== m.teardown_minutes) {
+    const { error } = await supabase.from("meetings").update({ setup_minutes: montaje, teardown_minutes: desmonte }).eq("id", meetingId);
+    if (error) return fallo(errorBase(error));
+  }
+  for (const space_id of agregar) {
+    const { error } = await supabase.from("meeting_spaces").insert({ meeting_id: meetingId, space_id });
+    if (error) {
+      revalidar(meetingId);
+      return fallo(errorBase(error));
+    }
+  }
+  revalidar(meetingId);
+  return { ok: true, data: undefined };
+}
+
+// Fechas de la serie en que algún espacio ya está ocupado.
+async function choquesDeSerie(
+  supabase: ServirClient, reuniones: { id: string; meeting_date: string }[], espacios: string[],
+): Promise<string[]> {
+  if (!espacios.length) return [];
+  const { data: ms } = await supabase.from("meetings")
+    .select("id, meeting_date, starts_at, ends_at, setup_minutes, teardown_minutes").in("id", reuniones.map((r) => r.id));
+  const choques: string[] = [];
+  for (const m of ms ?? []) {
+    if (!m.starts_at || !m.ends_at) continue;
+    const { data } = await supabase.rpc("disponibilidad_espacios", {
+      p_starts: m.starts_at, p_ends: m.ends_at, p_setup_minutes: m.setup_minutes, p_teardown_minutes: m.teardown_minutes,
+    });
+    const ocupados = (data ?? []).filter((d) => espacios.includes(d.space_id) && !d.libre).map((d) => d.name);
+    if (ocupados.length) choques.push(`${fechaLarga(m.meeting_date)}: ${ocupados.join(", ")}`);
+  }
+  return choques.sort();
+}
+
 // ── Crear ─────────────────────────────────────────────────────────────────
 
 async function crearUna(
@@ -88,11 +202,12 @@ async function crearUna(
   let tipo: {
     name: string; kind: string; ministry_id: string | null; default_template_id: string | null;
     usual_time: string | null; duration_min: number | null;
+    usual_space_ids: string[]; setup_minutes: number; teardown_minutes: number;
   } | null = null;
   if (input.meeting_type_id) {
     const { data } = await supabase
       .from("meeting_types")
-      .select("name, kind, ministry_id, default_template_id, usual_time, duration_min")
+      .select("name, kind, ministry_id, default_template_id, usual_time, duration_min, usual_space_ids, setup_minutes, teardown_minutes")
       .eq("id", input.meeting_type_id)
       .maybeSingle();
     if (!data) return fallo("No encontramos ese tipo de reunión.");
@@ -100,10 +215,13 @@ async function crearUna(
   }
 
   const templateId = input.template_id ?? tipo?.default_template_id ?? null;
-  let plantilla: { run_sheet: Json; meeting_type_id: string | null } | null = null;
+  let plantilla: {
+    run_sheet: Json; meeting_type_id: string | null;
+    space_ids: string[] | null; setup_minutes: number | null; teardown_minutes: number | null;
+  } | null = null;
   if (templateId) {
     const { data } = await supabase
-      .from("meeting_templates").select("run_sheet, meeting_type_id").eq("id", templateId).maybeSingle();
+      .from("meeting_templates").select("run_sheet, meeting_type_id, space_ids, setup_minutes, teardown_minutes").eq("id", templateId).maybeSingle();
     if (!data) return fallo("No encontramos esa plantilla.");
     plantilla = data;
   }
@@ -120,6 +238,13 @@ async function crearUna(
   }
   if (startsAt && endsAt && endsAt <= startsAt) return fallo("La hora de fin debe ser después del inicio.");
 
+  // Espacios y montaje: lo que llegue, si no la plantilla, si no el tipo.
+  const espacios = limpiarEspacios(input.space_ids ?? plantilla?.space_ids ?? tipo?.usual_space_ids ?? []);
+  const montaje = minutos(input.setup_minutes ?? plantilla?.setup_minutes ?? tipo?.setup_minutes, MONTAJE);
+  const desmonte = minutos(input.teardown_minutes ?? plantilla?.teardown_minutes ?? tipo?.teardown_minutes, DESMONTE);
+  if (montaje === null || desmonte === null) return fallo("Montaje y desmonte van de 0 a 12 horas.");
+  if (espacios.length && (!startsAt || !endsAt)) return fallo("Para reservar espacios, la reunión necesita hora de inicio y duración.");
+
   const { data: reunion, error } = await supabase
     .from("meetings")
     .insert({
@@ -132,6 +257,8 @@ async function crearUna(
       kind: tipo?.kind ?? "ministerio",
       ministry_id: input.ministry_id ?? tipo?.ministry_id ?? null,
       booking_id: input.booking_id ?? null,
+      setup_minutes: montaje,
+      teardown_minutes: desmonte,
       status: "borrador",
       origin: "manual",
       outside_asana: true,
@@ -140,6 +267,12 @@ async function crearUna(
     .select("id")
     .single();
   if (error || !reunion) return fallo(error ? errorBase(error) : "No se pudo crear la reunión.");
+
+  // En borrador solo quedan escogidos: reservan al publicar.
+  if (espacios.length) {
+    const { error: e1 } = await supabase.from("meeting_spaces").insert(espacios.map((space_id) => ({ meeting_id: reunion.id, space_id })));
+    if (e1) return fallo(`La reunión se creó, pero no sus espacios: ${errorBase(e1)}`);
+  }
 
   if (plantilla) {
     const items = itemsDePlantilla(plantilla.run_sheet, reunion.id);
@@ -163,7 +296,7 @@ export async function crearReunion(input: NuevaReunion): Promise<Resultado<{ id:
 export async function crearEnSerie(
   input: Omit<NuevaReunion, "meeting_date">,
   fechas: string[],
-): Promise<Resultado<{ ids: string[] }>> {
+): Promise<Resultado<{ ids: string[]; choques: string[] }>> {
   const ctx = await contexto();
   if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
   if (!(await puedePlanear(ctx.supabase))) return fallo(SIN_PERMISO);
@@ -190,8 +323,11 @@ export async function crearEnSerie(
     }
     ids.push(r.data.id);
   }
+  const { data: creadas } = await ctx.supabase.from("meeting_spaces").select("space_id").in("meeting_id", ids);
+  const espacios = [...new Set((creadas ?? []).map((c) => c.space_id))];
+  const choques = await choquesDeSerie(ctx.supabase, ids.map((id, i) => ({ id, meeting_date: unicas[i] })), espacios);
   revalidar();
-  return { ok: true, data: { ids } };
+  return { ok: true, data: { ids, choques } };
 }
 
 export async function duplicarReunion(id: string, meeting_date: string): Promise<Resultado<{ id: string }>> {
@@ -203,7 +339,7 @@ export async function duplicarReunion(id: string, meeting_date: string): Promise
 
   const { data: m } = await supabase
     .from("meetings")
-    .select("name, starts_at, ends_at, meeting_type_id, template_id, kind, section, ministry_id, notes")
+    .select("name, starts_at, ends_at, meeting_type_id, template_id, kind, section, ministry_id, notes, setup_minutes, teardown_minutes")
     .eq("id", id)
     .maybeSingle();
   if (!m) return fallo("No encontramos la reunión.");
@@ -220,11 +356,18 @@ export async function duplicarReunion(id: string, meeting_date: string): Promise
       name: m.name, meeting_date, starts_at: startsAt, ends_at: endsAt,
       meeting_type_id: m.meeting_type_id, template_id: m.template_id, kind: m.kind,
       section: m.section, ministry_id: m.ministry_id, notes: m.notes,
+      setup_minutes: m.setup_minutes, teardown_minutes: m.teardown_minutes,
       status: "borrador", origin: "manual", outside_asana: true, created_by: userId,
     })
     .select("id")
     .single();
   if (error || !nueva) return fallo(error ? errorBase(error) : "No se pudo duplicar.");
+
+  // Los mismos espacios, escogidos (reservan cuando se publique).
+  const { data: espacios } = await supabase.from("meeting_spaces").select("space_id").eq("meeting_id", id);
+  if (espacios?.length && startsAt && endsAt) {
+    await supabase.from("meeting_spaces").insert(espacios.map((e) => ({ meeting_id: nueva.id, space_id: e.space_id })));
+  }
 
   const { data: items } = await supabase
     .from("run_items")
@@ -249,8 +392,12 @@ export async function guardarComoPlantilla(meetingId: string, nombre: string): P
   if (!name) return fallo("Ponle un nombre a la plantilla.");
 
   const { data: m } = await supabase
-    .from("meetings").select("meeting_type_id, template_id").eq("id", meetingId).maybeSingle();
+    .from("meetings").select("meeting_type_id, template_id, setup_minutes, teardown_minutes").eq("id", meetingId).maybeSingle();
   if (!m) return fallo("No encontramos la reunión.");
+  // Espacios y montaje viajan a la plantilla solo si quien guarda puede
+  // cambiarlos (Planeación, pastor de sede, super admin).
+  const { data: montajeGlobal } = await supabase.rpc("has_global_permission", { p_permission: "servir.planear" });
+  const { data: espacios } = await supabase.from("meeting_spaces").select("space_id").eq("meeting_id", meetingId);
 
   const { data: items } = await supabase
     .from("run_items")
@@ -286,6 +433,9 @@ export async function guardarComoPlantilla(meetingId: string, nombre: string): P
       run_sheet: runSheet as unknown as Json,
       required_positions: base?.required_positions ?? [],
       checklist_extra: base?.checklist_extra ?? [],
+      ...(montajeGlobal
+        ? { space_ids: (espacios ?? []).map((e) => e.space_id), setup_minutes: m.setup_minutes, teardown_minutes: m.teardown_minutes }
+        : {}),
       created_by: userId,
     })
     .select("id")
@@ -446,6 +596,25 @@ export async function restaurarReunion(id: string): Promise<Resultado> {
     meeting_id: id, change: "restaurada", new_date: data[0].meeting_date, actor_id: userId,
   });
   revalidar(id);
+  return { ok: true, data: undefined };
+}
+
+// Borra la reunión con su orden, equipo asignado e historial (todo en
+// cascada). Fuera del contrato. En vivo o cerrada no se borra: ya tiene
+// asistencia y cuenta en las estadísticas. RLS exige servir.planear.
+export async function eliminarReunion(id: string): Promise<Resultado> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  const { supabase } = ctx;
+  if (!(await puedePlanear(supabase))) return fallo(SIN_PERMISO);
+
+  const { data, error } = await supabase
+    .from("meetings").delete().eq("id", id).in("status", ["borrador", "publicada", "cancelada"]).select("id");
+  if (error) return fallo(errorBase(error));
+  if (!data?.length) {
+    return fallo(await motivoSinCambio(supabase, id, "Una reunión en vivo o cerrada no se puede borrar."));
+  }
+  revalidatePath("/servir/reuniones");
   return { ok: true, data: undefined };
 }
 
