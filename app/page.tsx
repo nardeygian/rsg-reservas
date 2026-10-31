@@ -324,13 +324,10 @@ export default async function HomePage() {
               <blockquote style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "clamp(19px, 5vw, 23px)", fontWeight: 500, lineHeight: 1.35, letterSpacing: "-.01em", color: "#fff" }}>
                 {versiculo.text}
               </blockquote>
-              <figcaption style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                  {versiculo.reference} · {versiculo.translation}
-                </span>
-                <span style={{ fontSize: 10.5, lineHeight: 1.35, color: "rgba(255,255,255,.6)" }}>
-                  Santa Biblia, Nueva Versión Internacional® NVI® © 1999, 2015 por Biblica, Inc.® Usado con permiso. Todos los derechos reservados mundialmente.
-                </span>
+              {/* Biblica no pide el aviso completo en medios que no se venden:
+                  basta la sigla de la versión al final de la cita. */}
+              <figcaption style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+                {versiculo.reference} · {versiculo.translation}
               </figcaption>
             </figure>
           )}

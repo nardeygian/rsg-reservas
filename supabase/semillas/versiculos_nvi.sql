@@ -8,8 +8,8 @@
 --
 -- IMPORTANTE: el texto se escribió de memoria. Antes de producción, que
 -- alguien del equipo lo revise contra una Biblia NVI.
--- La NVI permite citar hasta 500 versículos sin permiso escrito, con la
--- nota de créditos que muestra la app junto al versículo.
+-- La NVI permite citar hasta 500 versículos sin permiso escrito; en medios
+-- que no se venden basta la sigla "NVI" al final de cada cita.
 -- Generado desde una lista en Python; para cambiar un versículo basta
 -- editar su fila aquí o en la tabla (super admin).
 -- =====================================================================
