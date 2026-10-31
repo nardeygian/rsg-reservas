@@ -449,6 +449,25 @@ export async function restaurarReunion(id: string): Promise<Resultado> {
   return { ok: true, data: undefined };
 }
 
+// Borra la reunión con su orden, equipo asignado e historial (todo en
+// cascada). Fuera del contrato. En vivo o cerrada no se borra: ya tiene
+// asistencia y cuenta en las estadísticas. RLS exige servir.planear.
+export async function eliminarReunion(id: string): Promise<Resultado> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  const { supabase } = ctx;
+  if (!(await puedePlanear(supabase))) return fallo(SIN_PERMISO);
+
+  const { data, error } = await supabase
+    .from("meetings").delete().eq("id", id).in("status", ["borrador", "publicada", "cancelada"]).select("id");
+  if (error) return fallo(errorBase(error));
+  if (!data?.length) {
+    return fallo(await motivoSinCambio(supabase, id, "Una reunión en vivo o cerrada no se puede borrar."));
+  }
+  revalidatePath("/servir/reuniones");
+  return { ok: true, data: undefined };
+}
+
 // Datos básicos de la reunión (nombre, fecha, hora, notas). Fuera del contrato.
 export async function guardarDatosReunion(
   id: string,

@@ -50,7 +50,7 @@ export type Plataforma = "web" | "android" | "ios";
 export type Permiso =
   | "servir.ver_todo" | "servir.ver_reuniones" | "servir.planear" | "servir.vivo"
   | "servir.asistencia" | "servir.asignar" | "servir.plantillas" | "servir.estadisticas"
-  | "canciones.editar" | "notificar.enviar";
+  | "canciones.editar" | "notificar.enviar" | "servir.importar";
 
 // Las acciones devuelven esto en vez de lanzar: la UI muestra `error` tal cual.
 export type Resultado<T = void> = { ok: true; data: T } | { ok: false; error: string };

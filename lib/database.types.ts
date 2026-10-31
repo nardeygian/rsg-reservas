@@ -913,6 +913,67 @@ export type Database = {
           },
         ]
       }
+      meeting_imports: {
+        Row: {
+          created_at: string
+          extraction: Json
+          file_name: string
+          file_sha256: string
+          id: string
+          input_tokens: number | null
+          meeting_id: string | null
+          model: string
+          output_tokens: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extraction: Json
+          file_name: string
+          file_sha256: string
+          id?: string
+          input_tokens?: number | null
+          meeting_id?: string | null
+          model: string
+          output_tokens?: number | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          extraction?: Json
+          file_name?: string
+          file_sha256?: string
+          id?: string
+          input_tokens?: number | null
+          meeting_id?: string | null
+          model?: string
+          output_tokens?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_imports_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_imports_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "service_units"
+            referencedColumns: ["meeting_id"]
+          },
+          {
+            foreignKeyName: "meeting_imports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_templates: {
         Row: {
           checklist_extra: Json

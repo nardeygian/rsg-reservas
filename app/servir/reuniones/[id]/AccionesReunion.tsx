@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/app/_components/ui/Icon";
 import type { Resultado } from "@/lib/servir/contratos";
 import {
-  cancelarReunion, duplicarReunion, guardarComoPlantilla, guardarDatosReunion,
+  cancelarReunion, duplicarReunion, eliminarReunion, guardarComoPlantilla, guardarDatosReunion,
   publicarReunion, reprogramarReunion, restaurarReunion,
 } from "../actions";
 import { horaBogota, instanteBogota, sumarDias } from "../_lib/fechas";
 
-type Panel = null | "datos" | "reprogramar" | "cancelar" | "duplicar" | "plantilla";
+type Panel = null | "datos" | "reprogramar" | "cancelar" | "duplicar" | "plantilla" | "borrar";
 
 export function AccionesReunion({
   reunion,
@@ -43,6 +43,7 @@ export function AccionesReunion({
   const [nombrePlantilla, setNombrePlantilla] = useState(nombrePlantillaSugerido);
 
   const editable = reunion.status === "borrador" || reunion.status === "publicada";
+  const borrable = editable || reunion.status === "cancelada";
 
   function abrir(p: Panel) {
     setPanel(panel === p ? null : p);
@@ -97,6 +98,7 @@ export function AccionesReunion({
             Restaurar
           </button>
         )}
+        {borrable && boton("borrar", "close", "Borrar")}
       </div>
 
       {panel === "datos" && (
@@ -201,6 +203,27 @@ export function AccionesReunion({
             <input id="p-nombre" className="input" value={nombrePlantilla} onChange={(e) => setNombrePlantilla(e.target.value)} required maxLength={120} />
           </div>
           <button type="submit" className="btn-primary self-start" disabled={pendiente}>Guardar plantilla</button>
+        </form>
+      )}
+
+      {panel === "borrar" && (
+        <form className="card p-4 md:p-5 flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            correr(() => eliminarReunion(reunion.id), () => router.push("/servir/reuniones"));
+          }}>
+          <p className="text-[14px]">
+            Se borra «{reunion.name}» con su orden, su equipo asignado y su historial. No se puede deshacer.
+          </p>
+          {reunion.status === "publicada" && (
+            <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+              Las personas asignadas no reciben aviso. Si el equipo ya la vio, mejor cancélala.
+            </p>
+          )}
+          <button type="submit" className="btn-primary self-start" disabled={pendiente}
+            style={{ background: "var(--color-critical)", color: "#F6F5F1" }}>
+            Borrar reunión
+          </button>
         </form>
       )}
 

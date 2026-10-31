@@ -22,11 +22,12 @@ export async function permisos(supabase: ServirClient) {
     const { data } = await supabase.rpc("has_permission", { p_permission: p });
     return data === true;
   };
-  const [planear, plantillas, verReuniones, verTodo] = await Promise.all([
+  const [planear, plantillas, verReuniones, verTodo, importar] = await Promise.all([
     tiene("servir.planear"),
     tiene("servir.plantillas"),
     tiene("servir.ver_reuniones"),
     tiene("servir.ver_todo"),
+    tiene("servir.importar"),
   ]);
-  return { planear, plantillas, verTodas: verReuniones || verTodo };
+  return { planear, plantillas, verTodas: verReuniones || verTodo, importar: importar && planear };
 }
