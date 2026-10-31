@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getCalendarEvents } from "@/lib/asana";
+import { asanaConfigurado, getCalendarEvents } from "@/lib/asana";
 import { CalendarioShell } from "./_components/CalendarioShell";
 import { linkEventAction, unlinkEventAction } from "./actions";
 
@@ -54,11 +54,13 @@ export default async function CalendarioPage({
   // Eventos de Asana, links actuales y opciones de reserva (en paralelo)
   let asanaError: string | null = null;
   const [events, { data: linksRaw }, { data: bookingsRaw }] = await Promise.all([
-    getCalendarEvents().catch((e: Error) => {
-      console.error("[calendario] Asana:", e.message);
-      asanaError = e.message;
-      return [] as Awaited<ReturnType<typeof getCalendarEvents>>;
-    }),
+    asanaConfigurado()
+      ? getCalendarEvents().catch((e: Error) => {
+          console.error("[calendario] Asana:", e.message);
+          asanaError = e.message;
+          return [] as Awaited<ReturnType<typeof getCalendarEvents>>;
+        })
+      : Promise.resolve([] as Awaited<ReturnType<typeof getCalendarEvents>>),
     service.from("calendar_links").select("asana_gid, booking_id"),
     service
       .from("bookings_calendar")
