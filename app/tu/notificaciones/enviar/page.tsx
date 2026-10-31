@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { clienteServir } from "@/lib/notificaciones/supabase";
 import { ICONOS, Grupo, svg } from "../_ui";
 import { FormEnvio, type OpcionAudiencia } from "./FormEnvio";
+import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
 
 export const metadata = { title: "Enviar un aviso · Panel RSG" };
 
@@ -37,6 +38,7 @@ export default async function EnviarPage() {
     grupo: GRUPO[a.audience] ?? a.audience,
   }));
   if (opciones.length === 0) redirect("/tu/notificaciones");
+  const ahora = Date.now();
   const nombre = new Map(opciones.map((o) => [o.valor, o.etiqueta]));
 
   return (
@@ -52,6 +54,8 @@ export default async function EnviarPage() {
       </header>
 
       <FormEnvio opciones={opciones} />
+      {/* Cuando el despachador termina, el envío pasa a "N personas" sin recargar. */}
+      <ActualizarEnVivo canal={`envios-${user.id}`} escuchas={[{ tabla: "broadcasts", filtro: `author_id=eq.${user.id}` }]} />
 
       {(envios ?? []).length > 0 && (
         <Grupo titulo="Tus envíos">
@@ -65,8 +69,11 @@ export default async function EnviarPage() {
               </span>
               {e.sent_at ? (
                 <span className="chip chip-up flex-none">{e.recipients_count ?? 0} {e.recipients_count === 1 ? "persona" : "personas"}</span>
-              ) : (
+              ) : Date.parse(e.scheduled_for) > ahora ? (
                 <span className="chip chip-muted flex-none">Programado</span>
+              ) : (
+                // Ya le tocaba salir: el despachador lo está procesando.
+                <span className="chip chip-gold flex-none">Enviando…</span>
               )}
             </div>
           ))}

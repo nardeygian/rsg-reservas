@@ -16,6 +16,7 @@ export type ServicioFila = {
   posicion: string;
   departamento: string;
   pasado: boolean;
+  enVivo: boolean;             // la reunión está en vivo o es hoy
   checklist: { id: string; moment: string; text: string; done: boolean }[];
   orden: { id: string; title: string; kind: string; duration_sec: number; mia: boolean }[];
 };
@@ -71,6 +72,12 @@ export function ServicioTarjeta({ s }: { s: ServicioFila }) {
       </header>
 
       {err && <Aviso texto={err} />}
+
+      {s.enVivo && s.status === "aceptada" && (
+        <Link href={`/servir/${s.meeting_id}/vivo`} className="btn-primary">
+          Abrir en vivo <Icon name="arrow-right" />
+        </Link>
+      )}
 
       {!s.pasado && s.status === "pendiente" && !rechazando && (
         <div className="grid grid-cols-2 gap-2">

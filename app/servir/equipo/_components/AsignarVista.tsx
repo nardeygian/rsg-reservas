@@ -34,7 +34,7 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
   if (posiciones.length === 0) {
     return (
       <p className="card px-4 py-6 text-sm text-center" style={{ color: "var(--color-muted)" }}>
-        Tu equipo aún no tiene posiciones. Créalas en Mi equipo › Posiciones.
+        Tu equipo aún no tiene roles. Créalos en Mi equipo › Roles.
       </p>
     );
   }
@@ -57,11 +57,6 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
                     </span>
                   )}
                 </span>
-                {editable && (
-                  <button type="button" className="btn-secondary min-h-[40px] px-3 text-[14px]" onClick={() => setAbierta(p)}>
-                    <Icon name="plus" size={14} /> Asignar
-                  </button>
-                )}
               </div>
               {p.asignados.length === 0 ? (
                 <p className="text-[13px]" style={{ color: "var(--color-faint)" }}>Sin asignar</p>
@@ -90,6 +85,11 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
                     </li>
                   ))}
                 </ul>
+              )}
+              {editable && (
+                <button type="button" className="btn-secondary self-start min-h-[40px] px-3 text-[14px]" onClick={() => setAbierta(p)}>
+                  <Icon name="plus" size={14} /> Asignar
+                </button>
               )}
             </li>
           );
@@ -137,7 +137,7 @@ function SugerenciasHoja({ meetingId, reunionNombre, posicion, onClose }: {
         )}
         {lista && lista.length === 0 && (
           <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
-            Nadie más del equipo tiene esta posición. Márcala en la ficha de cada persona (Mi equipo › Miembros).
+            Nadie más del equipo tiene este rol. Márcalo en la ficha de cada persona (Mi equipo › Miembros).
           </p>
         )}
         {lista && lista.length > 0 && (
@@ -157,8 +157,8 @@ function SugerenciasHoja({ meetingId, reunionNombre, posicion, onClose }: {
                       </span>
                     </span>
                     {s.bloqueado && <span className="chip chip-down flex-none"><Icon name="lock" size={11} style={{ marginRight: 4 }} />No puede</span>}
-                    {!s.bloqueado && s.ya_asignado && <span className="chip chip-gold flex-none">Ya sirve</span>}
-                    {!s.bloqueado && !s.ya_asignado && <Icon name="plus" style={{ color: "var(--color-accent)" }} />}
+                    {!s.bloqueado && s.ya_asignado && <span className="chip chip-gold flex-none">Tiene otro rol</span>}
+                    {!s.bloqueado && <Icon name="plus" style={{ color: "var(--color-accent)" }} />}
                   </button>
                 </li>
               ))}

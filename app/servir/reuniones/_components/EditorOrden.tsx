@@ -144,19 +144,35 @@ export function EditorOrden({
                 if (desde >= 0) mover(desde, i);
                 setArrastrando(null);
               }}
-              className="flex gap-3 items-start rounded-[var(--radius-control)] px-3 py-2.5"
+              className={`flex gap-3 rounded-[var(--radius-control)] px-3 ${editable ? "flex-col md:flex-row md:items-start py-3" : "items-start py-2.5"}`}
               style={{
                 background: esEncabezado ? "var(--color-surface-2)" : "var(--color-bg-elev)",
                 border: "1px solid var(--color-line)",
                 opacity: arrastrando === f.key ? 0.5 : 1,
               }}
             >
-              <div className="w-12 flex-none pt-2 text-[13px] tabular font-semibold" style={{ color: "var(--color-muted)" }}>
-                {horas ? horas[i] : `${i + 1}.`}
+              {/* En celular la hora y los botones van arriba y el contenido usa todo el ancho. */}
+              <div className={editable ? "flex items-center justify-between gap-2 md:contents" : "contents"}>
+                <div className="w-12 flex-none md:pt-2 text-[13px] tabular font-semibold md:order-1" style={{ color: "var(--color-muted)" }}>
+                  {horas ? horas[i] : `${i + 1}.`}
+                </div>
+                {editable && (
+                  <div className="flex gap-1.5 flex-none md:order-3">
+                    <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} disabled={i === 0} onClick={() => mover(i, i - 1)}>
+                      <Icon name="chevron-up" size={16} label="Subir" />
+                    </button>
+                    <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} disabled={i === filas.length - 1} onClick={() => mover(i, i + 1)}>
+                      <Icon name="chevron-down" size={16} label="Bajar" />
+                    </button>
+                    <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} onClick={() => cambiar(filas.filter((x) => x.key !== f.key))}>
+                      <Icon name="close" size={16} label="Quitar" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {editable ? (
-                <div className="flex-1 min-w-0 flex flex-col gap-2">
+                <div className="flex-1 min-w-0 flex flex-col gap-2 md:order-2">
                   <input
                     aria-label="Título"
                     value={f.title}
@@ -187,7 +203,7 @@ export function EditorOrden({
                           if (seg !== null) actualizar(f.key, { duration_sec: seg });
                           else { setSucio(true); }
                         }}
-                        className="input filter-select tabular text-right w-[72px] px-2"
+                        className="input filter-select tabular text-right w-[80px] px-3"
                       />
                       min
                     </label>
@@ -221,19 +237,6 @@ export function EditorOrden({
                 </div>
               )}
 
-              {editable && (
-                <div className="flex flex-col md:flex-row gap-1 flex-none">
-                  <button type="button" className="icon-btn" style={{ width: 32, height: 32 }} disabled={i === 0} onClick={() => mover(i, i - 1)}>
-                    <Icon name="chevron-up" size={15} label="Subir" />
-                  </button>
-                  <button type="button" className="icon-btn" style={{ width: 32, height: 32 }} disabled={i === filas.length - 1} onClick={() => mover(i, i + 1)}>
-                    <Icon name="chevron-down" size={15} label="Bajar" />
-                  </button>
-                  <button type="button" className="icon-btn" style={{ width: 32, height: 32 }} onClick={() => cambiar(filas.filter((x) => x.key !== f.key))}>
-                    <Icon name="close" size={15} label="Quitar" />
-                  </button>
-                </div>
-              )}
             </li>
           );
         })}

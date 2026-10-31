@@ -3,6 +3,7 @@
 import { useEffect, useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { suscribirConSesion } from "@/lib/supabase/realtime";
 import { marcarLeidas } from "@/lib/notificaciones/acciones";
 import { ICONOS, ICONO_TIPO, IconoFila, Grupo, svg } from "./_ui";
 
@@ -41,12 +42,9 @@ export function ListaNotificaciones({ filas, userId }: { filas: FilaBandeja[]; u
 
   // Una notificación nueva aparece sin recargar (Realtime con RLS).
   useEffect(() => {
-    const sb = createClient();
-    const canal = sb
+    return suscribirConSesion(createClient(), (sb) => sb
       .channel(`bandeja-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => router.refresh())
-      .subscribe();
-    return () => { sb.removeChannel(canal); };
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => router.refresh()));
   }, [router, userId]);
 
   const nuevas = vista.filter((f) => !f.read_at);

@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { crearEnSerie, crearReunion } from "../actions";
 import { DIAS, fechaCorta, fechasEnSerie, instanteBogota, sumarDias, diaSemana } from "../_lib/fechas";
+import { EspaciosSelector, type EspacioOpcion, type ValorEspacios } from "../_components/EspaciosSelector";
 
 export type TipoOpcion = {
   id: string;
@@ -13,8 +14,23 @@ export type TipoOpcion = {
   usual_time: string | null;
   duration_min: number | null;
   default_template_id: string | null;
+  usual_space_ids: string[];
+  setup_minutes: number;
+  teardown_minutes: number;
 };
-export type PlantillaOpcion = { id: string; name: string; version: number; meeting_type_id: string | null; items: number };
+export type PlantillaOpcion = {
+  id: string; name: string; version: number; meeting_type_id: string | null; items: number;
+  space_ids: string[] | null; setup_minutes: number | null; teardown_minutes: number | null;
+};
+
+// Espacios y montaje: los de la plantilla y, si no tiene, los del tipo.
+function espaciosDe(t: TipoOpcion | null, p: PlantillaOpcion | null): ValorEspacios {
+  return {
+    space_ids: p?.space_ids ?? t?.usual_space_ids ?? [],
+    setup_minutes: p?.setup_minutes ?? t?.setup_minutes ?? 120,
+    teardown_minutes: p?.teardown_minutes ?? t?.teardown_minutes ?? 60,
+  };
+}
 
 // Siguiente fecha (desde hoy) que cae en ese día de la semana.
 function proximo(hoy: string, dia: number | null): string {
@@ -30,9 +46,9 @@ function finDeMes(fecha: string): string {
 }
 
 export function FormNuevaReunion({
-  tipos, plantillas, hoy, tipoInicial,
+  tipos, plantillas, hoy, tipoInicial, espacios,
 }: {
-  tipos: TipoOpcion[]; plantillas: PlantillaOpcion[]; hoy: string; tipoInicial: string | null;
+  tipos: TipoOpcion[]; plantillas: PlantillaOpcion[]; hoy: string; tipoInicial: string | null; espacios: EspacioOpcion[];
 }) {
   const router = useRouter();
   const inicial = tipos.find((t) => t.id === tipoInicial) ?? null;
@@ -47,7 +63,10 @@ export function FormNuevaReunion({
   const [desde, setDesde] = useState(proximo(hoy, inicial?.usual_weekday ?? null));
   const [hasta, setHasta] = useState(finDeMes(hoy));
   const [dias, setDias] = useState<number[]>(inicial?.usual_weekday != null ? [inicial.usual_weekday] : [0]);
+  const [esp, setEsp] = useState<ValorEspacios>(() =>
+    espaciosDe(inicial, plantillas.find((p) => p.id === inicial?.default_template_id) ?? null));
   const [error, setError] = useState<string | null>(null);
+  const [choques, setChoques] = useState<string[] | null>(null);
   const [pendiente, startTransition] = useTransition();
 
   const tipo = tipos.find((t) => t.id === tipoId) ?? null;
@@ -60,6 +79,7 @@ export function FormNuevaReunion({
     if (!nombre.trim() || tipos.some((x) => x.name === nombre)) setNombre(t?.name ?? "");
     setTipoId(id);
     setPlantillaId(t?.default_template_id ?? "");
+    setEsp(espaciosDe(t, plantillas.find((p) => p.id === t?.default_template_id) ?? null));
     setHora(t?.usual_time?.slice(0, 5) ?? "");
     setDurMin(t?.duration_min ? String(t.duration_min) : "");
     if (t?.usual_weekday != null) {
@@ -84,7 +104,11 @@ export function FormNuevaReunion({
       name: nombre,
       starts_at,
       ends_at,
+      space_ids: esp.space_ids,
+      setup_minutes: esp.setup_minutes,
+      teardown_minutes: esp.teardown_minutes,
     };
+    if (esp.space_ids.length && !ends_at) return setError("Para reservar espacios, pon la hora de inicio y la duración.");
     startTransition(async () => {
       if (modo === "una") {
         const r = await crearReunion({ ...base, meeting_date: fecha });
@@ -93,12 +117,35 @@ export function FormNuevaReunion({
       } else {
         const r = await crearEnSerie(base, serie);
         if (!r.ok) return setError(r.error);
+        // Si algún espacio ya está ocupado en alguna fecha, se avisa antes de salir.
+        if (r.data.choques.length) return setChoques(r.data.choques);
         router.push(tipoId ? `/servir/reuniones?tipo=${tipoId}` : "/servir/reuniones");
       }
     });
   }
 
   const plantilla = plantillas.find((p) => p.id === plantillaId);
+  const primeraFecha = modo === "una" ? fecha : serie[0];
+  const durVista = durMin ? Number(durMin) : 0;
+  const inicioVista = hora && primeraFecha ? instanteBogota(primeraFecha, hora) : null;
+  const finVista = inicioVista && durVista > 0 ? new Date(new Date(inicioVista).getTime() + durVista * 60_000).toISOString() : null;
+
+  if (choques) {
+    return (
+      <div className="card p-5 md:p-7 flex flex-col gap-3 max-w-xl">
+        <h2 className="text-[17px] font-semibold" style={{ color: "var(--color-ink)" }}>Se crearon las reuniones, pero algunos espacios chocan</h2>
+        <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+          Estas fechas no se podrán publicar con esos espacios. Cambia el espacio, la hora o el montaje en cada una:
+        </p>
+        <ul className="flex flex-col gap-1 text-[14px]" style={{ color: "var(--color-ink)" }}>
+          {choques.map((c) => <li key={c} className="first-letter:uppercase">{c}</li>)}
+        </ul>
+        <button type="button" className="btn-primary self-start" onClick={() => router.push(tipoId ? `/servir/reuniones?tipo=${tipoId}` : "/servir/reuniones")}>
+          Ver las reuniones
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={enviar} className="grid gap-5 md:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] md:items-start">
@@ -119,7 +166,10 @@ export function FormNuevaReunion({
 
         <div>
           <label htmlFor="plantilla" className="field-label block mb-1.5">Plantilla</label>
-          <select id="plantilla" className="input" value={plantillaId} onChange={(e) => setPlantillaId(e.target.value)}>
+          <select id="plantilla" className="input" value={plantillaId} onChange={(e) => {
+            setPlantillaId(e.target.value);
+            setEsp(espaciosDe(tipo, plantillas.find((p) => p.id === e.target.value) ?? null));
+          }}>
             <option value="">Sin plantilla (orden vacío)</option>
             {plantillasDelTipo.map((p) => (
               <option key={p.id} value={p.id}>{p.name} · v{p.version} · {p.items} ítems</option>
@@ -148,6 +198,17 @@ export function FormNuevaReunion({
           </div>
         </div>
         <p className="text-xs -mt-3" style={{ color: "var(--color-faint)" }}>Hora de Bogotá. Puedes dejarla vacía si todavía no está definida.</p>
+
+        <EspaciosSelector
+          espacios={espacios}
+          valor={esp}
+          onChange={setEsp}
+          inicio={inicioVista}
+          fin={finVista}
+          nota={modo === "serie"
+            ? "La disponibilidad es de la primera fecha. Al crear la serie te avisamos si alguna otra choca. Los espacios se reservan al publicar cada reunión."
+            : "Los espacios se reservan al publicar la reunión; en borrador quedan escogidos."}
+        />
       </div>
 
       <div className="card p-5 md:p-7 flex flex-col gap-5">

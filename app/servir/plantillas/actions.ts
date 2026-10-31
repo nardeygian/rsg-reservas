@@ -17,7 +17,8 @@ function fallo(error: string): { ok: false; error: string } {
   return { ok: false, error };
 }
 
-function errorBase(e: { code?: string; message: string }): string {
+function errorBase(e: { code?: string; message: string; hint?: string | null }): string {
+  if (e.message.includes("sin_permiso_montaje")) return MONTAJE_SIN_PERMISO;
   if (e.code === "42501" || /row-level security/i.test(e.message)) return "No tienes permiso para editar tipos y plantillas de este ministerio.";
   if (e.code === "23505") return "Ya existe un tipo con ese nombre.";
   if (e.code === "23514") return "Algún dato no es válido.";
@@ -57,10 +58,16 @@ export type DatosTipo = {
   usual_weekday: number | null;
   usual_time: string | null;      // HH:mm (Bogotá)
   duration_min: number | null;
-  usual_space_id: string | null;
+  usual_space_ids: string[];
+  setup_minutes: number;          // montaje antes, en minutos
+  teardown_minutes: number;       // desmonte después
   default_template_id: string | null;
   active: boolean;
 };
+
+const UUID = /^[0-9a-f-]{36}$/i;
+const minutosValidos = (n: number) => Number.isInteger(n) && n >= 0 && n <= 720;
+const MONTAJE_SIN_PERMISO = "Solo Planeación, un pastor de sede o un super admin cambian espacios, montaje y desmonte.";
 
 export async function guardarTipo(input: DatosTipo): Promise<Resultado<{ id: string }>> {
   const supabase = await servirClient();
@@ -73,6 +80,8 @@ export async function guardarTipo(input: DatosTipo): Promise<Resultado<{ id: str
   if (input.usual_time && !esHora(input.usual_time)) return fallo("Hora no válida.");
   if (input.duration_min != null && !(input.duration_min > 0 && input.duration_min <= 24 * 60)) return fallo("Duración no válida.");
   if (input.color && !/^#[0-9a-fA-F]{6}$/.test(input.color)) return fallo("Color no válido.");
+  if (!minutosValidos(input.setup_minutes) || !minutosValidos(input.teardown_minutes)) return fallo("Montaje y desmonte van de 0 a 12 horas.");
+  const espacios = [...new Set(input.usual_space_ids.filter((x) => UUID.test(x)))].slice(0, 20);
 
   const fila = {
     name,
@@ -83,7 +92,10 @@ export async function guardarTipo(input: DatosTipo): Promise<Resultado<{ id: str
     usual_weekday: input.usual_weekday,
     usual_time: input.usual_time || null,
     duration_min: input.duration_min,
-    usual_space_id: input.usual_space_id || null,
+    usual_space_ids: espacios,
+    usual_space_id: espacios[0] ?? null,
+    setup_minutes: input.setup_minutes,
+    teardown_minutes: input.teardown_minutes,
     default_template_id: input.default_template_id || null,
     active: input.active,
   };
@@ -147,7 +159,7 @@ export async function guardarPlantilla(
 
   const { data: t } = await supabase
     .from("meeting_templates")
-    .select("meeting_type_id, required_positions, checklist_extra, created_from_meeting_id")
+    .select("meeting_type_id, required_positions, checklist_extra, created_from_meeting_id, space_ids, setup_minutes, teardown_minutes")
     .eq("id", id)
     .maybeSingle();
   if (!t) return fallo("No encontramos la plantilla.");
@@ -171,6 +183,7 @@ export async function guardarPlantilla(
       name, meeting_type_id: t.meeting_type_id, version: (ult?.[0]?.version ?? 0) + 1,
       run_sheet: orden as unknown as Json, required_positions: t.required_positions,
       checklist_extra: t.checklist_extra, created_from_meeting_id: t.created_from_meeting_id,
+      space_ids: t.space_ids, setup_minutes: t.setup_minutes, teardown_minutes: t.teardown_minutes,
       created_by: userId,
     })
     .select("id")
@@ -204,5 +217,30 @@ export async function borrarPlantilla(id: string): Promise<Resultado> {
   if (error) return fallo(errorBase(error));
   if (!data?.length) return fallo("No tienes permiso para borrar esta plantilla.");
   revalidar();
+  return { ok: true, data: undefined };
+}
+
+// Espacios, montaje y desmonte de una plantilla (null = los del tipo). Se
+// guardan en la misma versión: no cambian el orden. Solo servir.planear
+// global; la base lo vuelve a revisar.
+export async function guardarEspaciosPlantilla(
+  id: string,
+  valor: { space_ids: string[]; setup_minutes: number; teardown_minutes: number } | null,
+): Promise<Resultado> {
+  const supabase = await servirClient();
+  if (!(await usuarioActual(supabase))) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  if (!UUID.test(id)) return fallo("No encontramos la plantilla.");
+  if (valor && (!minutosValidos(valor.setup_minutes) || !minutosValidos(valor.teardown_minutes))) {
+    return fallo("Montaje y desmonte van de 0 a 12 horas.");
+  }
+  const { data: puede } = await supabase.rpc("has_global_permission", { p_permission: "servir.planear" });
+  if (!puede) return fallo(MONTAJE_SIN_PERMISO);
+  const { data, error } = await supabase.from("meeting_templates").update(valor
+    ? { space_ids: [...new Set(valor.space_ids.filter((x) => UUID.test(x)))].slice(0, 20), setup_minutes: valor.setup_minutes, teardown_minutes: valor.teardown_minutes }
+    : { space_ids: null, setup_minutes: null, teardown_minutes: null }).eq("id", id).select("id");
+  if (error) return fallo(errorBase(error));
+  if (!data?.length) return fallo("No tienes permiso para editar esta plantilla.");
+  revalidar();
+  revalidatePath(`/servir/plantillas/${id}`);
   return { ok: true, data: undefined };
 }

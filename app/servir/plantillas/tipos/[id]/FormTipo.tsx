@@ -5,15 +5,17 @@ import { useRouter } from "next/navigation";
 import type { ClaseReunion, Conteo } from "@/lib/servir/contratos";
 import { DIAS } from "../../../reuniones/_lib/fechas";
 import { guardarTipo, type DatosTipo } from "../../actions";
+import { EspaciosSelector, type EspacioOpcion } from "../../../reuniones/_components/EspaciosSelector";
 
 const COLORES = ["#003329", "#2E5A66", "#1F6B4F", "#8A7424", "#9A3B2E", "#6B4E8A", "#B8643A", "#55524A"];
 
 export function FormTipo({
-  inicial, ministerios, espacios, plantillas,
+  inicial, ministerios, espacios, plantillas, puedeMontaje,
 }: {
   inicial: DatosTipo;
   ministerios: { id: string; name: string }[];
-  espacios: { id: string; name: string }[];
+  espacios: EspacioOpcion[];
+  puedeMontaje: boolean;
   plantillas: { id: string; label: string }[];
 }) {
   const router = useRouter();
@@ -98,19 +100,22 @@ export function FormTipo({
             <input id="hora" type="time" className="input" value={d.usual_time?.slice(0, 5) ?? ""} onChange={(e) => poner("usual_time", e.target.value || null)} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="dur" className="field-label block mb-1.5">Duración (min)</label>
-            <input id="dur" type="number" min={1} max={1440} className="input" value={d.duration_min ?? ""} onChange={(e) => poner("duration_min", e.target.value ? Number(e.target.value) : null)} />
-          </div>
-          <div>
-            <label htmlFor="esp" className="field-label block mb-1.5">Espacio habitual</label>
-            <select id="esp" className="input" value={d.usual_space_id ?? ""} onChange={(e) => poner("usual_space_id", e.target.value || null)}>
-              <option value="">Ninguno</option>
-              {espacios.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
+        <div>
+          <label htmlFor="dur" className="field-label block mb-1.5">Duración (min)</label>
+          <input id="dur" type="number" min={1} max={1440} className="input" value={d.duration_min ?? ""} onChange={(e) => poner("duration_min", e.target.value ? Number(e.target.value) : null)} />
         </div>
+        <EspaciosSelector
+          plantilla
+          espacios={espacios}
+          valor={{ space_ids: d.usual_space_ids, setup_minutes: d.setup_minutes, teardown_minutes: d.teardown_minutes }}
+          onChange={(v) => setD((x) => ({ ...x, usual_space_ids: v.space_ids, setup_minutes: v.setup_minutes, teardown_minutes: v.teardown_minutes }))}
+          inicio={null}
+          fin={null}
+          editable={puedeMontaje}
+          nota={puedeMontaje
+            ? "Cada reunión nueva de este tipo llega con estos espacios y tiempos. Se pueden cambiar en la plantilla o en la reunión."
+            : "Solo Planeación, un pastor de sede o un super admin cambian espacios, montaje y desmonte."}
+        />
         <div>
           <label htmlFor="plant" className="field-label block mb-1.5">Plantilla por defecto</label>
           <select id="plant" className="input" value={d.default_template_id ?? ""} onChange={(e) => poner("default_template_id", e.target.value || null)} disabled={!d.id}>
