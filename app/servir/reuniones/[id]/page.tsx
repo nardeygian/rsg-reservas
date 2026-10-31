@@ -4,7 +4,7 @@ import { Icon } from "@/app/_components/ui/Icon";
 import type { TipoItemOrden } from "@/lib/servir/contratos";
 import { guardarOrden } from "../actions";
 import { permisos, servirClient, usuarioActual } from "../_lib/db";
-import { fechaLarga, horaBogota } from "../_lib/fechas";
+import { fechaLarga, horaBogota, hoyBogota } from "../_lib/fechas";
 import { BotonEnlace, Encabezado, EstadoChip, Pagina, PuntoColor } from "../_components/ui";
 import { EditorOrden } from "../_components/EditorOrden";
 import { AccionesReunion } from "./AccionesReunion";
@@ -132,7 +132,10 @@ export default async function ReunionPage({ params, searchParams }: {
             starts_at: m.starts_at, ends_at: m.ends_at, notes: m.notes,
           }}
           nombrePlantillaSugerido={plantilla?.name ?? tipo?.name ?? m.name}
-          puedeBorrar={superAdmin === true}
+          // Pasada (o en vivo/cerrada): solo super admin. Futura: también
+          // Planeación y pastor de sede (servir.planear global). RLS lo exige.
+          puedeBorrar={superAdmin === true || (montajeGlobal === true
+            && !["en_vivo", "cerrada"].includes(m.status) && m.meeting_date >= hoyBogota())}
         />
       )}
 

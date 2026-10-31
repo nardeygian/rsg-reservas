@@ -599,19 +599,23 @@ export async function restaurarReunion(id: string): Promise<Resultado> {
   return { ok: true, data: undefined };
 }
 
-// Borra la reunión en cualquier estado con su orden, equipo asignado,
-// asistencia e historial (todo en cascada; sus reservas se liberan).
-// Fuera del contrato. Solo el super admin: RLS lo exige.
+// Borra la reunión con su orden, equipo asignado, asistencia e historial
+// (todo en cascada; sus reservas se liberan). Fuera del contrato.
+// RLS decide: una reunión que ya pasó solo el super admin; una que no ha
+// pasado, también Planeación y el pastor de sede.
 export async function eliminarReunion(id: string): Promise<Resultado> {
   const ctx = await contexto();
   if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
   const { supabase } = ctx;
-  const { data: superAdmin } = await supabase.rpc("is_super_admin");
-  if (superAdmin !== true) return fallo("Solo un super admin puede borrar reuniones.");
 
+  const { data: m } = await supabase.from("meetings").select("meeting_date, status").eq("id", id).maybeSingle();
+  if (!m) return fallo("No encontramos la reunión.");
   const { data, error } = await supabase.from("meetings").delete().eq("id", id).select("id");
   if (error) return fallo(errorBase(error));
-  if (!data?.length) return fallo("No encontramos la reunión.");
+  if (!data?.length) {
+    const { data: paso } = await supabase.rpc("reunion_ya_paso", { p_meeting_date: m.meeting_date, p_status: m.status });
+    return fallo(paso ? "Una reunión que ya pasó solo la borra un super admin." : "No tienes permiso para borrar reuniones.");
+  }
   revalidatePath("/servir/reuniones");
   return { ok: true, data: undefined };
 }

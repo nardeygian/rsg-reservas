@@ -3227,6 +3227,10 @@ export type Database = {
         Returns: string
       }
       resumen_cambio_vivo: { Args: { p_meeting_id: string }; Returns: string }
+      reunion_ya_paso: {
+        Args: { p_meeting_date: string; p_status: string }
+        Returns: boolean
+      }
       revocar_invitacion: {
         Args: { p_invitation_id: string }
         Returns: undefined

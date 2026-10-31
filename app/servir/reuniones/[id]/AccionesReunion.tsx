@@ -22,7 +22,8 @@ export function AccionesReunion({
     starts_at: string | null; ends_at: string | null; notes: string | null;
   };
   nombrePlantillaSugerido: string;
-  // Solo el super admin borra (cualquier estado); la base lo exige.
+  // Una reunión pasada solo la borra el super admin; una futura, también
+  // Planeación y el pastor de sede. La base lo exige.
   puedeBorrar: boolean;
 }) {
   const router = useRouter();
