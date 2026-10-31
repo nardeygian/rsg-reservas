@@ -90,7 +90,9 @@ export function MiembrosVista({ equipo, miembros, posiciones, areas, personas }:
         <AgregarHoja equipo={equipo} personas={personas} miembros={miembros} onClose={() => setAgregando(false)} onError={setError} />
       )}
       {actual && (
-        <MiembroHoja key={actual.team_member_id} equipo={equipo} miembro={actual} posiciones={posiciones.filter((p) => p.active)} areas={areas}
+        // Roles de todo el departamento y los del área del servidor.
+        <MiembroHoja key={actual.team_member_id} equipo={equipo} miembro={actual}
+          posiciones={posiciones.filter((p) => p.active && (!p.area_id || p.area_id === actual.area_id))} areas={areas}
           onClose={() => setEditando(null)} onError={setError} />
       )}
     </section>
@@ -200,7 +202,7 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
         <div className="flex flex-col gap-2">
           <p className="field-label">Puede servir en</p>
           {posiciones.length === 0 ? (
-            <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>Crea primero los roles del equipo.</p>
+            <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>Todavía no hay roles para su área. Los crea el líder de Planeación en Servir › Estructura.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {posiciones.map((p) => {

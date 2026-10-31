@@ -23,6 +23,8 @@ function fallo(error: PostgrestError | { message: string; code?: string }, que: 
     return { ok: false, error: `No tienes permiso para ${que}.` };
   }
   if (code === "23505") return { ok: false, error: "Eso ya existe." };
+  // La base exige que el servidor tenga el rol (trigger assignments_exigir_rol).
+  if (code === "23514" && /no tiene ese rol/.test(error.message)) return { ok: false, error: error.message };
   console.error(`[servir/equipo] ${que}:`, error.message);
   return { ok: false, error: `No se pudo ${que}. Intenta de nuevo.` };
 }

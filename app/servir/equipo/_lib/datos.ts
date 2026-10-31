@@ -47,6 +47,12 @@ export type Equipo = {
 
 export const EQUIPO_GENERAL: Equipo = { key: "g", ministry_id: null, ministry_name: "Roles generales", area_id: null, area_name: null };
 
+// Equipos que el usuario puede asignar, de arriba abajo en la jerarquía:
+// servir.asignar global (super admin, pastor de sede, fundador) → todos los
+// departamentos; líder de departamento → el suyo; líder de área → su área.
+// El departamento que planea y los roles generales los asignan su líder y
+// a quienes él autorice (puede_asignar_planeacion).
+
 // Filtra una consulta por el departamento del equipo (o por los roles
 // generales, que no tienen departamento).
 export function delEquipo<Q extends { eq: (c: "ministry_id", v: string) => Q; is: (c: "ministry_id", v: null) => Q }>(q: Q, equipo: Equipo): Q {
@@ -54,16 +60,18 @@ export function delEquipo<Q extends { eq: (c: "ministry_id", v: string) => Q; is
 }
 
 export async function misEquipos(db: ClienteServir): Promise<Equipo[]> {
-  const [{ data: alcances }, { data: planea }] = await Promise.all([
+  const [{ data: alcances }, { data: planea }, { data: planeacionId }] = await Promise.all([
     db.rpc("permission_scopes", { p_permission: "servir.asignar" }),
-    db.rpc("has_permission", { p_permission: "servir.planear" }),
+    db.rpc("puede_asignar_planeacion"),
+    db.rpc("ministerio_que_planea"),
   ]);
   const general = planea === true ? [EQUIPO_GENERAL] : [];
-  if (!alcances?.length) return general;
+  const deptIds = (alcances ?? []).filter((a) => a.scope_type === "departamento").map((a) => a.scope_id);
+  if (planea === true && planeacionId && !deptIds.includes(planeacionId)) deptIds.push(planeacionId);
+  if (!alcances?.length && !deptIds.length) return general;
 
-  const global = alcances.some((a) => a.scope_type === null);
-  const deptIds = alcances.filter((a) => a.scope_type === "departamento").map((a) => a.scope_id);
-  const areaIds = alcances.filter((a) => a.scope_type === "area").map((a) => a.scope_id);
+  const global = (alcances ?? []).some((a) => a.scope_type === null);
+  const areaIds = (alcances ?? []).filter((a) => a.scope_type === "area").map((a) => a.scope_id);
 
   const [ministerios, areas] = await Promise.all([
     global

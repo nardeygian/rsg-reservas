@@ -64,9 +64,9 @@ export default async function MiEquipoPage({ searchParams }: { searchParams: Pro
 }
 
 async function EquipoDatos({ db, equipo, vista }: { db: ClienteServir; equipo: Equipo; vista: Vista }) {
-  const datos = await datosEquipo(db, equipo);
+  const [datos, { data: estructura }] = await Promise.all([datosEquipo(db, equipo), db.rpc("puede_estructura")]);
   return vista === "posiciones"
-    ? <PosicionesVista equipo={equipo} posiciones={datos.posiciones} areas={datos.areas} />
+    ? <PosicionesVista equipo={equipo} posiciones={datos.posiciones} areas={datos.areas} puedeEstructura={estructura === true} />
     : <MiembrosVista equipo={equipo} miembros={datos.miembros} posiciones={datos.posiciones} areas={datos.areas} personas={datos.personas} />;
 }
 

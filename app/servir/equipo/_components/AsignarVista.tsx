@@ -34,7 +34,7 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
   if (posiciones.length === 0) {
     return (
       <p className="card px-4 py-6 text-sm text-center" style={{ color: "var(--color-muted)" }}>
-        Tu equipo aún no tiene roles. Créalos en Mi equipo › Roles.
+        Todavía no hay roles aquí. Los crea el líder de Planeación en Servir › Estructura.
       </p>
     );
   }

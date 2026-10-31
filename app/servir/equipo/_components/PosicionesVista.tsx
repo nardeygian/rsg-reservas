@@ -9,12 +9,16 @@ import { Aviso, Hoja, MOMENTO_TEXTO } from "./ui";
 
 const MOMENTOS: MomentoChecklist[] = ["antes", "durante", "despues"];
 
-export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo; posiciones: PosicionFila[]; areas: AreaFila[] }) {
+// Crear, renombrar, mover y archivar roles y áreas es de Estructura (super
+// admin y líder de Planeación). Los demás líderes solo editan el checklist.
+export function PosicionesVista({ equipo, posiciones, areas, puedeEstructura }: {
+  equipo: Equipo; posiciones: PosicionFila[]; areas: AreaFila[]; puedeEstructura: boolean;
+}) {
   const [abierta, setAbierta] = useState<string | "nueva" | null>(null);
   const [nuevaArea, setNuevaArea] = useState("");
   const [error, setError] = useState("");
   const [pendiente, start] = useTransition();
-  const esDepto = !!equipo.ministry_id && !equipo.area_id;
+  const esDepto = !!equipo.ministry_id && !equipo.area_id && puedeEstructura;
 
   // Agrupadas por área (las sin área primero, como "Generales").
   const grupos: { id: string | null; nombre: string; items: PosicionFila[] }[] = [];
@@ -39,11 +43,14 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col items-start gap-2">
-        <button type="button" className="btn-primary" onClick={() => setAbierta("nueva")}>
-          <Icon name="plus" /> Rol
-        </button>
+        {puedeEstructura && (
+          <button type="button" className="btn-primary" onClick={() => setAbierta("nueva")}>
+            <Icon name="plus" /> Rol
+          </button>
+        )}
         <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
           Cada rol trae su checklist: se copia al servidor cuando acepta.
+          {!puedeEstructura && " Los roles los crea el líder de Planeación en Servir › Estructura."}
         </p>
       </div>
 
@@ -94,16 +101,18 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
       )}
 
       {abierta === "nueva" && (
-        <PosicionHoja equipo={equipo} areas={areas} onClose={() => setAbierta(null)} />
+        <PosicionHoja equipo={equipo} areas={areas} puedeEstructura onClose={() => setAbierta(null)} />
       )}
       {actual && (
-        <PosicionHoja key={actual.id} equipo={equipo} areas={areas} posicion={actual} onClose={() => setAbierta(null)} />
+        <PosicionHoja key={actual.id} equipo={equipo} areas={areas} posicion={actual} puedeEstructura={puedeEstructura} onClose={() => setAbierta(null)} />
       )}
     </section>
   );
 }
 
-function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; areas: AreaFila[]; posicion?: PosicionFila; onClose: () => void }) {
+function PosicionHoja({ equipo, areas, posicion, puedeEstructura, onClose }: {
+  equipo: Equipo; areas: AreaFila[]; posicion?: PosicionFila; puedeEstructura: boolean; onClose: () => void;
+}) {
   const [nombre, setNombre] = useState(posicion?.name ?? "");
   const [area, setArea] = useState(posicion?.area_id ?? equipo.area_id ?? "");
   const [momento, setMomento] = useState<MomentoChecklist>("antes");
@@ -142,14 +151,14 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
 
   return (
     <Hoja titulo={posicion ? posicion.name : "Nuevo rol"} subtitulo={equipo.area_name ? `${equipo.ministry_name} · ${equipo.area_name}` : equipo.ministry_name} onClose={onClose}
-      pie={posicion && (
+      pie={posicion && puedeEstructura && (
         <button type="button" className="btn-ghost w-full" style={{ color: posicion.active ? "var(--color-down)" : "var(--color-accent)" }} disabled={pendiente} onClick={archivar}>
           {posicion.active ? "Archivar rol" : "Volver a activar"}
         </button>
       )}>
       <div className="flex flex-col gap-5">
         {err && <Aviso texto={err} />}
-        <form onSubmit={guardar} className="flex flex-col gap-3">
+        {puedeEstructura && <form onSubmit={guardar} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="field-label">Nombre</span>
             <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Guitarra eléctrica" autoFocus={!posicion} />
@@ -166,7 +175,7 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
           <button type="submit" className="btn-primary" disabled={pendiente || !nombre.trim()}>
             {posicion ? "Guardar cambios" : "Crear rol"}
           </button>
-        </form>
+        </form>}
 
         {posicion && (
           <div className="flex flex-col gap-3">

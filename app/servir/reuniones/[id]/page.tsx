@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/app/_components/ui/Icon";
 import type { TipoItemOrden } from "@/lib/servir/contratos";
@@ -10,6 +11,8 @@ import { AccionesReunion } from "./AccionesReunion";
 import { EspaciosReunion } from "./EspaciosReunion";
 import { ReporteReunion, type Reporte } from "../_components/ReporteReunion";
 import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
+import { misEquipos } from "../../equipo/_lib/datos";
+import { ServidoresReunion } from "./ServidoresReunion";
 
 export const metadata = { title: "Reunión · Servir" };
 
@@ -25,8 +28,11 @@ function cuando(iso: string) {
   });
 }
 
-export default async function ReunionPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function ReunionPage({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ vista?: string }>;
+}) {
+  const [{ id }, { vista }] = await Promise.all([params, searchParams]);
   // Una reunión que no existe o que no puede ver (p. ej. un servidor no
   // asignado) lleva al Inicio.
   if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/");
@@ -62,6 +68,9 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
     supabase.rpc("reservas_de_reunion", { p_meeting_id: id }),
     supabase.rpc("has_global_permission", { p_permission: "servir.planear" }),
   ]);
+  // Pestaña Servidores: solo para quien tiene algún equipo que asignar.
+  const asignaAlgo = (await misEquipos(supabase)).length > 0;
+  const enServidores = asignaAlgo && vista === "servidores";
   const idsEscogidos = (escogidos ?? []).map((e) => e.space_id);
   // Activos, más los ya escogidos aunque luego se hayan deshabilitado.
   const opcionesEspacio = (espacios ?? []).filter((s) => s.status === "active" || idsEscogidos.includes(s.id));
@@ -125,6 +134,21 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         />
       )}
 
+      {asignaAlgo && (
+        <nav className="segmented self-start" aria-label="Secciones de la reunión">
+          <Link href={`/servir/reuniones/${m.id}`} className="segmented-link" aria-current={enServidores ? undefined : "page"}>Orden</Link>
+          <Link href={`/servir/reuniones/${m.id}?vista=servidores`} className="segmented-link" aria-current={enServidores ? "page" : undefined}>Servidores</Link>
+        </nav>
+      )}
+
+      {enServidores ? (
+        <ServidoresReunion
+          meetingId={m.id}
+          reunionNombre={m.name}
+          templateId={m.template_id}
+          editable={m.status !== "cerrada" && m.status !== "cancelada"}
+        />
+      ) : (
       <div className="grid gap-5 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] md:items-start">
         <EditorOrden
           key={(items ?? []).map((i) => i.id).join()}
@@ -184,6 +208,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
           </section>
         </div>
       </div>
+      )}
     </Pagina>
   );
 }

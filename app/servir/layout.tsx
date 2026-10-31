@@ -10,23 +10,25 @@ export default async function ServirLayout({ children }: { children: ReactNode }
   if (!claims?.claims.sub) return children;
 
   const tiene = async (p: string) => (await db.rpc("has_permission", { p_permission: p })).data === true;
-  const [verReuniones, verTodo, plantillas, estadisticas, asignar, planear] = await Promise.all([
+  const [verReuniones, verTodo, plantillas, estadisticas, asignar, asignarPlaneacion, estructura] = await Promise.all([
     tiene("servir.ver_reuniones"),
     tiene("servir.ver_todo"),
     tiene("servir.plantillas"),
     db.rpc("puede_ver_estadisticas").then((r) => r.data === true),
     tiene("servir.asignar"),
-    tiene("servir.planear"),
+    db.rpc("puede_asignar_planeacion").then((r) => r.data === true),
+    db.rpc("puede_estructura").then((r) => r.data === true),
   ]);
 
   const enlaces: EnlaceServir[] = [
     { href: "/servir/mis-servicios", texto: "Mis servicios" },
-    // Planeación sin equipo propio entra a los roles generales (VIO, Escenario).
-    ...(asignar || planear ? [{ href: "/servir/equipo", texto: asignar ? "Mi equipo" : "Roles generales" }] : []),
+    // Planeación entra a su departamento y a los roles generales (VIO, Escenario).
+    ...(asignar || asignarPlaneacion ? [{ href: "/servir/equipo", texto: "Mi equipo" }] : []),
     ...(verReuniones || verTodo ? [{ href: "/servir/reuniones", texto: "Reuniones" }] : []),
     { href: "/servir/canciones", texto: "Canciones" },
     ...(plantillas ? [{ href: "/servir/plantillas", texto: "Plantillas" }] : []),
     ...(estadisticas ? [{ href: "/servir/estadisticas", texto: "Estadísticas" }] : []),
+    ...(estructura ? [{ href: "/servir/estructura", texto: "Estructura" }] : []),
   ];
 
   return (

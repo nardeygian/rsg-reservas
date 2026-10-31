@@ -1463,6 +1463,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_planning: boolean
           lead_user_id: string | null
           name: string
           type: string
@@ -1470,6 +1471,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_planning?: boolean
           lead_user_id?: string | null
           name: string
           type: string
@@ -1477,6 +1479,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_planning?: boolean
           lead_user_id?: string | null
           name?: string
           type?: string
@@ -1713,6 +1716,7 @@ export type Database = {
           area_id: string | null
           created_at: string
           description: string | null
+          grupo: string | null
           id: string
           ministry_id: string | null
           name: string
@@ -1723,6 +1727,7 @@ export type Database = {
           area_id?: string | null
           created_at?: string
           description?: string | null
+          grupo?: string | null
           id?: string
           ministry_id?: string | null
           name: string
@@ -1733,6 +1738,7 @@ export type Database = {
           area_id?: string | null
           created_at?: string
           description?: string | null
+          grupo?: string | null
           id?: string
           ministry_id?: string | null
           name?: string
@@ -2966,6 +2972,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      es_lider_planeacion: { Args: never; Returns: boolean }
       es_pastor: { Args: { p_user_id: string }; Returns: boolean }
       es_solo_servidor: { Args: never; Returns: boolean }
       estadisticas_reuniones: {
@@ -3071,6 +3078,7 @@ export type Database = {
         Args: { m: Database["public"]["Tables"]["meetings"]["Row"] }
         Returns: string
       }
+      ministerio_que_planea: { Args: never; Returns: string }
       my_broadcast_audiences: {
         Args: never
         Returns: {
@@ -3127,6 +3135,12 @@ export type Database = {
           starts_at: string
         }[]
       }
+      puede_asignar_planeacion: { Args: never; Returns: boolean }
+      puede_asignar_rol: {
+        Args: { p_area_id: string; p_ministry_id: string }
+        Returns: boolean
+      }
+      puede_estructura: { Args: never; Returns: boolean }
       puede_quitar_canciones: {
         Args: { p_meeting_id: string }
         Returns: boolean
