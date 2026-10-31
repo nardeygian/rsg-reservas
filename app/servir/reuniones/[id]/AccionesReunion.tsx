@@ -15,18 +15,23 @@ type Panel = null | "datos" | "reprogramar" | "cancelar" | "duplicar" | "plantil
 export function AccionesReunion({
   reunion,
   nombrePlantillaSugerido,
+  puedeBorrar,
 }: {
   reunion: {
     id: string; name: string; status: string; meeting_date: string;
     starts_at: string | null; ends_at: string | null; notes: string | null;
   };
   nombrePlantillaSugerido: string;
+  // Solo el super admin borra (cualquier estado); la base lo exige.
+  puedeBorrar: boolean;
 }) {
   const router = useRouter();
   const [panel, setPanel] = useState<Panel>(null);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
+  // En el celular las acciones de uso ocasional van detrás de "Más".
+  const [mas, setMas] = useState(false);
 
   const horaActual = reunion.starts_at ? horaBogota(reunion.starts_at) : "";
   const durActual = reunion.starts_at && reunion.ends_at
@@ -43,7 +48,6 @@ export function AccionesReunion({
   const [nombrePlantilla, setNombrePlantilla] = useState(nombrePlantillaSugerido);
 
   const editable = reunion.status === "borrador" || reunion.status === "publicada";
-  const borrable = editable || reunion.status === "cancelada";
 
   function abrir(p: Panel) {
     setPanel(panel === p ? null : p);
@@ -61,12 +65,14 @@ export function AccionesReunion({
     });
   }
 
-  const boton = (p: Panel, icono: Parameters<typeof Icon>[0]["name"], texto: string) => (
+  // Las acciones que destruyen (cancelar, borrar) van en rojo.
+  const boton = (p: Panel, icono: Parameters<typeof Icon>[0]["name"], texto: string, peligro = false) => (
     <button type="button" onClick={() => abrir(p)} aria-expanded={panel === p}
       className="h-10 px-4 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5"
       style={{
         background: panel === p ? "var(--color-surface-2)" : "var(--color-surface)",
-        border: "1px solid var(--color-line)", color: "var(--color-ink)", boxShadow: "inset 0 1px 0 var(--glass-border)",
+        border: `1px solid ${peligro ? "var(--color-critical)" : "var(--color-line)"}`,
+        color: peligro ? "var(--color-critical)" : "var(--color-ink)", boxShadow: "inset 0 1px 0 var(--glass-border)",
       }}>
       <Icon name={icono} size={15} />
       {texto}
@@ -87,9 +93,6 @@ export function AccionesReunion({
         )}
         {editable && boton("datos", "clock", "Editar datos")}
         {editable && boton("reprogramar", "calendar-plus", "Reprogramar")}
-        {boton("duplicar", "copy", "Duplicar")}
-        {boton("plantilla", "repeat", "Guardar como plantilla")}
-        {editable && boton("cancelar", "x-circle", "Cancelar reunión")}
         {reunion.status === "cancelada" && (
           <button type="button" className="h-10 px-4 rounded-full text-[14px] font-semibold"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
@@ -98,8 +101,22 @@ export function AccionesReunion({
             Restaurar
           </button>
         )}
-        {borrable && boton("borrar", "close", "Borrar")}
+        <button type="button" aria-expanded={mas} onClick={() => setMas(!mas)}
+          className="h-10 px-4 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5"
+          style={{ background: mas ? "var(--color-surface-2)" : "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-ink)" }}>
+          Más
+          <Icon name={mas ? "chevron-up" : "chevron-down"} size={15} />
+        </button>
       </div>
+
+      {mas && (
+      <div className="flex flex-wrap gap-2">
+        {boton("duplicar", "copy", "Duplicar")}
+        {boton("plantilla", "repeat", "Guardar como plantilla")}
+        {editable && boton("cancelar", "x-circle", "Cancelar reunión", true)}
+        {puedeBorrar && boton("borrar", "close", "Borrar", true)}
+      </div>
+      )}
 
       {panel === "datos" && (
         <form className="card p-4 md:p-5 grid gap-3 md:grid-cols-2"
@@ -213,9 +230,14 @@ export function AccionesReunion({
             correr(() => eliminarReunion(reunion.id), () => router.push("/servir/reuniones"));
           }}>
           <p className="text-[14px]">
-            Se borra «{reunion.name}» con su orden, su equipo asignado y su historial. No se puede deshacer.
+            Se borra «{reunion.name}» con su orden, su equipo asignado y su historial, y se liberan sus espacios. No se puede deshacer.
           </p>
-          {reunion.status === "publicada" && (
+          {(reunion.status === "en_vivo" || reunion.status === "cerrada") && (
+            <p className="text-[14px]" style={{ color: "var(--color-critical)" }}>
+              También se borra su asistencia y deja de contar en las estadísticas.
+            </p>
+          )}
+          {reunion.status !== "borrador" && (
             <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
               Las personas asignadas no reciben aviso. Si el equipo ya la vio, mejor cancélala.
             </p>

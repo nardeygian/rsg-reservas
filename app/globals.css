@@ -623,6 +623,8 @@ summary.list-none::-webkit-details-marker { display: none; }
 }
 .icon-btn:active { transform: scale(0.94); }
 .icon-btn:disabled { opacity: 0.35; }
+/* Botones de icono que quitan o borran algo: en rojo. */
+.icon-btn-danger { color: var(--color-critical); }
 .icon-btn-accent {
   background: var(--color-action-bg);
   color: var(--color-action-fg);

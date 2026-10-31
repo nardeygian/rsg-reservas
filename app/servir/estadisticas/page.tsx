@@ -122,7 +122,7 @@ function Reuniones({ filas, desde, hoy }: { filas: EstadisticaReunion[]; desde: 
         <Cifra titulo="Canceladas" valor={canceladas.length} />
         <Cifra titulo="Reprogramadas" valor={reprogramadas.length} detalle={`${sum("reprogramaciones", filas)} cambios de fecha`} />
         <Cifra titulo="Cobertura" valor={pct(sum("aceptadas"), sum("requeridas"))} detalle={`${sum("aceptadas")} aceptadas de ${sum("requeridas")} requeridas`} />
-        <Cifra titulo="Aceptación" valor={pct(sum("aceptadas"), sum("aceptadas") + sum("rechazadas"))} detalle={`${sum("rechazadas")} rechazos · ${sum("pendientes")} sin responder`} />
+        <Cifra titulo="Aceptación" valor={pct(sum("aceptadas"), sum("aceptadas") + sum("rechazadas"))} detalle={`${sum("rechazadas")} ${sum("rechazadas") === 1 ? "rechazo" : "rechazos"} · ${sum("pendientes")} sin responder`} />
         <Cifra titulo="Tiempo en responder" valor={horas === null ? "—" : `${Math.round(horas)} h`} detalle="promedio" />
         <Cifra titulo="Asistencia" valor={pct(sum("asistio") + sum("tarde"), marcadas)} detalle={`${sum("tarde")} tarde · ${sum("ausente")} ausentes`} />
         <Cifra titulo="Checklists" valor={pct(sum("checklist_hechos"), sum("checklist_total"))} detalle={`${sum("checklist_hechos")} de ${sum("checklist_total")} puntos`} />

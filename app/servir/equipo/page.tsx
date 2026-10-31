@@ -41,7 +41,8 @@ export default async function MiEquipoPage({ searchParams }: { searchParams: Pro
   return (
     <main className="min-h-dvh px-4 pt-6 max-w-[1180px] mx-auto w-full flex flex-col gap-4" style={{ paddingBottom: "calc(var(--nav-space) + 24px)" }}>
       <header className="flex flex-col gap-1">
-        <p className="eyebrow">{!equipo.ministry_id ? "Planeación · sin departamento" : equipo.area_name ? `Líder de área · ${equipo.ministry_name}` : "Líder de departamento"}</p>
+        {/* Describe el equipo, no el cargo de quien entra (un super admin ve todos). */}
+        <p className="eyebrow">{!equipo.ministry_id ? "Sin departamento · los asigna Planeación" : equipo.area_name ? `Área de ${equipo.ministry_name}` : "Departamento"}</p>
         <h1 className="page-title">{equipo.area_name ?? equipo.ministry_name}</h1>
       </header>
 

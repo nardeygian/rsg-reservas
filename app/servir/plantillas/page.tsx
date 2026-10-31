@@ -54,7 +54,7 @@ export default async function PlantillasPage() {
   if (!puede.plantillas && !puede.verTodas) {
     return (
       <Pagina>
-        <Encabezado titulo="Tipos y plantillas" volver={{ href: "/servir/reuniones", label: "Reuniones" }} />
+        <Encabezado titulo="Tipos y plantillas" />
         <SinAcceso texto="Solo Planeación y los pastores de ministerio administran tipos y plantillas." />
       </Pagina>
     );
@@ -120,7 +120,7 @@ export default async function PlantillasPage() {
       <Encabezado
         titulo="Tipos y plantillas"
         subtitulo="Cada tipo guarda lo que se repite; su plantilla por defecto prellena las reuniones nuevas."
-        volver={{ href: "/servir/reuniones", label: "Reuniones" }}
+       
       >
         {puede.plantillas && (
           <BotonEnlace href="/servir/plantillas/tipos/nuevo" primario>

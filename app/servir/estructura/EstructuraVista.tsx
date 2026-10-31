@@ -37,8 +37,9 @@ export function EstructuraVista({ deptos, roles, planeacionId, autorizables }: {
     <div className="flex flex-col gap-5">
       {error && <Aviso texto={error} onClose={() => setError("")} />}
 
-      <NombreForm etiqueta="Nuevo departamento" placeholder="Servolución" boton="Crear" pendiente={pendiente}
-        onGuardar={(t, limpiar) => correr(() => crearDepartamento(t), limpiar)} />
+      <p className="text-[13px] -mt-2" style={{ color: "var(--color-muted)" }}>
+        Toca un rol para renombrarlo, moverlo de departamento o área, o archivarlo. Toca el nombre de un departamento o de un área para renombrarlo.
+      </p>
 
       <div className="grid gap-4 md:grid-cols-2 md:items-start">
         {deptos.map((d) => (
@@ -66,6 +67,9 @@ export function EstructuraVista({ deptos, roles, planeacionId, autorizables }: {
         </section>
       </div>
 
+      <NombreForm etiqueta="Nuevo departamento" placeholder="Nombre del departamento" boton="Crear" pendiente={pendiente}
+        onGuardar={(t, limpiar) => correr(() => crearDepartamento(t), limpiar)} />
+
       {autorizables && (
         <section className="card p-4 md:p-5 flex flex-col gap-3 md:max-w-[640px]">
           <div>
@@ -84,6 +88,7 @@ export function EstructuraVista({ deptos, roles, planeacionId, autorizables }: {
                 <span className="flex-1 text-[14px]">{p.full_name}</span>
                 <button type="button" disabled={pendiente}
                   className={p.autorizado ? "btn-ghost min-h-[36px] px-3 text-[13px]" : "btn-secondary min-h-[36px] px-3 text-[13px]"}
+                  style={p.autorizado ? { color: "var(--color-critical)" } : undefined}
                   onClick={() => correr(() => p.autorizado ? quitarAutorizacionPlaneacion(p.profile_id) : autorizarPlaneacion(p.profile_id))}>
                   {p.autorizado ? "Quitar" : "Autorizar"}
                 </button>
@@ -130,7 +135,7 @@ function DeptoCard({ depto, roles, pendiente, correr, onRol }: {
         <AreaRoles key={a.id} area={a} roles={roles.filter((r) => r.area_id === a.id)} pendiente={pendiente} correr={correr} onRol={onRol} />
       ))}
 
-      <NombreForm etiqueta="Nueva área" placeholder="Nombre de la nueva área" boton="Crear área" pendiente={pendiente} compacto
+      <NombreForm etiqueta="Nueva área" placeholder="Nueva área" boton="Crear área" pendiente={pendiente} compacto
         onGuardar={(t, limpiar) => correr(() => crearArea(depto.id, t), limpiar)} />
     </section>
   );

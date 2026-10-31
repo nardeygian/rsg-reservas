@@ -164,7 +164,7 @@ export function EditorOrden({
                     <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} disabled={i === filas.length - 1} onClick={() => mover(i, i + 1)}>
                       <Icon name="chevron-down" size={16} label="Bajar" />
                     </button>
-                    <button type="button" className="icon-btn" style={{ width: 36, height: 36 }} onClick={() => cambiar(filas.filter((x) => x.key !== f.key))}>
+                    <button type="button" className="icon-btn icon-btn-danger" style={{ width: 36, height: 36 }} onClick={() => cambiar(filas.filter((x) => x.key !== f.key))}>
                       <Icon name="close" size={16} label="Quitar" />
                     </button>
                   </div>

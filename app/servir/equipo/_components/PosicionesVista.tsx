@@ -192,7 +192,7 @@ function PosicionHoja({ equipo, areas, posicion, puedeEstructura, onClose }: {
                       {items.map((c) => (
                         <li key={c.id} className="flex items-center gap-2 min-h-[40px]">
                           <span className="flex-1 text-[14px]" style={{ color: "var(--color-ink)" }}>{c.text}</span>
-                          <button type="button" className="icon-btn" aria-label={`Quitar “${c.text}”`} disabled={pendiente} onClick={() => borrarPunto(c.id)}>
+                          <button type="button" className="icon-btn icon-btn-danger" aria-label={`Quitar “${c.text}”`} disabled={pendiente} onClick={() => borrarPunto(c.id)}>
                             <Icon name="close" size={14} />
                           </button>
                         </li>

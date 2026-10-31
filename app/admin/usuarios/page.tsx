@@ -311,7 +311,7 @@ function UserCard({
                 <input type="hidden" name="role_id" value={er.id} />
                 <button type="submit"
                   className="w-5 h-5 flex items-center justify-center rounded-full text-[11px] font-bold transition flex-none"
-                  style={{ background: "var(--color-line)", color: "var(--color-muted)" }}
+                  style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
                   aria-label={`Quitar rol ${er.role}`}>
                   <Icon name="close" size={16} label="Cerrar" />
                 </button>

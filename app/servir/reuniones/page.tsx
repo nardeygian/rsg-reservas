@@ -122,17 +122,17 @@ export default async function ReunionesPage({
         titulo="Reuniones"
         subtitulo={puede.planear ? "Crea, ordena y publica las reuniones de la iglesia." : "Las reuniones donde sirves y su orden."}
       >
-        {puede.plantillas && <BotonEnlace href="/servir/plantillas">Tipos y plantillas</BotonEnlace>}
-        {puede.importar && (
-          <BotonEnlace href="/servir/reuniones/importar">
-            <Icon name="paperclip" size={16} />
-            Importar PDF
-          </BotonEnlace>
-        )}
+        {/* Tipos y plantillas ya está en las pestañas de Servir. */}
         {puede.planear && (
           <BotonEnlace href="/servir/reuniones/nueva" primario>
             <Icon name="plus" size={16} />
             Nueva reunión
+          </BotonEnlace>
+        )}
+        {puede.importar && (
+          <BotonEnlace href="/servir/reuniones/importar">
+            <Icon name="paperclip" size={16} />
+            Importar PDF
           </BotonEnlace>
         )}
       </Encabezado>

@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Icon } from "@/app/_components/ui/Icon";
 import type { PosicionRequerida } from "@/lib/servir/contratos";
 import { clienteServir } from "../../equipo/_lib/supabase";
-import { misEquipos, type Equipo } from "../../equipo/_lib/datos";
+import type { Equipo } from "../../equipo/_lib/datos";
 import { AsignarVista, type AsignadoFila, type PosicionAsignar } from "../../equipo/_components/AsignarVista";
 
 // Pestaña Servidores de una reunión: Departamento → Área → Rol → asignados,
@@ -15,11 +16,11 @@ type Bloque = { equipo: Equipo; grupos: Grupo[]; cubiertas: number; total: numbe
 
 const ORDEN_ESTADO: Record<string, number> = { aceptada: 0, pendiente: 1, rechazada: 2 };
 
-export async function ServidoresReunion({ meetingId, reunionNombre, templateId, editable }: {
+export async function ServidoresReunion({ meetingId, reunionNombre, templateId, editable, equipos }: {
   meetingId: string; reunionNombre: string; templateId: string | null; editable: boolean;
+  equipos: Equipo[];   // misEquipos(), ya calculado por la página
 }) {
   const db = await clienteServir();
-  const equipos = await misEquipos(db);
   if (equipos.length === 0) {
     return <p className="card px-4 py-6 text-sm text-center" style={{ color: "var(--color-muted)" }}>No tienes equipos para asignar en esta reunión.</p>;
   }
@@ -76,18 +77,24 @@ export async function ServidoresReunion({ meetingId, reunionNombre, templateId, 
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       {bloques.map(({ equipo, grupos, cubiertas, total }) => (
-        <section key={equipo.key} className="flex flex-col gap-3">
-          <header className="flex flex-wrap items-baseline justify-between gap-2 px-1">
-            <h2 className="text-[17px] font-semibold" style={{ color: "var(--color-ink)" }}>
-              {equipo.ministry_id ? equipo.ministry_name : "Roles generales"}
-              {equipo.area_name && <span style={{ color: "var(--color-muted)" }}> · {equipo.area_name}</span>}
-            </h2>
-            <span className="text-[13px] tabular" style={{ color: cubiertas < total ? "var(--color-gold-text)" : "var(--color-muted)" }}>
-              {total === 0 ? "Sin roles" : `${cubiertas} de ${total} roles cubiertos`}
+        // Con un solo equipo abre directo; con varios (p. ej. super admin)
+        // cada departamento se pliega y muestra su cobertura.
+        <details key={equipo.key} open={bloques.length === 1} className="group flex flex-col gap-3">
+          <summary className="card px-4 py-3 flex items-center gap-3 cursor-pointer list-none min-h-[56px] [&::-webkit-details-marker]:hidden">
+            <span className="flex-1 min-w-0">
+              <span className="block text-[16px] font-semibold truncate" style={{ color: "var(--color-ink)" }}>
+                {equipo.ministry_id ? equipo.ministry_name : "Roles generales"}
+                {equipo.area_name && <span style={{ color: "var(--color-muted)" }}> · {equipo.area_name}</span>}
+              </span>
+              <span className="block text-[13px] tabular" style={{ color: cubiertas < total ? "var(--color-gold-text)" : "var(--color-muted)" }}>
+                {total === 0 ? "Sin roles" : `${cubiertas} de ${total} roles cubiertos`}
+              </span>
             </span>
-          </header>
+            <Icon name="chevron-down" size={18} className="flex-none transition-transform group-open:rotate-180" style={{ color: "var(--color-muted)" }} />
+          </summary>
+          <div className="flex flex-col gap-3 pt-3">
           {grupos.length === 0 ? (
             <AsignarVista meetingId={meetingId} reunionNombre={reunionNombre} posiciones={[]} editable={editable} />
           ) : grupos.map((g) => (
@@ -96,7 +103,8 @@ export async function ServidoresReunion({ meetingId, reunionNombre, templateId, 
               <AsignarVista meetingId={meetingId} reunionNombre={reunionNombre} posiciones={g.posiciones} editable={editable} />
             </div>
           ))}
-        </section>
+          </div>
+        </details>
       ))}
       <p className="text-xs px-1" style={{ color: "var(--color-faint)" }}>
         Solo aparecen quienes tienen el rol marcado en <Link href="/servir/equipo" className="underline">Mi equipo › Miembros</Link>.

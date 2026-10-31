@@ -66,7 +66,7 @@ export default async function FichaServidorPage({ params }: { params: Promise<{ 
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Cifra titulo="Servicios (6 meses)" valor={tot("servicios")} detalle={s ? `${s.servicios_ventana} en la ventana actual` : undefined} />
-        <Cifra titulo="Aceptación" valor={pct(tot("aceptadas"), tot("aceptadas") + tot("rechazadas"))} detalle={`${tot("rechazadas")} rechazos`} />
+        <Cifra titulo="Aceptación" valor={pct(tot("aceptadas"), tot("aceptadas") + tot("rechazadas"))} detalle={`${tot("rechazadas")} ${tot("rechazadas") === 1 ? "rechazo" : "rechazos"}`} />
         <Cifra titulo="Ausencias" valor={tot("ausencias")} detalle={`${tot("tardes")} llegadas tarde`} />
         <Cifra titulo="Checklists" valor={pct(tot("checklist_hechos"), tot("checklist_total"))}
           detalle={s?.ultima_fecha ? `Última vez: ${fechaCorta(s.ultima_fecha)}` : "Sin servicios"} />

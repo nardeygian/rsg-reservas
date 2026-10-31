@@ -79,7 +79,7 @@ export function Bloqueos({ bloqueos, hoy }: { bloqueos: BloqueoFila[]; hoy: stri
                 <span className="block text-[15px]" style={{ color: "var(--color-ink)" }}>{b.rango}</span>
                 {b.reason && <span className="block text-[13px] truncate" style={{ color: "var(--color-muted)" }}>{b.reason}</span>}
               </span>
-              <button type="button" className="icon-btn" aria-label={`Borrar bloqueo ${b.rango}`} disabled={pendiente} onClick={() => borrar(b.id)}>
+              <button type="button" className="icon-btn icon-btn-danger" aria-label={`Borrar bloqueo ${b.rango}`} disabled={pendiente} onClick={() => borrar(b.id)}>
                 <Icon name="close" size={14} />
               </button>
             </li>

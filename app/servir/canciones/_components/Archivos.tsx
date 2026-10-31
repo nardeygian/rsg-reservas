@@ -130,7 +130,7 @@ export function Archivos({ songId, archivos, editor }: { songId: string; archivo
               {editor && (
                 <button
                   type="button"
-                  className="icon-btn"
+                  className="icon-btn icon-btn-danger"
                   aria-label={`Borrar ${a.name}`}
                   title="Borrar"
                   disabled={pendiente}

@@ -368,7 +368,7 @@ function DiscipuloRow({
             className="flex-none text-xs font-semibold px-2.5 py-1.5 rounded-[var(--radius-control)] transition"
             style={{
               background: confirming ? "var(--color-down-soft)" : "var(--color-surface-2)",
-              color: confirming ? "var(--color-down)" : "var(--color-faint)",
+              color: "var(--color-down)",
               border: `1px solid ${confirming ? "var(--color-down)" : "var(--color-line)"}`,
               minWidth: 44,
             }}

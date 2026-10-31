@@ -69,7 +69,8 @@ export default async function ReunionPage({ params, searchParams }: {
     supabase.rpc("has_global_permission", { p_permission: "servir.planear" }),
   ]);
   // Pestaña Servidores: solo para quien tiene algún equipo que asignar.
-  const asignaAlgo = (await misEquipos(supabase)).length > 0;
+  const [equipos, { data: superAdmin }] = await Promise.all([misEquipos(supabase), supabase.rpc("is_super_admin")]);
+  const asignaAlgo = equipos.length > 0;
   const enServidores = asignaAlgo && vista === "servidores";
   const idsEscogidos = (escogidos ?? []).map((e) => e.space_id);
   // Activos, más los ya escogidos aunque luego se hayan deshabilitado.
@@ -131,6 +132,7 @@ export default async function ReunionPage({ params, searchParams }: {
             starts_at: m.starts_at, ends_at: m.ends_at, notes: m.notes,
           }}
           nombrePlantillaSugerido={plantilla?.name ?? tipo?.name ?? m.name}
+          puedeBorrar={superAdmin === true}
         />
       )}
 
@@ -146,6 +148,7 @@ export default async function ReunionPage({ params, searchParams }: {
           meetingId={m.id}
           reunionNombre={m.name}
           templateId={m.template_id}
+          equipos={equipos}
           editable={m.status !== "cerrada" && m.status !== "cancelada"}
         />
       ) : (
