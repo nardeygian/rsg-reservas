@@ -855,6 +855,36 @@ export type Database = {
           },
         ]
       }
+      daily_verses: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          reference: string
+          sort: number
+          text: string
+          translation: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          reference: string
+          sort: number
+          text: string
+          translation?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          reference?: string
+          sort?: number
+          text?: string
+          translation?: string
+        }
+        Relationships: []
+      }
       discipleship_groups: {
         Row: {
           active: boolean
@@ -3356,6 +3386,14 @@ export type Database = {
           first_name: string
           invited_by_name: string
           status: string
+        }[]
+      }
+      versiculo_del_dia: {
+        Args: never
+        Returns: {
+          reference: string
+          text: string
+          translation: string
         }[]
       }
     }
