@@ -81,6 +81,27 @@ function itemsDePlantilla(runSheet: Json, meetingId: string) {
     .map((i, sort) => ({ ...i, duration_sec: i.duration_sec ?? 0, meeting_id: meetingId, sort }));
 }
 
+// ── Avisos automáticos ────────────────────────────────────────────────────
+// En la plantilla se guardan por la posición del punto en el orden
+// (item_sort); en la reunión, por el punto (run_item_id).
+
+export type AvisoAutoPlantilla = { item_sort: number; anchor: "antes_fin" | "despues_inicio"; minutes: number; ministry_ids: string[]; message: string };
+
+function avisosDePlantilla(raw: Json): AvisoAutoPlantilla[] {
+  return (Array.isArray(raw) ? (raw as unknown as AvisoAutoPlantilla[]) : []).filter((a) =>
+    Number.isInteger(a?.item_sort) && (a.anchor === "antes_fin" || a.anchor === "despues_inicio")
+    && Number.isInteger(a.minutes) && Array.isArray(a.ministry_ids) && a.ministry_ids.length > 0 && typeof a.message === "string");
+}
+
+// Copia avisos a una reunión. idPorSort: posición del punto → su id.
+async function copiarAvisos(supabase: ServirClient, meetingId: string, userId: string, avisos: AvisoAutoPlantilla[], idPorSort: Map<number, string>) {
+  const filas = avisos.flatMap((a) => {
+    const item = idPorSort.get(a.item_sort);
+    return item ? [{ meeting_id: meetingId, run_item_id: item, anchor: a.anchor, minutes: a.minutes, ministry_ids: a.ministry_ids, message: a.message, created_by: userId }] : [];
+  });
+  if (filas.length) await supabase.from("meeting_alerts").insert(filas);
+}
+
 // ── Espacios ──────────────────────────────────────────────────────────────
 
 const MONTAJE = 120;   // minutos por defecto (decisión de Gian)
@@ -217,11 +238,11 @@ async function crearUna(
   const templateId = input.template_id ?? tipo?.default_template_id ?? null;
   let plantilla: {
     run_sheet: Json; meeting_type_id: string | null;
-    space_ids: string[] | null; setup_minutes: number | null; teardown_minutes: number | null;
+    space_ids: string[] | null; setup_minutes: number | null; teardown_minutes: number | null; alerts: Json;
   } | null = null;
   if (templateId) {
     const { data } = await supabase
-      .from("meeting_templates").select("run_sheet, meeting_type_id, space_ids, setup_minutes, teardown_minutes").eq("id", templateId).maybeSingle();
+      .from("meeting_templates").select("run_sheet, meeting_type_id, space_ids, setup_minutes, teardown_minutes, alerts").eq("id", templateId).maybeSingle();
     if (!data) return fallo("No encontramos esa plantilla.");
     plantilla = data;
   }
@@ -277,8 +298,15 @@ async function crearUna(
   if (plantilla) {
     const items = itemsDePlantilla(plantilla.run_sheet, reunion.id);
     if (items.length) {
-      const { error: e2 } = await supabase.from("run_items").insert(items);
+      const { data: creados, error: e2 } = await supabase.from("run_items").insert(items).select("id, sort");
       if (e2) return fallo(`La reunión se creó, pero no su orden: ${e2.message}`);
+      // item_sort de la plantilla es la posición en run_sheet; los puntos
+      // vacíos no se copian, así que se traduce a la posición nueva.
+      const crudo = Array.isArray(plantilla.run_sheet) ? (plantilla.run_sheet as unknown as ItemOrdenPlantilla[]) : [];
+      const validos = crudo.map((r, i) => (limpiarItem(r) ? i : -1)).filter((i) => i >= 0);
+      const porSort = new Map((creados ?? []).map((c) => [c.sort, c.id]));
+      const idPorSort = new Map(validos.map((original, nuevo) => [original, porSort.get(nuevo)!]).filter(([, id]) => id) as [number, string][]);
+      await copiarAvisos(supabase, reunion.id, userId, avisosDePlantilla(plantilla.alerts), idPorSort);
     }
   }
   return { ok: true, data: { id: reunion.id } };
@@ -371,12 +399,19 @@ export async function duplicarReunion(id: string, meeting_date: string): Promise
 
   const { data: items } = await supabase
     .from("run_items")
-    .select("sort, kind, title, duration_sec, song_id, song_key, notes, responsible_position_id")
+    .select("id, sort, kind, title, duration_sec, song_id, song_key, notes, responsible_position_id")
     .eq("meeting_id", id)
     .order("sort");
   if (items?.length) {
-    const { error: e2 } = await supabase.from("run_items").insert(items.map((i) => ({ ...i, meeting_id: nueva.id })));
+    const { data: creados, error: e2 } = await supabase.from("run_items")
+      .insert(items.map(({ id: _viejo, ...i }) => ({ ...i, meeting_id: nueva.id }))).select("id, sort");
     if (e2) return fallo(`La reunión se duplicó, pero no su orden: ${e2.message}`);
+    // Los mismos avisos automáticos, sobre los puntos copiados.
+    const sortDe = new Map(items.map((i) => [i.id, i.sort]));
+    const { data: avisos } = await supabase.from("meeting_alerts").select("run_item_id, anchor, minutes, ministry_ids, message").eq("meeting_id", id);
+    await copiarAvisos(supabase, nueva.id, userId,
+      (avisos ?? []).map((a) => ({ ...a, item_sort: sortDe.get(a.run_item_id) ?? -1, anchor: a.anchor as AvisoAutoPlantilla["anchor"] })),
+      new Map((creados ?? []).map((c) => [c.sort, c.id])));
   }
   revalidar();
   return { ok: true, data: { id: nueva.id } };
@@ -401,9 +436,15 @@ export async function guardarComoPlantilla(meetingId: string, nombre: string): P
 
   const { data: items } = await supabase
     .from("run_items")
-    .select("kind, title, duration_sec, song_id, responsible_position_id")
+    .select("id, kind, title, duration_sec, song_id, responsible_position_id")
     .eq("meeting_id", meetingId)
     .order("sort");
+  // Avisos automáticos: viajan por la posición del punto en el orden.
+  const { data: avisosReunion } = await supabase.from("meeting_alerts").select("run_item_id, anchor, minutes, ministry_ids, message").eq("meeting_id", meetingId);
+  const posicion = new Map((items ?? []).map((i, n) => [i.id, n]));
+  const alerts: AvisoAutoPlantilla[] = (avisosReunion ?? []).flatMap((a) => posicion.has(a.run_item_id)
+    ? [{ item_sort: posicion.get(a.run_item_id)!, anchor: a.anchor as AvisoAutoPlantilla["anchor"], minutes: a.minutes, ministry_ids: a.ministry_ids, message: a.message }]
+    : []);
 
   let anteriores = supabase.from("meeting_templates").select("version, required_positions, checklist_extra").eq("name", name);
   anteriores = m.meeting_type_id ? anteriores.eq("meeting_type_id", m.meeting_type_id) : anteriores.is("meeting_type_id", null);
@@ -431,6 +472,7 @@ export async function guardarComoPlantilla(meetingId: string, nombre: string): P
       version: (previas?.[0]?.version ?? 0) + 1,
       created_from_meeting_id: meetingId,
       run_sheet: runSheet as unknown as Json,
+      alerts: alerts as unknown as Json,
       required_positions: base?.required_positions ?? [],
       checklist_extra: base?.checklist_extra ?? [],
       ...(montajeGlobal
@@ -648,3 +690,38 @@ const _contrato: AccionesPlaneacion = {
   guardarOrden, publicarReunion, reprogramarReunion, cancelarReunion,
 };
 void _contrato;
+
+// Avisos automáticos de una reunión: "cuando falten N min de la prédica,
+// avisar a LMRSG". RLS: servir.planear o servir.vivo.
+export async function guardarAvisoAuto(meetingId: string, input: {
+  run_item_id: string; anchor: "antes_fin" | "despues_inicio"; minutes: number; ministry_ids: string[]; message: string;
+}): Promise<Resultado<{ id: string }>> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  const message = input.message.trim().slice(0, 300);
+  const minutes = Math.round(Number(input.minutes));
+  if (!message) return fallo("Escribe el mensaje del aviso.");
+  if (!Number.isFinite(minutes) || minutes < 0 || minutes > 240) return fallo("Los minutos van de 0 a 240.");
+  if (!input.ministry_ids.length) return fallo("Escoge al menos un departamento.");
+  if (input.anchor !== "antes_fin" && input.anchor !== "despues_inicio") return fallo("Escoge cuándo sale el aviso.");
+  const { data: item } = await ctx.supabase.from("run_items").select("id").eq("id", input.run_item_id).eq("meeting_id", meetingId).maybeSingle();
+  if (!item) return fallo("Ese punto no es de esta reunión.");
+  const { data, error } = await ctx.supabase.from("meeting_alerts")
+    .insert({ meeting_id: meetingId, run_item_id: input.run_item_id, anchor: input.anchor, minutes, ministry_ids: input.ministry_ids, message, created_by: ctx.userId })
+    .select("id").single();
+  if (error || !data) return fallo(error ? errorBase(error) : "No se pudo guardar el aviso.");
+  revalidar(meetingId);
+  revalidatePath(`/servir/${meetingId}/vivo`);
+  return { ok: true, data: { id: data.id } };
+}
+
+export async function borrarAvisoAuto(meetingId: string, id: string): Promise<Resultado> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  const { data, error } = await ctx.supabase.from("meeting_alerts").delete().eq("id", id).eq("meeting_id", meetingId).select("id");
+  if (error) return fallo(errorBase(error));
+  if (!data?.length) return fallo(SIN_PERMISO);
+  revalidar(meetingId);
+  revalidatePath(`/servir/${meetingId}/vivo`);
+  return { ok: true, data: undefined };
+}

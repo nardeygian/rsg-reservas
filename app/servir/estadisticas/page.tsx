@@ -9,6 +9,8 @@ import { FiltrosEstadisticas } from "./_components/FiltrosEstadisticas";
 import { PERIODOS } from "./_lib/periodos";
 import { Cifra, SEMAFORO, SemaforoChip, minutos, pct } from "./_components/ui";
 import { Ajustes } from "./_components/Ajustes";
+import { AnalisisAtrasos } from "./_components/AnalisisAtrasos";
+import { MOTIVOS } from "@/app/servir/reuniones/_components/ReporteReunion";
 
 export const metadata = { title: "Estadísticas · Servir" };
 
@@ -38,7 +40,7 @@ export default async function EstadisticasPage({
   }
 
   const p = await searchParams;
-  const vista = p.vista === "salud" ? "salud" : "reuniones";
+  const vista = p.vista === "salud" ? "salud" : p.vista === "atrasos" ? "atrasos" : "reuniones";
   const periodo = PERIODOS.some((x) => x.value === p.periodo) ? p.periodo! : "trimestre";
   const hoy = hoyBogota();
   const desde = periodo === "mes" ? `${hoy.slice(0, 8)}01` : sumarDias(hoy, -DIAS[periodo]);
@@ -69,11 +71,14 @@ export default async function EstadisticasPage({
         <nav className="segmented self-start" aria-label="Estadísticas">
           <Link href={qs("reuniones")} className="segmented-link" aria-current={vista === "reuniones" ? "page" : undefined}>Reuniones</Link>
           <Link href={qs("salud")} className="segmented-link" aria-current={vista === "salud" ? "page" : undefined}>Salud del equipo</Link>
+          <Link href={qs("atrasos")} className="segmented-link" aria-current={vista === "atrasos" ? "page" : undefined}>Atrasos</Link>
         </nav>
         <FiltrosEstadisticas tipos={tiposR.data ?? []} departamentos={depsR.data ?? []} conTipo={vista === "reuniones"} />
       </div>
 
-      {vista === "reuniones" ? (
+      {vista === "atrasos" ? (
+        <Atrasos desde={desde} hoy={hoy} />
+      ) : vista === "reuniones" ? (
         <Reuniones
           filas={(await db.rpc("estadisticas_reuniones", {
             p_desde: desde, p_hasta: hoy,
@@ -246,6 +251,90 @@ function Salud({ filas, ajustes, puedeAjustar }: {
       )}
 
       {puedeAjustar && ajustes && <Ajustes ajustes={ajustes} />}
+    </div>
+  );
+}
+
+// Atrasos por motivo: lo que se registra al sumar minutos en vivo. Abajo, el
+// último informe de Claude del periodo y el botón para pedir uno nuevo.
+async function Atrasos({ desde, hoy }: { desde: string; hoy: string }) {
+  const db = await createClient();
+  const [{ data: porMotivo }, { data: motivos }, { data: informes }] = await Promise.all([
+    db.rpc("estadisticas_atrasos", { p_desde: desde, p_hasta: hoy }),
+    db.rpc("motivos_atraso", { p_desde: desde, p_hasta: hoy }),
+    db.from("delay_reports").select("id, desde, hasta, content, created_at, profiles(full_name)").order("created_at", { ascending: false }).limit(1),
+  ]);
+  const filas = porMotivo ?? [];
+  const total = filas.reduce((a, f) => a + (f.minutos ?? 0), 0);
+  const reuniones = new Set((motivos ?? []).map((m) => `${m.fecha}|${m.reunion}`)).size;
+  const etiqueta = (c: string) => MOTIVOS.find((m) => m.value === c)?.label ?? "Sin motivo";
+  const informe = informes?.[0] ?? null;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+        <Cifra titulo="Minutos de atraso" valor={total} detalle={`desde ${fechaCorta(desde)}`} />
+        <Cifra titulo="Reuniones con atraso" valor={reuniones} />
+        <Cifra titulo="Causa principal" valor={filas[0] ? etiqueta(filas[0].categoria) : "—"} detalle={filas[0] ? `${filas[0].minutos} min` : undefined} />
+      </div>
+
+      <section className="card p-4 md:p-5 flex flex-col gap-3">
+        <h2 className="text-[15px] font-semibold">Por motivo</h2>
+        {filas.length === 0 ? (
+          <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+            Todavía no hay atrasos con motivo en este periodo. Se registran al sumar minutos o anunciar un atraso en vivo.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {filas.map((f) => (
+              <li key={f.categoria} className="flex flex-col gap-1">
+                <div className="flex items-baseline justify-between gap-2 text-[14px]">
+                  <span style={{ color: "var(--color-ink)" }}>{etiqueta(f.categoria)}</span>
+                  <span className="tabular" style={{ color: "var(--color-muted)" }}>{f.minutos} min · {f.veces} {f.veces === 1 ? "vez" : "veces"}</span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-surface-2)" }}>
+                  <div className="h-full rounded-full" style={{ width: `${total ? Math.max(4, (100 * f.minutos) / total) : 0}%`, background: "var(--color-gold-text)" }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card p-4 md:p-5 flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[15px] font-semibold">Análisis con Claude</h2>
+          <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+            Lee los motivos y las notas del periodo y propone qué cambiar. Se guarda; pide uno nuevo cuando haya más reuniones.
+          </p>
+        </div>
+        <AnalisisAtrasos desde={desde} hasta={hoy} hayDatos={(motivos ?? []).length > 0} />
+        {informe && (
+          <article className="flex flex-col gap-1 pt-2" style={{ borderTop: "1px solid var(--color-line)" }}>
+            <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>
+              {fechaCorta(informe.desde)} a {fechaCorta(informe.hasta)} · pedido por {(informe.profiles as { full_name: string | null } | null)?.full_name ?? "alguien"}
+            </p>
+            <div className="text-[14px] whitespace-pre-line leading-relaxed" style={{ color: "var(--color-ink)" }}>{informe.content}</div>
+          </article>
+        )}
+      </section>
+
+      {(motivos ?? []).length > 0 && (
+        <section className="card p-4 md:p-5 flex flex-col gap-2">
+          <h2 className="text-[15px] font-semibold">Detalle</h2>
+          <ul className="flex flex-col">
+            {(motivos ?? []).slice(0, 50).map((m, i) => (
+              <li key={i} className="flex gap-3 py-1.5 text-[13px] border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
+                <span className="tabular flex-none w-[56px]" style={{ color: "var(--color-muted)" }}>{fechaCorta(m.fecha)}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block" style={{ color: "var(--color-ink)" }}>+{m.minutos} min · {etiqueta(m.categoria)}{m.nota ? `: ${m.nota}` : ""}</span>
+                  <span className="block" style={{ color: "var(--color-muted)" }}>{m.reunion}{m.punto ? ` · ${m.punto}` : ""}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

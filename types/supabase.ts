@@ -885,6 +885,44 @@ export type Database = {
         }
         Relationships: []
       }
+      delay_reports: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          desde: string
+          hasta: string
+          id: string
+          model: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string
+          desde: string
+          hasta: string
+          id?: string
+          model: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          desde?: string
+          hasta?: string
+          id?: string
+          model?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delay_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discipleship_groups: {
         Row: {
           active: boolean
@@ -929,6 +967,77 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      meeting_alerts: {
+        Row: {
+          anchor: string
+          created_at: string
+          created_by: string | null
+          id: string
+          meeting_id: string
+          message: string
+          ministry_ids: string[]
+          minutes: number
+          run_item_id: string
+          sent_at: string | null
+          skipped: boolean
+        }
+        Insert: {
+          anchor?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meeting_id: string
+          message: string
+          ministry_ids: string[]
+          minutes: number
+          run_item_id: string
+          sent_at?: string | null
+          skipped?: boolean
+        }
+        Update: {
+          anchor?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meeting_id?: string
+          message?: string
+          ministry_ids?: string[]
+          minutes?: number
+          run_item_id?: string
+          sent_at?: string | null
+          skipped?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_alerts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_alerts_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_alerts_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "service_units"
+            referencedColumns: ["meeting_id"]
+          },
+          {
+            foreignKeyName: "meeting_alerts_run_item_id_fkey"
+            columns: ["run_item_id"]
+            isOneToOne: false
+            referencedRelation: "run_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meeting_changes: {
         Row: {
@@ -1056,31 +1165,43 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          data: Json | null
+          from_item_id: string | null
           id: string
           item_title: string | null
           kind: string
           meeting_id: string
           minutes: number | null
+          reason: string | null
+          reason_category: string | null
           run_item_id: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          data?: Json | null
+          from_item_id?: string | null
           id?: string
           item_title?: string | null
           kind: string
           meeting_id: string
           minutes?: number | null
+          reason?: string | null
+          reason_category?: string | null
           run_item_id?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          data?: Json | null
+          from_item_id?: string | null
           id?: string
           item_title?: string | null
           kind?: string
           meeting_id?: string
           minutes?: number | null
+          reason?: string | null
+          reason_category?: string | null
           run_item_id?: string | null
         }
         Relationships: [
@@ -1089,6 +1210,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_live_changes_from_item_id_fkey"
+            columns: ["from_item_id"]
+            isOneToOne: false
+            referencedRelation: "run_items"
             referencedColumns: ["id"]
           },
           {
@@ -1156,6 +1284,7 @@ export type Database = {
       }
       meeting_templates: {
         Row: {
+          alerts: Json
           checklist_extra: Json
           created_at: string
           created_by: string | null
@@ -1172,6 +1301,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          alerts?: Json
           checklist_extra?: Json
           created_at?: string
           created_by?: string | null
@@ -1188,6 +1318,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          alerts?: Json
           checklist_extra?: Json
           created_at?: string
           created_by?: string | null
@@ -2074,6 +2205,7 @@ export type Database = {
           alejandose_hasta: number
           id: boolean
           inactivo_semanas: number
+          ministerio_creativos_id: string | null
           ministerio_musica_id: string | null
           sobrecargado_desde: number
           updated_at: string
@@ -2084,6 +2216,7 @@ export type Database = {
           alejandose_hasta?: number
           id?: boolean
           inactivo_semanas?: number
+          ministerio_creativos_id?: string | null
           ministerio_musica_id?: string | null
           sobrecargado_desde?: number
           updated_at?: string
@@ -2094,6 +2227,7 @@ export type Database = {
           alejandose_hasta?: number
           id?: boolean
           inactivo_semanas?: number
+          ministerio_creativos_id?: string | null
           ministerio_musica_id?: string | null
           sobrecargado_desde?: number
           updated_at?: string
@@ -2101,6 +2235,13 @@ export type Database = {
           ventana_dias?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "servir_ajustes_ministerio_creativos_id_fkey"
+            columns: ["ministerio_creativos_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "servir_ajustes_ministerio_musica_id_fkey"
             columns: ["ministerio_musica_id"]
@@ -2774,7 +2915,12 @@ export type Database = {
         }[]
       }
       ajustar_item: {
-        Args: { p_item_id: string; p_minutos: number }
+        Args: {
+          p_categoria: string
+          p_item_id: string
+          p_minutos: number
+          p_motivo?: string
+        }
         Returns: {
           actual_end: string | null
           actual_start: string | null
@@ -2820,7 +2966,12 @@ export type Database = {
         }[]
       }
       atrasar_reunion: {
-        Args: { p_meeting_id: string; p_minutos: number }
+        Args: {
+          p_categoria: string
+          p_meeting_id: string
+          p_minutos: number
+          p_motivo?: string
+        }
         Returns: {
           actual_end: string | null
           actual_start: string | null
@@ -2899,7 +3050,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      avisar_asignados: {
+        Args: {
+          p_cuerpo: string
+          p_generales: boolean
+          p_kind: string
+          p_meeting_id: string
+          p_ministerios: string[]
+          p_titulo: string
+        }
+        Returns: number
+      }
       avisar_cambio_vivo: {
+        Args: { p_cuerpo: string; p_meeting_id: string; p_titulo: string }
+        Returns: undefined
+      }
+      avisar_creativos: {
         Args: { p_cuerpo: string; p_meeting_id: string; p_titulo: string }
         Returns: undefined
       }
@@ -2971,6 +3137,13 @@ export type Database = {
       }
       current_person_id: { Args: never; Returns: string }
       current_role_is: { Args: { roles: string[] }; Returns: boolean }
+      departamentos_para_avisar: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          ministry_id: string
+          nombre: string
+        }[]
+      }
       directorio_personas: {
         Args: never
         Returns: {
@@ -3002,9 +3175,22 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      enviar_aviso_reunion: {
+        Args: { p_meeting_id: string; p_ministerios: string[]; p_texto: string }
+        Returns: number
+      }
       es_lider_planeacion: { Args: never; Returns: boolean }
       es_pastor: { Args: { p_user_id: string }; Returns: boolean }
       es_solo_servidor: { Args: never; Returns: boolean }
+      estadisticas_atrasos: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          categoria: string
+          minutos: number
+          reuniones: number
+          veces: number
+        }[]
+      }
       estadisticas_reuniones: {
         Args: {
           p_desde: string
@@ -3109,6 +3295,18 @@ export type Database = {
         Returns: string
       }
       ministerio_que_planea: { Args: never; Returns: string }
+      motivos_atraso: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          categoria: string
+          fecha: string
+          minutos: number
+          nota: string
+          punto: string
+          reunion: string
+          tipo: string
+        }[]
+      }
       my_broadcast_audiences: {
         Args: never
         Returns: {
@@ -3202,6 +3400,32 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reemplazar_cancion: {
+        Args: { p_item_id: string; p_motivo?: string; p_song_id: string }
+        Returns: {
+          actual_end: string | null
+          actual_start: string | null
+          created_at: string
+          duration_sec: number
+          id: string
+          kind: string
+          meeting_id: string
+          notes: string | null
+          planned_duration_sec: number | null
+          removed_at: string | null
+          responsible_position_id: string | null
+          song_id: string | null
+          song_key: string | null
+          sort: number
+          title: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "run_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       refrescar_salud_servidor: { Args: never; Returns: undefined }
       refresh_song_last_used: {
         Args: { p_song_ids: string[] }
@@ -3261,6 +3485,7 @@ export type Database = {
         Args: { p_meeting_date: string; p_status: string }
         Returns: boolean
       }
+      revisar_avisos_reunion: { Args: never; Returns: number }
       revocar_invitacion: {
         Args: { p_invitation_id: string }
         Returns: undefined

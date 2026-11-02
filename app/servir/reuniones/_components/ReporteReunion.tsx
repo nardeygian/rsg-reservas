@@ -12,8 +12,23 @@ export type Reporte = {
   atraso_inicio_min: number | null;
   diferencia_fin_min: number | null;
   puntos: { titulo: string; tipo: string; planeado_min: number; ajustado_min: number; real_min: number | null; quitado: boolean }[];
-  cambios: { hora: string; tipo: string; minutos: number | null; punto: string | null; quien: string | null }[];
+  cambios: {
+    hora: string; tipo: string; minutos: number | null; punto: string | null; quien: string | null;
+    categoria?: string | null; motivo?: string | null;
+  }[];
 };
+
+// Motivos de un ajuste de tiempo (iguales al check de meeting_live_changes).
+export const MOTIVOS: { value: string; label: string }[] = [
+  { value: "alabanza", label: "Alabanza extendida" },
+  { value: "predica", label: "Prédica extendida" },
+  { value: "tecnica", label: "Técnica o sonido" },
+  { value: "llegada", label: "Llegada tarde" },
+  { value: "logistica", label: "Logística o montaje" },
+  { value: "otro", label: "Otro" },
+];
+export const textoMotivo = (categoria: string | null | undefined, nota?: string | null) =>
+  [MOTIVOS.find((m) => m.value === categoria)?.label, nota].filter(Boolean).join(": ");
 
 const hora = (iso: string | null) => (iso ? formatInTimeZone(new Date(iso), TZ, "h:mm a", { locale: es }) : "—");
 
@@ -24,6 +39,15 @@ export function textoCambio(tipo: string, minutos: number | null, punto: string 
     case "duracion": return `${punto ?? "Punto"} ${min}`;
     case "quitar": return `Se quitó ${punto ?? "un punto"}`;
     case "devolver": return `Volvió ${punto ?? "un punto"}`;
+    // minutos = cuántos puntos se movió (negativo: hacia atrás).
+    case "avanzar":
+      if (minutos === 1) return `Pasó a ${punto ?? "el siguiente punto"}`;
+      return minutos != null && minutos < 0
+        ? `Volvió ${Math.abs(minutos)} ${Math.abs(minutos) === 1 ? "punto" : "puntos"} a ${punto ?? "un punto anterior"}`
+        : `Saltó ${minutos ?? ""} puntos a ${punto ?? "otro punto"}`;
+    case "aviso": return `Aviso: ${punto ?? ""}`;
+    case "aviso_auto": return `Aviso automático: ${punto ?? ""}`;
+    case "cancion_cambiada": return `Canción cambiada por ${punto ?? "otra"}`;
     default: return tipo;
   }
 }
@@ -87,6 +111,9 @@ export function ReporteReunion({ reporte }: { reporte: Reporte }) {
                 <span className="flex-1 min-w-0" style={{ color: "var(--color-ink)" }}>
                   {textoCambio(c.tipo, c.minutos, c.punto)}
                   {c.quien && <span style={{ color: "var(--color-muted)" }}> · {c.quien}</span>}
+                  {(c.categoria || c.motivo) && (
+                    <span className="block text-[12px]" style={{ color: "var(--color-muted)" }}>Motivo: {textoMotivo(c.categoria, c.motivo)}</span>
+                  )}
                 </span>
               </li>
             ))}

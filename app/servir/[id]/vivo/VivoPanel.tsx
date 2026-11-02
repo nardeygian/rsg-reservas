@@ -8,9 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 import { suscribirConSesion } from "@/lib/supabase/realtime";
 import type { EstadoAsistencia } from "@/lib/servir/contratos";
 import { marcarChecklist } from "@/app/servir/equipo/_lib/acciones";
-import { Aviso, MOMENTO_TEXTO } from "@/app/servir/equipo/_components/ui";
-import { textoCambio } from "@/app/servir/reuniones/_components/ReporteReunion";
-import { ajustarItem, atrasarReunion, avanzarItem, confirmarAsistencia, iniciarReunion, quitarItem, terminarReunion } from "./actions";
+import { Aviso, Hoja, MOMENTO_TEXTO } from "@/app/servir/equipo/_components/ui";
+import { MOTIVOS, textoCambio, textoMotivo } from "@/app/servir/reuniones/_components/ReporteReunion";
+import {
+  ajustarItem, atrasarReunion, avanzarItem, confirmarAsistencia, enviarAviso, iniciarReunion, quitarItem, reemplazarCancion,
+  terminarReunion, type CategoriaMotivo,
+} from "./actions";
 
 export type ItemVivo = {
   id: string; kind: string; title: string; duration_sec: number; notes: string | null;
@@ -19,7 +22,12 @@ export type ItemVivo = {
   removed: boolean;               // quitado en vivo
   proyectado: string | null;      // hora proyectada de inicio (con atrasos y ajustes)
 };
-export type CambioVivo = { id: string; kind: string; minutes: number | null; item_title: string | null; created_at: string };
+export type CambioVivo = {
+  id: string; kind: string; minutes: number | null; item_title: string | null; created_at: string;
+  categoria: string | null; motivo: string | null; quien: string | null;
+};
+export type AlertaVivo = { id: string; item: string; cuando: string; mensaje: string; departamentos: string; enviada: string | null; omitida: boolean };
+export type CancionOpcion = { id: string; title: string; default_key: string | null };
 export type MiServicio = { posiciones: string[]; checklist: { id: string; moment: string; text: string; done: boolean }[] };
 export type ServidorVivo = {
   person_id: string; nombre: string; posiciones: string[]; departamento: string;
@@ -40,6 +48,9 @@ type Props = {
   puede: { vivo: boolean; cerrarAsistencia: boolean; confirmar: boolean; quitarCanciones: boolean };
   assignmentIds: string[];
   cambios: CambioVivo[];
+  canciones: CancionOpcion[];      // catálogo, para cambiar una canción (solo si puede)
+  avisos: { departamentos: { id: string; nombre: string }[]; todos: boolean };
+  alertas: AlertaVivo[];
   finProyectado: string | null;
   finPlaneado: string | null;
 };
@@ -103,7 +114,7 @@ function useAhora(activo: boolean) {
   return ahora;
 }
 
-export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, puede, assignmentIds, cambios, finProyectado, finPlaneado }: Props) {
+export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, puede, assignmentIds, cambios, finProyectado, finPlaneado, canciones, avisos, alertas }: Props) {
   useEnVivo(meeting.id, assignmentIds);
   const enVivo = meeting.status === "en_vivo";
   const ahora = useAhora(enVivo);
@@ -114,6 +125,10 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
   const items = todos.filter((i) => !i.removed);
   const ajustable = puede.vivo && (meeting.status === "publicada" || meeting.status === "en_vivo");
   const [quitado, setQuitado] = useState<ItemVivo | null>(null);
+  // Sumar o restar minutos pide el motivo antes de aplicarse.
+  const [pedido, setPedido] = useState<{ minutos: number; itemId: string | null; titulo: string } | null>(null);
+  const [avisando, setAvisando] = useState(false);
+  const [ok, setOk] = useState("");
   useEffect(() => {
     if (!quitado) return;
     const t = setTimeout(() => setQuitado(null), 8000);
@@ -132,6 +147,20 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
       if (!r.ok) setErr(r.error ?? "No se pudo completar.");
     });
   }
+  // Pasar al siguiente es el botón Siguiente; cualquier otro movimiento
+  // (Anterior o tocar un punto del orden) pide confirmar cuántos se salta.
+  function saltar(id: string) {
+    const destino = items.findIndex((i) => i.id === id);
+    if (destino < 0 || destino === idxActual) return;
+    const n = destino - idxActual;
+    const titulo = items[destino].title;
+    const pregunta = idxActual < 0
+      ? `¿Ir a “${titulo}”?`
+      : n === 1 ? `¿Pasar a “${titulo}”?`
+      : n > 0 ? `¿Saltar ${n} puntos hacia adelante, a “${titulo}”?`
+      : `¿Volver ${-n} ${n === -1 ? "punto" : "puntos"} atrás, a “${titulo}”?`;
+    if (confirm(pregunta)) correr(() => avanzarItem(meeting.id, id));
+  }
   function quitar(i: ItemVivo, q: boolean) {
     setErr("");
     start(async () => {
@@ -144,7 +173,13 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
   return (
     <div className="flex flex-col gap-5 md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-start md:gap-6">
       <div className="flex flex-col gap-5 min-w-0">
+        {(avisos.todos || avisos.departamentos.length > 0) && (meeting.status === "publicada" || enVivo) && (
+          <button type="button" className="btn-secondary self-start" onClick={() => setAvisando(true)}>
+            <Icon name="users" size={16} /> Enviar aviso
+          </button>
+        )}
         {err && <Aviso texto={err} onClose={() => setErr("")} />}
+        {ok && <Aviso texto={ok} tipo="ok" onClose={() => setOk("")} />}
         {quitado && (
           <div className="card px-4 py-3 flex items-center gap-3" role="status">
             <span className="flex-1 min-w-0 text-[14px] truncate" style={{ color: "var(--color-ink)" }}>Se quitó {quitado.title}</span>
@@ -153,8 +188,8 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
         )}
 
         {ajustable && (
-          <Atraso meetingId={meeting.id} atraso={meeting.delay_minutes} finProyectado={finProyectado} finPlaneado={finPlaneado}
-            pendiente={pendiente} correr={correr} />
+          <Atraso atraso={meeting.delay_minutes} finProyectado={finProyectado} finPlaneado={finPlaneado}
+            pendiente={pendiente} onPedir={(min) => setPedido({ minutos: min, itemId: null, titulo: "Atraso de la reunión" })} />
         )}
 
         {meeting.status === "publicada" && (
@@ -174,7 +209,8 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
           <section className="card p-4 flex flex-col gap-3" aria-live="polite" style={{ borderColor: "var(--color-up)" }}>
             <div className="flex items-center gap-2">
               <span className="chip chip-up">En vivo</span>
-              <span className="text-[13px] tabular" style={{ color: "var(--color-muted)" }}>Reunión: {reloj(totalReunion)}</span>
+              {/* El reloj cambia de segundo entre el servidor y el navegador. */}
+              <span className="text-[13px] tabular" style={{ color: "var(--color-muted)" }} suppressHydrationWarning>Reunión: {reloj(totalReunion)}</span>
             </div>
             {actual ? (
               <>
@@ -187,7 +223,7 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
                   </p>
                 )}
                 {actual.duration_sec > 0 && (
-                  <p className="text-[34px] font-semibold tabular leading-none" style={{ color: restante < 0 ? "var(--color-down)" : "var(--color-ink)" }}>
+                  <p className="text-[34px] font-semibold tabular leading-none" style={{ color: restante < 0 ? "var(--color-down)" : "var(--color-ink)" }} suppressHydrationWarning>
                     {reloj(restante)}
                     <span className="text-[14px] font-medium ml-2" style={{ color: "var(--color-muted)" }}>
                       {restante < 0 ? "pasado" : "restante"} de {Math.round(actual.duration_sec / 60)} min
@@ -205,7 +241,7 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
             {puede.vivo && (
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button type="button" className="btn-secondary" disabled={pendiente || idxActual <= 0}
-                  onClick={() => correr(() => avanzarItem(meeting.id, items[idxActual - 1]?.id ?? null))}>
+                  onClick={() => items[idxActual - 1] && saltar(items[idxActual - 1].id)}>
                   <Icon name="chevron-left" /> Anterior
                 </button>
                 <button type="button" className="btn-primary" disabled={pendiente || items.length === 0}
@@ -218,11 +254,14 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
         )}
 
         <Orden items={todos} actualId={meeting.current_item_id} puedeSaltar={puede.vivo && enVivo} pendiente={pendiente}
-          onSaltar={(id) => correr(() => avanzarItem(meeting.id, id))}
-          ajustar={ajustable ? (id, min) => correr(() => ajustarItem(meeting.id, id, min)) : null}
+          onSaltar={saltar}
+          ajustar={ajustable ? (id, min) => setPedido({ minutos: min, itemId: id, titulo: todos.find((i) => i.id === id)?.title ?? "" }) : null}
+          canciones={puede.quitarCanciones ? canciones : []}
+          cambiarCancion={(i, songId) => correr(() => reemplazarCancion(meeting.id, i.id, songId))}
           puedeQuitar={(i) => (meeting.status === "publicada" || meeting.status === "en_vivo") && (i.kind === "cancion" ? puede.quitarCanciones : puede.vivo)}
           onQuitar={quitar} />
 
+        {alertas.length > 0 && <Alertas alertas={alertas} />}
         {cambios.length > 0 && <Cambios cambios={cambios} />}
 
         {puede.vivo && enVivo && (
@@ -243,15 +282,39 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
           <p className="card px-4 py-3 text-[14px]" style={{ color: "var(--color-muted)" }}>La asistencia de esta reunión ya se cerró.</p>
         )}
       </div>
+
+      {pedido && (
+        <MotivoHoja pedido={pedido} pendiente={pendiente} onClose={() => setPedido(null)}
+          onAplicar={(categoria, nota) => {
+            const motivo = { categoria, nota: nota || undefined };
+            const p = pedido;
+            setPedido(null);
+            correr(() => p.itemId ? ajustarItem(meeting.id, p.itemId, p.minutos, motivo) : atrasarReunion(meeting.id, p.minutos, motivo));
+          }} />
+      )}
+      {avisando && (
+        <AvisoHoja departamentos={avisos.departamentos} todos={avisos.todos} pendiente={pendiente} onClose={() => setAvisando(false)}
+          onEnviar={(deptos, texto) => {
+            setErr("");
+            start(async () => {
+              const r = await enviarAviso(meeting.id, deptos, texto);
+              if (!r.ok) return setErr(r.error);
+              setAvisando(false);
+              setOk(r.data.destinatarios === 1 ? "Aviso enviado a 1 persona." : `Aviso enviado a ${r.data.destinatarios} personas.`);
+            });
+          }} />
+      )}
     </div>
   );
 }
 
-function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, puedeQuitar, onQuitar }: {
+function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, puedeQuitar, onQuitar, canciones, cambiarCancion }: {
   items: ItemVivo[]; actualId: string | null; puedeSaltar: boolean; pendiente: boolean; onSaltar: (id: string) => void;
   ajustar: ((id: string, minutos: number) => void) | null;
   puedeQuitar: (i: ItemVivo) => boolean;
   onQuitar: (i: ItemVivo, quitar: boolean) => void;
+  canciones: CancionOpcion[];
+  cambiarCancion: (i: ItemVivo, songId: string) => void;
 }) {
   const [abierto, setAbierto] = useState<string | null>(null);
   if (items.length === 0) {
@@ -318,7 +381,9 @@ function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, pue
                 )}
               </div>
               {abierto === i.id && !i.removed && (
-                <AjustePunto item={i} pendiente={pendiente} ajustar={ajustar} quitar={puedeQuitar(i) ? () => { setAbierto(null); onQuitar(i, true); } : null} />
+                <AjustePunto item={i} pendiente={pendiente} ajustar={ajustar} quitar={puedeQuitar(i) ? () => { setAbierto(null); onQuitar(i, true); } : null}
+                  canciones={i.kind === "cancion" ? canciones : []}
+                  cambiar={(songId) => { setAbierto(null); cambiarCancion(i, songId); }} />
               )}
             </li>
           );
@@ -329,13 +394,30 @@ function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, pue
 }
 
 // Ajustar un punto: −5 / +5 a un toque, o la cantidad que se quiera; y quitarlo.
-function AjustePunto({ item, pendiente, ajustar, quitar }: {
+function AjustePunto({ item, pendiente, ajustar, quitar, canciones, cambiar }: {
   item: ItemVivo; pendiente: boolean; ajustar: ((id: string, minutos: number) => void) | null; quitar: (() => void) | null;
+  canciones: CancionOpcion[]; cambiar: (songId: string) => void;
 }) {
   const [min, setMin] = useState("");
+  const [otra, setOtra] = useState("");
   const valor = Number(min);
   return (
     <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
+      {canciones.length > 0 && (
+        <form className="flex items-center gap-1 w-full" onSubmit={(e) => {
+          e.preventDefault();
+          const s = canciones.find((c) => c.id === otra);
+          if (s && confirm(`¿Cambiar “${item.title}” por “${s.title}”? Se avisa a Creativos.`)) cambiar(s.id);
+        }}>
+          <select className="input flex-1 min-w-0 min-h-[40px]" value={otra} onChange={(e) => setOtra(e.target.value)} aria-label={`Cambiar ${item.title} por otra canción`}>
+            <option value="">Cambiar por otra canción…</option>
+            {canciones.filter((c) => c.id !== item.song_id).map((c) => (
+              <option key={c.id} value={c.id}>{c.title}{c.default_key ? ` (${c.default_key})` : ""}</option>
+            ))}
+          </select>
+          <button type="submit" className="btn-secondary min-h-[40px] px-3 flex-none" disabled={pendiente || !otra}>Cambiar</button>
+        </form>
+      )}
       {ajustar && (
         <>
           <button type="button" className="btn-secondary min-h-[40px] px-3" disabled={pendiente} onClick={() => ajustar(item.id, -5)}>−5</button>
@@ -357,10 +439,11 @@ function AjustePunto({ item, pendiente, ajustar, quitar }: {
 }
 
 // Atraso: +5/+10/+15 a un toque, o la cantidad que se quiera. Antes de
-// empezar corre la hora de inicio; en vivo alarga el punto actual.
-function Atraso({ meetingId, atraso, finProyectado, finPlaneado, pendiente, correr }: {
-  meetingId: string; atraso: number; finProyectado: string | null; finPlaneado: string | null; pendiente: boolean;
-  correr: (f: () => Promise<{ ok: boolean; error?: string }>) => void;
+// empezar corre la hora de inicio; en vivo alarga el punto actual. Siempre
+// pide el motivo (onPedir abre la hoja del motivo).
+function Atraso({ atraso, finProyectado, finPlaneado, pendiente, onPedir }: {
+  atraso: number; finProyectado: string | null; finPlaneado: string | null; pendiente: boolean;
+  onPedir: (minutos: number) => void;
 }) {
   const [min, setMin] = useState("");
   const valor = Number(min);
@@ -376,9 +459,9 @@ function Atraso({ meetingId, atraso, finProyectado, finPlaneado, pendiente, corr
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {[5, 10, 15].map((m) => (
-          <button key={m} type="button" className="btn-secondary min-h-[40px] px-3" disabled={pendiente} onClick={() => correr(() => atrasarReunion(meetingId, m))}>+{m}</button>
+          <button key={m} type="button" className="btn-secondary min-h-[40px] px-3" disabled={pendiente} onClick={() => onPedir(m)}>+{m}</button>
         ))}
-        <form className="flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); if (valor) { correr(() => atrasarReunion(meetingId, valor)); setMin(""); } }}>
+        <form className="flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); if (valor) { onPedir(valor); setMin(""); } }}>
           <input className="input w-[76px] min-h-[40px] tabular" inputMode="numeric" placeholder="min" value={min}
             onChange={(e) => setMin(e.target.value.replace(/[^\d-]/g, ""))} aria-label="Minutos de atraso" />
           <button type="submit" className="btn-primary min-h-[40px] px-3" disabled={pendiente || !valor}>Anunciar</button>
@@ -398,7 +481,13 @@ function Cambios({ cambios }: { cambios: CambioVivo[] }) {
         {cambios.map((c) => (
           <li key={c.id} className="flex gap-3 py-1.5 text-[14px] border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
             <span className="tabular flex-none w-[64px]" style={{ color: "var(--color-muted)" }}>{hora(c.created_at)}</span>
-            <span className="flex-1 min-w-0" style={{ color: "var(--color-ink)" }}>{textoCambio(c.kind, c.minutes, c.item_title)}</span>
+            <span className="flex-1 min-w-0" style={{ color: "var(--color-ink)" }}>
+              {textoCambio(c.kind, c.minutes, c.item_title)}
+              {c.quien && <span style={{ color: "var(--color-muted)" }}> · {c.quien}</span>}
+              {(c.categoria || c.motivo) && (
+                <span className="block text-[12px]" style={{ color: "var(--color-muted)" }}>Motivo: {textoMotivo(c.categoria, c.motivo)}</span>
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -600,6 +689,114 @@ function Asistencia({ meetingId, filas, puedeCerrar, cerrada }: { meetingId: str
           </button>
         )}
       </div>
+    </section>
+  );
+}
+
+// Motivo de un ajuste de tiempo: categoría obligatoria y nota opcional.
+function MotivoHoja({ pedido, pendiente, onClose, onAplicar }: {
+  pedido: { minutos: number; titulo: string }; pendiente: boolean; onClose: () => void;
+  onAplicar: (categoria: CategoriaMotivo, nota: string) => void;
+}) {
+  const [categoria, setCategoria] = useState<CategoriaMotivo | null>(null);
+  const [nota, setNota] = useState("");
+  const signo = pedido.minutos > 0 ? "+" : "−";
+  return (
+    <Hoja titulo={`${signo}${Math.abs(pedido.minutos)} min`} subtitulo={pedido.titulo} onClose={onClose}>
+      <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (categoria) onAplicar(categoria, nota.trim()); }}>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="field-label mb-1.5">¿Por qué?</legend>
+          <div className="flex flex-wrap gap-2">
+            {MOTIVOS.map((m) => (
+              <button key={m.value} type="button" aria-pressed={categoria === m.value} onClick={() => setCategoria(m.value as CategoriaMotivo)}
+                className="min-h-[40px] px-3 rounded-full text-[14px] font-semibold"
+                style={categoria === m.value
+                  ? { background: "var(--color-action-bg)", color: "var(--color-action-fg)" }
+                  : { background: "var(--color-surface-2)", color: "var(--color-ink)" }}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <label className="flex flex-col gap-1.5">
+          <span className="field-label">Nota (opcional)</span>
+          <input className="input" value={nota} onChange={(e) => setNota(e.target.value)} maxLength={300} placeholder="Ej.: el predicador pidió 5 minutos más" />
+        </label>
+        <button type="submit" className="btn-primary" disabled={pendiente || !categoria}>Aplicar</button>
+        <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>El motivo queda en el reporte y en las estadísticas de atrasos.</p>
+      </form>
+    </Hoja>
+  );
+}
+
+// Aviso a los servidores de la reunión. Quien conduce y los líderes
+// escogen departamentos (o todos); un servidor avisa a su departamento.
+function AvisoHoja({ departamentos, todos, pendiente, onClose, onEnviar }: {
+  departamentos: { id: string; nombre: string }[]; todos: boolean; pendiente: boolean; onClose: () => void;
+  onEnviar: (deptos: string[] | null, texto: string) => void;
+}) {
+  const [texto, setTexto] = useState("");
+  const [sel, setSel] = useState<Set<string>>(() => new Set(todos ? [] : departamentos.map((d) => d.id)));
+  const aTodos = todos && sel.size === 0;
+  const cambiar = (id: string) => {
+    const n = new Set(sel);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    setSel(n);
+  };
+  return (
+    <Hoja titulo="Enviar aviso" subtitulo="Llega como notificación a los servidores de esta reunión." onClose={onClose}>
+      <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); onEnviar(aTodos ? null : [...sel], texto); }}>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="field-label mb-1.5">Para</legend>
+          <div className="flex flex-wrap gap-2">
+            {todos && (
+              <button type="button" aria-pressed={aTodos} onClick={() => setSel(new Set())}
+                className="min-h-[40px] px-3 rounded-full text-[14px] font-semibold"
+                style={aTodos ? { background: "var(--color-action-bg)", color: "var(--color-action-fg)" } : { background: "var(--color-surface-2)", color: "var(--color-ink)" }}>
+                Todos
+              </button>
+            )}
+            {departamentos.map((d) => (
+              <button key={d.id} type="button" aria-pressed={sel.has(d.id)} onClick={() => (todos || departamentos.length > 1) && cambiar(d.id)}
+                className="min-h-[40px] px-3 rounded-full text-[14px] font-semibold"
+                style={sel.has(d.id) ? { background: "var(--color-action-bg)", color: "var(--color-action-fg)" } : { background: "var(--color-surface-2)", color: "var(--color-ink)" }}>
+                {d.nombre}
+              </button>
+            ))}
+          </div>
+          {!todos && <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>Como servidor, avisas a tu departamento en esta reunión.</p>}
+        </fieldset>
+        <label className="flex flex-col gap-1.5">
+          <span className="field-label">Mensaje</span>
+          <textarea className="input py-2" rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={500}
+            placeholder="Ej.: LMRSG, suban al escenario" autoFocus />
+        </label>
+        <button type="submit" className="btn-primary" disabled={pendiente || !texto.trim() || (!aTodos && sel.size === 0)}>
+          {pendiente ? "Enviando…" : "Enviar"}
+        </button>
+      </form>
+    </Hoja>
+  );
+}
+
+// Avisos automáticos programados para esta reunión y su estado.
+function Alertas({ alertas }: { alertas: AlertaVivo[] }) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="eyebrow px-1">Avisos automáticos</h2>
+      <ul className="card px-4 py-2 flex flex-col">
+        {alertas.map((a) => (
+          <li key={a.id} className="flex gap-3 py-1.5 text-[14px] border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
+            <span className="flex-1 min-w-0">
+              <span className="block" style={{ color: "var(--color-ink)" }}>{a.mensaje}</span>
+              <span className="block text-[12px]" style={{ color: "var(--color-muted)" }}>{a.cuando} · {a.departamentos}</span>
+            </span>
+            <span className="text-[12px] flex-none" style={{ color: a.enviada ? "var(--color-up)" : "var(--color-muted)" }}>
+              {a.omitida ? "omitido" : a.enviada ? `enviado ${hora(a.enviada)}` : "programado"}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

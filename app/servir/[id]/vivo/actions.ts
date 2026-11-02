@@ -17,7 +17,15 @@ const MENSAJES: Record<string, string> = {
   estado_asistencia_invalido: "Escoge asistió, tarde o ausente.",
   minutos_invalidos: "Escribe entre 1 y 240 minutos.",
   item_quitado: "Ese punto está quitado. Devuélvelo primero.",
+  motivo_requerido: "Escoge el motivo del ajuste.",
+  texto_requerido: "Escribe el aviso.",
+  cancion_invalida: "Esa canción no está en el catálogo.",
 };
+
+// Motivos de un ajuste de tiempo (iguales al check de la base).
+export type CategoriaMotivo = "alabanza" | "predica" | "tecnica" | "llegada" | "logistica" | "otro";
+const CATEGORIAS: CategoriaMotivo[] = ["alabanza", "predica", "tecnica", "llegada", "logistica", "otro"];
+export type Motivo = { categoria: CategoriaMotivo; nota?: string };
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const ESTADOS: EstadoAsistencia[] = ["asistio", "tarde", "ausente"];
@@ -95,21 +103,27 @@ function minutosValidos(min: number): boolean {
   return Number.isInteger(min) && min !== 0 && Math.abs(min) <= 240;
 }
 
-export async function atrasarReunion(meetingId: string, minutos: number): Promise<Resultado> {
+export async function atrasarReunion(meetingId: string, minutos: number, motivo: Motivo): Promise<Resultado> {
   if (!UUID.test(meetingId)) return { ok: false, error: MENSAJES.no_encontrada };
   if (!minutosValidos(minutos)) return { ok: false, error: MENSAJES.minutos_invalidos };
+  if (!CATEGORIAS.includes(motivo?.categoria)) return { ok: false, error: MENSAJES.motivo_requerido };
   const db = await createClient();
-  const { error } = await db.rpc("atrasar_reunion", { p_meeting_id: meetingId, p_minutos: minutos });
+  const { error } = await db.rpc("atrasar_reunion", {
+    p_meeting_id: meetingId, p_minutos: minutos, p_categoria: motivo.categoria, p_motivo: motivo.nota?.slice(0, 300) ?? undefined,
+  });
   if (error) return fallo(error);
   refrescar(meetingId);
   return { ok: true, data: undefined };
 }
 
-export async function ajustarItem(meetingId: string, itemId: string, minutos: number): Promise<Resultado> {
+export async function ajustarItem(meetingId: string, itemId: string, minutos: number, motivo: Motivo): Promise<Resultado> {
   if (!UUID.test(meetingId) || !UUID.test(itemId)) return { ok: false, error: MENSAJES.item_invalido };
   if (!minutosValidos(minutos)) return { ok: false, error: MENSAJES.minutos_invalidos };
+  if (!CATEGORIAS.includes(motivo?.categoria)) return { ok: false, error: MENSAJES.motivo_requerido };
   const db = await createClient();
-  const { error } = await db.rpc("ajustar_item", { p_item_id: itemId, p_minutos: minutos });
+  const { error } = await db.rpc("ajustar_item", {
+    p_item_id: itemId, p_minutos: minutos, p_categoria: motivo.categoria, p_motivo: motivo.nota?.slice(0, 300) ?? undefined,
+  });
   if (error) return fallo(error);
   refrescar(meetingId);
   return { ok: true, data: undefined };
@@ -122,4 +136,30 @@ export async function quitarItem(meetingId: string, itemId: string, quitar: bool
   if (error) return fallo(error);
   refrescar(meetingId);
   return { ok: true, data: undefined };
+}
+
+// Cambia una canción del orden por otra del catálogo (avisa a Creativos).
+export async function reemplazarCancion(meetingId: string, itemId: string, songId: string, motivo?: string): Promise<Resultado> {
+  if (!UUID.test(meetingId) || !UUID.test(itemId) || !UUID.test(songId)) return { ok: false, error: MENSAJES.item_invalido };
+  const db = await createClient();
+  const { error } = await db.rpc("reemplazar_cancion", { p_item_id: itemId, p_song_id: songId, p_motivo: motivo?.slice(0, 300) ?? undefined });
+  if (error) return fallo(error);
+  refrescar(meetingId);
+  return { ok: true, data: undefined };
+}
+
+// Aviso a los servidores de la reunión. ministerios null = todos los que
+// el usuario puede avisar (la base decide cuáles son).
+export async function enviarAviso(meetingId: string, ministerios: string[] | null, texto: string): Promise<Resultado<{ destinatarios: number }>> {
+  if (!UUID.test(meetingId)) return { ok: false, error: MENSAJES.no_encontrada };
+  if (ministerios && !ministerios.every((m) => UUID.test(m))) return { ok: false, error: MENSAJES.sin_permiso };
+  const limpio = texto.trim().slice(0, 500);
+  if (!limpio) return { ok: false, error: MENSAJES.texto_requerido };
+  const db = await createClient();
+  const { data, error } = await db.rpc("enviar_aviso_reunion", {
+    p_meeting_id: meetingId, p_ministerios: (ministerios ?? null) as string[], p_texto: limpio,
+  });
+  if (error) return fallo(error);
+  refrescar(meetingId);
+  return { ok: true, data: { destinatarios: data ?? 0 } };
 }

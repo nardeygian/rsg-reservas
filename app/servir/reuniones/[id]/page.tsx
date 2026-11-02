@@ -13,6 +13,7 @@ import { ReporteReunion, type Reporte } from "../_components/ReporteReunion";
 import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
 import { misEquipos } from "../../equipo/_lib/datos";
 import { ServidoresReunion } from "./ServidoresReunion";
+import { AvisosAutomaticos, type AvisoAuto } from "./AvisosAutomaticos";
 
 export const metadata = { title: "Reunión · Servir" };
 
@@ -71,6 +72,13 @@ export default async function ReunionPage({ params, searchParams }: {
   // Pestaña Servidores: solo para quien tiene algún equipo que asignar.
   const [equipos, { data: superAdmin }] = await Promise.all([misEquipos(supabase), supabase.rpc("is_super_admin")]);
   const asignaAlgo = equipos.length > 0;
+  // Avisos automáticos (solo quien planea los ve y edita aquí).
+  const [{ data: avisosR }, { data: deptosR }] = puede.planear && !(vista === "servidores")
+    ? await Promise.all([
+        supabase.from("meeting_alerts").select("id, run_item_id, anchor, minutes, ministry_ids, message, sent_at, skipped").eq("meeting_id", id).order("created_at"),
+        supabase.from("ministries").select("id, name").eq("type", "departamento").order("name"),
+      ])
+    : [{ data: [] }, { data: [] }];
   const enServidores = asignaAlgo && vista === "servidores";
   const idsEscogidos = (escogidos ?? []).map((e) => e.space_id);
   // Activos, más los ya escogidos aunque luego se hayan deshabilitado.
@@ -180,6 +188,15 @@ export default async function ReunionPage({ params, searchParams }: {
               status={m.status}
               reservas={Object.fromEntries((reservas ?? []).map((r) => [r.space_id, r]))}
               editable={montajeGlobal === true && (m.status === "borrador" || m.status === "publicada")}
+            />
+          )}
+          {puede.planear && (
+            <AvisosAutomaticos
+              meetingId={m.id}
+              avisos={(avisosR ?? []) as AvisoAuto[]}
+              puntos={(items ?? []).filter((i) => i.kind !== "encabezado").map((i) => ({ id: i.id, title: i.title }))}
+              departamentos={(deptosR ?? []) as { id: string; name: string }[]}
+              editable={m.status !== "cerrada" && m.status !== "cancelada"}
             />
           )}
           {m.notes && (

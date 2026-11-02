@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fechaLarga, hoyBogota } from "@/app/servir/reuniones/_lib/fechas";
 import { Encabezado, EstadoChip, Pagina } from "@/app/servir/reuniones/_components/ui";
 import { ReporteReunion, type Reporte } from "@/app/servir/reuniones/_components/ReporteReunion";
-import { VivoPanel, type AsistenciaFila, type CambioVivo, type ItemVivo, type MiServicio, type ServidorVivo } from "./VivoPanel";
+import { VivoPanel, type AlertaVivo, type AsistenciaFila, type CambioVivo, type ItemVivo, type MiServicio, type ServidorVivo } from "./VivoPanel";
 
 export const metadata = { title: "En vivo · Servir" };
 
@@ -38,9 +38,30 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
       .select("id, person_id, status, people(full_name), positions(name), ministries(id, name), checklist_items(id, moment, text, sort, done_at)")
       .eq("meeting_id", id).eq("status", "aceptada"),
     db.rpc("proyeccion_reunion", { p_meeting_id: id }),
-    db.from("meeting_live_changes").select("id, kind, minutes, item_title, created_at").eq("meeting_id", id).order("created_at", { ascending: false }).limit(30),
+    // Cada "Siguiente" queda registrado, pero aquí solo se muestran los saltos.
+    db.from("meeting_live_changes").select("id, kind, minutes, item_title, created_at, reason_category, reason, profiles(full_name)")
+      .eq("meeting_id", id).or("kind.neq.avanzar,minutes.neq.1").order("created_at", { ascending: false }).limit(30),
     db.rpc("puede_quitar_canciones", { p_meeting_id: id }).then((r) => r.data === true),
   ]);
+  const [{ data: deptosAviso }, { data: alertasR }, cancionesR] = await Promise.all([
+    db.rpc("departamentos_para_avisar", { p_meeting_id: id }),
+    db.from("meeting_alerts").select("id, anchor, minutes, ministry_ids, message, sent_at, skipped, run_items(title)").eq("meeting_id", id).order("created_at"),
+    quitaCanciones ? db.from("songs").select("id, title, default_key").eq("active", true).order("title").limit(500) : Promise.resolve({ data: [] }),
+  ]);
+  const idsAlerta = [...new Set((alertasR ?? []).flatMap((a) => a.ministry_ids))];
+  const { data: nombresDepto } = idsAlerta.length
+    ? await db.from("ministries").select("id, name").in("id", idsAlerta)
+    : { data: [] as { id: string; name: string }[] };
+  const nombreDepto = new Map((nombresDepto ?? []).map((d) => [d.id, d.name]));
+  const alertas: AlertaVivo[] = (alertasR ?? []).map((a) => ({
+    id: a.id,
+    item: (a.run_items as { title: string } | null)?.title ?? "",
+    cuando: `${a.anchor === "antes_fin" ? `Faltando ${a.minutes} min de` : `A los ${a.minutes} min de`} ${(a.run_items as { title: string } | null)?.title ?? "un punto"}`,
+    mensaje: a.message,
+    departamentos: a.ministry_ids.map((m) => nombreDepto.get(m) ?? "").filter(Boolean).join(", "),
+    enviada: a.skipped ? null : a.sent_at,
+    omitida: a.skipped,
+  }));
   const proyeccion = new Map((proyR.data ?? []).map((p) => [p.run_item_id, p]));
   const esLiderDepto = alcancesAsignar.some((a) => a.scope_type === null || a.scope_type === "departamento");
 
@@ -56,7 +77,10 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
   const finPlaneado = m.starts_at
     ? new Date(Date.parse(m.starts_at) + items.reduce((t, i) => t + i.planned_duration_sec, 0) * 1000).toISOString()
     : null;
-  const cambios: CambioVivo[] = (cambiosR.data ?? []).map((c) => ({ id: c.id, kind: c.kind, minutes: c.minutes, item_title: c.item_title, created_at: c.created_at }));
+  const cambios: CambioVivo[] = (cambiosR.data ?? []).map((c) => ({
+    id: c.id, kind: c.kind, minutes: c.minutes, item_title: c.item_title, created_at: c.created_at,
+    categoria: c.reason_category, motivo: c.reason, quien: (c.profiles as { full_name: string | null } | null)?.full_name ?? null,
+  }));
 
   type Asig = NonNullable<typeof asignR.data>[number];
   const checklist = (a: Asig) => [...(a.checklist_items ?? [])].sort((x, y) => x.sort - y.sort);
@@ -116,6 +140,9 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
         cambios={cambios}
         finProyectado={finProyectado}
         finPlaneado={finPlaneado}
+        canciones={(cancionesR.data ?? []) as { id: string; title: string; default_key: string | null }[]}
+        avisos={{ departamentos: (deptosAviso ?? []).map((d) => ({ id: d.ministry_id, nombre: d.nombre })), todos: puedeVivo || alcancesAsignar.length > 0 }}
+        alertas={alertas}
       />
       {m.report && <ReporteReunion reporte={m.report as unknown as Reporte} />}
     </Pagina>
