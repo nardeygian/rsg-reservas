@@ -198,17 +198,17 @@ export async function leerPdf(
       }],
     });
   } catch (e) {
-    if (e instanceof Anthropic.AuthenticationError) throw new ErrorLectura("La clave de la API de Claude no es válida.");
-    if (e instanceof Anthropic.RateLimitError) throw new ErrorLectura("Claude está ocupado. Intenta de nuevo en un minuto.");
-    if (e instanceof Anthropic.BadRequestError) throw new ErrorLectura("Claude no pudo abrir ese PDF. ¿Está dañado o protegido con clave?");
-    if (e instanceof Anthropic.APIError) throw new ErrorLectura(`Claude respondió con un error (${e.status ?? "sin conexión"}).`);
+    if (e instanceof Anthropic.AuthenticationError) throw new ErrorLectura("La clave de la API no es válida.");
+    if (e instanceof Anthropic.RateLimitError) throw new ErrorLectura("El lector está ocupado. Intenta de nuevo en un minuto.");
+    if (e instanceof Anthropic.BadRequestError) throw new ErrorLectura("No se pudo abrir ese PDF. ¿Está dañado o protegido con clave?");
+    if (e instanceof Anthropic.APIError) throw new ErrorLectura(`El lector respondió con un error (${e.status ?? "sin conexión"}).`);
     throw e;
   }
 
-  if (respuesta.stop_reason === "refusal") throw new ErrorLectura("Claude no quiso leer este documento.");
+  if (respuesta.stop_reason === "refusal") throw new ErrorLectura("No se pudo leer este documento.");
   if (respuesta.stop_reason === "max_tokens") throw new ErrorLectura("El documento es demasiado largo para leerlo de una vez.");
   const bloque = respuesta.content.find((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text");
-  if (!bloque) throw new ErrorLectura("Claude no devolvió nada.");
+  if (!bloque) throw new ErrorLectura("La lectura llegó vacía. Intenta de nuevo.");
 
   let json: unknown;
   try {

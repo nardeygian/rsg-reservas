@@ -45,13 +45,13 @@ export async function analizarAtrasos(motivos: MotivoAtraso[], periodo: { desde:
       }],
     });
   } catch (e) {
-    if (e instanceof Anthropic.AuthenticationError) throw new ErrorAnalisis("La clave de la API de Claude no es válida.");
-    if (e instanceof Anthropic.RateLimitError) throw new ErrorAnalisis("Claude está ocupado. Intenta de nuevo en un minuto.");
-    if (e instanceof Anthropic.APIError) throw new ErrorAnalisis(`Claude respondió con un error (${e.status ?? "sin conexión"}).`);
+    if (e instanceof Anthropic.AuthenticationError) throw new ErrorAnalisis("La clave de la API no es válida.");
+    if (e instanceof Anthropic.RateLimitError) throw new ErrorAnalisis("El servicio de análisis está ocupado. Intenta de nuevo en un minuto.");
+    if (e instanceof Anthropic.APIError) throw new ErrorAnalisis(`El servicio de análisis respondió con un error (${e.status ?? "sin conexión"}).`);
     throw e;
   }
-  if (respuesta.stop_reason === "refusal") throw new ErrorAnalisis("Claude no pudo hacer este análisis.");
+  if (respuesta.stop_reason === "refusal") throw new ErrorAnalisis("No se pudo hacer este análisis.");
   const texto = respuesta.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("\n").trim();
-  if (!texto) throw new ErrorAnalisis("Claude no devolvió nada.");
+  if (!texto) throw new ErrorAnalisis("El análisis llegó vacío. Intenta de nuevo.");
   return { texto, modelo: respuesta.model };
 }

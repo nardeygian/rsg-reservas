@@ -28,7 +28,7 @@ export default async function ImportarReunionPage() {
     return (
       <Pagina>
         <Encabezado titulo="Importar reunión" volver={volver} />
-        <SinAcceso texto="Importar desde PDF no está configurado todavía: falta la clave de la API de Claude (ANTHROPIC_API_KEY)." />
+        <SinAcceso texto="Importar desde PDF no está configurado todavía: falta la clave de la API (ANTHROPIC_API_KEY)." />
       </Pagina>
     );
   }

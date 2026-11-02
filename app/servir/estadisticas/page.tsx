@@ -303,7 +303,7 @@ async function Atrasos({ desde, hoy }: { desde: string; hoy: string }) {
 
       <section className="card p-4 md:p-5 flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="text-[15px] font-semibold">Análisis con Claude</h2>
+          <h2 className="text-[15px] font-semibold">Análisis</h2>
           <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
             Lee los motivos y las notas del periodo y propone qué cambiar. Se guarda; pide uno nuevo cuando haya más reuniones.
           </p>

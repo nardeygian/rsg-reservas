@@ -112,7 +112,7 @@ export function ImportarPdf({
         {leyendo ? "Leyendo el PDF… (puede tardar un minuto)" : "Leer PDF"}
       </button>
       <p className="text-xs -mt-2" style={{ color: "var(--color-faint)" }}>
-        El PDF lo lee Claude (IA) y no se guarda. Nada se crea hasta que confirmes.
+        El PDF se lee con IA y no se guarda. Nada se crea hasta que confirmes.
       </p>
     </div>
   );

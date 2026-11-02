@@ -32,11 +32,11 @@ export async function guardarAjustes(input: {
 
 // Informe de atrasos escrito por Claude para el periodo. Queda guardado en
 // delay_reports (RLS: quien puede ver estadísticas) para no pagarlo cada vez.
-export async function analizarAtrasosConClaude(desde: string, hasta: string): Promise<Resultado<{ id: string }>> {
+export async function analizarAtrasosDelPeriodo(desde: string, hasta: string): Promise<Resultado<{ id: string }>> {
   const fecha = /^\d{4}-\d{2}-\d{2}$/;
   if (!fecha.test(desde) || !fecha.test(hasta) || desde > hasta) return { ok: false, error: "El periodo no es válido." };
   const { analizarAtrasos, ErrorAnalisis, MODELO_ANALISIS } = await import("@/lib/servir/analisis-atrasos");
-  if (!process.env.ANTHROPIC_API_KEY) return { ok: false, error: "El análisis con Claude no está configurado (falta la clave de la API)." };
+  if (!process.env.ANTHROPIC_API_KEY) return { ok: false, error: "El análisis no está configurado (falta la clave de la API)." };
 
   const db = await createClient();
   const { data: puede } = await db.rpc("puede_ver_estadisticas");
