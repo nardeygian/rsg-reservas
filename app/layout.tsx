@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Sans } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { ServiceWorkerRegister } from "./_components/ServiceWorkerRegister";
+import { RespuestaInmediata } from "./_components/RespuestaInmediata";
 import { PortalNavServer } from "./_components/portal/PortalNavServer";
 
 const instrument = Instrument_Sans({
@@ -50,6 +52,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
       </head>
       <body>
+        <Suspense fallback={null}><RespuestaInmediata /></Suspense>
         {/* Filtro de refracción para el liquid glass (solo lo usan navegadores que
             admiten url() en backdrop-filter; los demás lo ignoran). */}
         <svg width="0" height="0" aria-hidden="true" style={{ position: "absolute" }}>

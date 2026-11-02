@@ -44,7 +44,9 @@ export async function signupAction(formData: FormData) {
     options: {
       data: {
         full_name: fullName,
-        ...(rawRequestedRole ? { requested_role: rawRequestedRole } : {}),
+        // Por invitación entra como servidor (decisión de Gian); el trigger lo lee.
+        ...(porInvitacion ? { via: "invitacion" } : {}),
+        ...(rawRequestedRole && !porInvitacion ? { requested_role: rawRequestedRole } : {}),
       },
       emailRedirectTo: next === "/"
         ? `${origin}/auth/callback`

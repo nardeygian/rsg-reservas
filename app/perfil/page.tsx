@@ -19,6 +19,9 @@ const ROLE_LABELS: Record<string, string> = {
   admin_casa: "Admin de casa",
   studio_admin: "Admin del Estudio",
   super_admin: "Super admin",
+  planeacion: "Planeación",
+  fundador: "Fundador",
+  servidor: "Servidor",
 };
 
 const APPROVER_ROLES = ["pastor_sede", "admin_casa", "super_admin", "pastor_ministerio"];
@@ -202,10 +205,29 @@ export default async function ProfilePage({
         </form>
       </Group>
 
+      <Group title="Cuenta">
+        <Link href="/perfil/cuenta" className="block">
+          <RowBody
+            icon={<RowIcon>{icon(<><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>)}</RowIcon>}
+            label="Cuenta y formas de entrar"
+            detail="Google, correo, tu registro de servidor y eliminar cuenta"
+            trailing={Chevron}
+          />
+        </Link>
+      </Group>
+
       <Group
         title="Notificaciones"
         footer="Con Slack vinculado te llega un mensaje directo cuando aprueban o rechazan tus reservas."
       >
+        <Link href="/tu/notificaciones" className="block">
+          <RowBody
+            icon={<RowIcon>{icon(<><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z" /></>)}</RowIcon>}
+            label="Avisos"
+            detail="Tu bandeja y las notificaciones en este dispositivo"
+            trailing={Chevron}
+          />
+        </Link>
         <RowBody
           icon={<RowIcon>{icon(<><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></>)}</RowIcon>}
           label="Slack"

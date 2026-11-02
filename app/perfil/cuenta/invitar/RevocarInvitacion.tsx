@@ -10,7 +10,7 @@ export function RevocarInvitacion({ id }: { id: string }) {
   return (
     <button
       type="button"
-      disabled={pendiente}
+      aria-busy={pendiente} disabled={pendiente}
       className="btn-ghost text-[14px] min-h-[40px] px-3"
       style={{ color: "var(--color-down)" }}
       onClick={() =>

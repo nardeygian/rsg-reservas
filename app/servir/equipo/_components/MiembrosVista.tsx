@@ -6,6 +6,7 @@ import type { Resultado } from "@/lib/servir/contratos";
 import { agregarMiembro, cambiarPosicionPersona, moverMiembro, quitarMiembro } from "../_lib/acciones";
 import type { AreaFila, Equipo, MiembroFila, PersonaOpcion, PosicionFila } from "../_lib/datos";
 import { Aviso, Avatar, Hoja } from "./ui";
+import { InvitarPersona } from "@/lib/cuentas/InvitarPersona";
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -34,10 +35,10 @@ export function MiembrosVista({ equipo, miembros, posiciones, areas, personas }:
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <input className="input flex-1" placeholder="Buscar en el equipo" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Buscar en el equipo" />
-        <button type="button" className="btn-primary" onClick={() => setAgregando(true)}>
+        <button type="button" className="btn-primary flex-none" onClick={() => setAgregando(true)}>
           <Icon name="plus" /> <span>Agregar</span>
         </button>
+        <input className="input flex-1 min-w-0" placeholder="Buscar en el equipo" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Buscar en el equipo" />
       </div>
 
       {error && <Aviso texto={error} onClose={() => setError("")} />}
@@ -69,7 +70,7 @@ export function MiembrosVista({ equipo, miembros, posiciones, areas, personas }:
                         {m.posiciones.map((p) => nombrePos.get(p) && <span key={p} className="chip chip-accent">{nombrePos.get(p)}</span>)}
                       </span>
                     ) : (
-                      <span className="text-[12px]" style={{ color: "var(--color-faint)" }}>Sin posiciones: no aparecerá en las sugerencias</span>
+                      <span className="text-[12px]" style={{ color: "var(--color-faint)" }}>Sin roles: no aparecerá en las sugerencias</span>
                     )}
                     {m.bloqueos.map((b, i) => (
                       <span key={i} className="text-[12px] flex items-center gap-1" style={{ color: "var(--color-down)" }}>
@@ -89,7 +90,9 @@ export function MiembrosVista({ equipo, miembros, posiciones, areas, personas }:
         <AgregarHoja equipo={equipo} personas={personas} miembros={miembros} onClose={() => setAgregando(false)} onError={setError} />
       )}
       {actual && (
-        <MiembroHoja key={actual.team_member_id} equipo={equipo} miembro={actual} posiciones={posiciones.filter((p) => p.active)} areas={areas}
+        // Roles de todo el departamento y los del área del servidor.
+        <MiembroHoja key={actual.team_member_id} equipo={equipo} miembro={actual}
+          posiciones={posiciones.filter((p) => p.active && (!p.area_id || p.area_id === actual.area_id))} areas={areas}
           onClose={() => setEditando(null)} onError={setError} />
       )}
     </section>
@@ -122,18 +125,23 @@ function AgregarHoja({ equipo, personas, miembros, onClose, onError }: {
         <ul className="flex flex-col divide-y" style={{ borderColor: "var(--color-line)" }}>
           {resultados.map((p) => (
             <li key={p.id}>
-              <button type="button" disabled={pendiente} className="w-full flex items-center gap-3 py-2.5 min-h-[48px] text-left"
-                onClick={() => correr(() => agregarMiembro({ ministry_id: equipo.ministry_id, area_id: equipo.area_id, person_id: p.id }))}>
+              <button type="button" aria-busy={pendiente} disabled={pendiente} className="w-full flex items-center gap-3 py-2.5 min-h-[48px] text-left"
+                onClick={() => correr(() => agregarMiembro({ ministry_id: equipo.ministry_id ?? "", area_id: equipo.area_id, person_id: p.id }))}>
                 <Avatar nombre={p.full_name} size={32} />
-                <span className="flex-1 text-[15px]" style={{ color: "var(--color-ink)" }}>{p.full_name}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[15px] truncate" style={{ color: "var(--color-ink)" }}>{p.full_name}</span>
+                  <span className="block text-[12px] truncate" style={{ color: "var(--color-muted)" }}>
+                    {p.departamentos.length ? p.departamentos.join(" · ") : "Sin departamento"}
+                  </span>
+                </span>
                 <Icon name="plus" style={{ color: "var(--color-accent)" }} />
               </button>
             </li>
           ))}
         </ul>
         {q.trim().length >= 2 && !exacto && (
-          <button type="button" disabled={pendiente} className="btn-secondary"
-            onClick={() => correr(() => agregarMiembro({ ministry_id: equipo.ministry_id, area_id: equipo.area_id, full_name: q }))}>
+          <button type="button" aria-busy={pendiente} disabled={pendiente} className="btn-secondary"
+            onClick={() => correr(() => agregarMiembro({ ministry_id: equipo.ministry_id ?? "", area_id: equipo.area_id, full_name: q }))}>
             <Icon name="plus" /> Crear a “{q.trim()}” y agregarlo
           </button>
         )}
@@ -185,7 +193,7 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
   return (
     <Hoja titulo={miembro.full_name} subtitulo={equipo.area_name ?? equipo.ministry_name} onClose={onClose}
       pie={
-        <button type="button" className="btn-ghost w-full" style={{ color: "var(--color-down)" }} disabled={pendiente} onClick={quitar}>
+        <button type="button" className="btn-ghost w-full" style={{ color: "var(--color-down)" }} aria-busy={pendiente} disabled={pendiente} onClick={quitar}>
           {confirmar ? "Toca otra vez para quitarlo del equipo" : "Quitar del equipo"}
         </button>
       }>
@@ -194,7 +202,7 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
         <div className="flex flex-col gap-2">
           <p className="field-label">Puede servir en</p>
           {posiciones.length === 0 ? (
-            <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>Crea primero las posiciones del equipo.</p>
+            <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>Todavía no hay roles para su área. Los crea el líder de Planeación en Servir › Estructura.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {posiciones.map((p) => {
@@ -216,7 +224,7 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
         {!equipo.area_id && areas.length > 0 && (
           <label className="flex flex-col gap-2">
             <span className="field-label">Área</span>
-            <select className="input" defaultValue={miembro.area_id ?? ""} disabled={pendiente} onChange={(e) => mover(e.target.value)}>
+            <select className="input" defaultValue={miembro.area_id ?? ""} aria-busy={pendiente} disabled={pendiente} onChange={(e) => mover(e.target.value)}>
               <option value="">Sin área</option>
               {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
@@ -230,6 +238,10 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
             <span key={i} style={{ color: "var(--color-down)" }}>No puede {rango(b.starts_on, b.ends_on)}{b.reason ? ` · ${b.reason}` : ""}</span>
           ))}
         </div>
+
+        {!miembro.tiene_cuenta && (
+          <InvitarPersona personId={miembro.person_id} nombre={miembro.full_name} email={miembro.email} phone={miembro.phone} />
+        )}
       </div>
     </Hoja>
   );

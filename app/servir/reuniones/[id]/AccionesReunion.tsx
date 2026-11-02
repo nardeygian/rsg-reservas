@@ -5,28 +5,34 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/app/_components/ui/Icon";
 import type { Resultado } from "@/lib/servir/contratos";
 import {
-  cancelarReunion, duplicarReunion, guardarComoPlantilla, guardarDatosReunion,
+  cancelarReunion, duplicarReunion, eliminarReunion, guardarComoPlantilla, guardarDatosReunion,
   publicarReunion, reprogramarReunion, restaurarReunion,
 } from "../actions";
 import { horaBogota, instanteBogota, sumarDias } from "../_lib/fechas";
 
-type Panel = null | "datos" | "reprogramar" | "cancelar" | "duplicar" | "plantilla";
+type Panel = null | "datos" | "reprogramar" | "cancelar" | "duplicar" | "plantilla" | "borrar";
 
 export function AccionesReunion({
   reunion,
   nombrePlantillaSugerido,
+  puedeBorrar,
 }: {
   reunion: {
     id: string; name: string; status: string; meeting_date: string;
     starts_at: string | null; ends_at: string | null; notes: string | null;
   };
   nombrePlantillaSugerido: string;
+  // Una reunión pasada solo la borra el super admin; una futura, también
+  // Planeación y el pastor de sede. La base lo exige.
+  puedeBorrar: boolean;
 }) {
   const router = useRouter();
   const [panel, setPanel] = useState<Panel>(null);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
+  // En el celular las acciones de uso ocasional van detrás de "Más".
+  const [mas, setMas] = useState(false);
 
   const horaActual = reunion.starts_at ? horaBogota(reunion.starts_at) : "";
   const durActual = reunion.starts_at && reunion.ends_at
@@ -60,12 +66,14 @@ export function AccionesReunion({
     });
   }
 
-  const boton = (p: Panel, icono: Parameters<typeof Icon>[0]["name"], texto: string) => (
+  // Las acciones que destruyen (cancelar, borrar) van en rojo.
+  const boton = (p: Panel, icono: Parameters<typeof Icon>[0]["name"], texto: string, peligro = false) => (
     <button type="button" onClick={() => abrir(p)} aria-expanded={panel === p}
       className="h-10 px-4 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5"
       style={{
         background: panel === p ? "var(--color-surface-2)" : "var(--color-surface)",
-        border: "1px solid var(--color-line)", color: "var(--color-ink)", boxShadow: "inset 0 1px 0 var(--glass-border)",
+        border: `1px solid ${peligro ? "var(--color-critical)" : "var(--color-line)"}`,
+        color: peligro ? "var(--color-critical)" : "var(--color-ink)", boxShadow: "inset 0 1px 0 var(--glass-border)",
       }}>
       <Icon name={icono} size={15} />
       {texto}
@@ -78,7 +86,7 @@ export function AccionesReunion({
         {reunion.status === "borrador" && (
           <button type="button" className="h-10 px-4 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5"
             style={{ background: "var(--color-action-bg)", color: "var(--color-action-fg)", opacity: pendiente ? 0.6 : 1 }}
-            disabled={pendiente}
+            aria-busy={pendiente} disabled={pendiente}
             onClick={() => correr(() => publicarReunion(reunion.id), () => { setAviso("Publicada."); router.refresh(); })}>
             <Icon name="check" size={15} />
             Publicar
@@ -86,18 +94,30 @@ export function AccionesReunion({
         )}
         {editable && boton("datos", "clock", "Editar datos")}
         {editable && boton("reprogramar", "calendar-plus", "Reprogramar")}
-        {boton("duplicar", "copy", "Duplicar")}
-        {boton("plantilla", "repeat", "Guardar como plantilla")}
-        {editable && boton("cancelar", "x-circle", "Cancelar reunión")}
         {reunion.status === "cancelada" && (
           <button type="button" className="h-10 px-4 rounded-full text-[14px] font-semibold"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
-            disabled={pendiente}
+            aria-busy={pendiente} disabled={pendiente}
             onClick={() => correr(() => restaurarReunion(reunion.id), () => { setAviso("Restaurada como borrador."); router.refresh(); })}>
             Restaurar
           </button>
         )}
+        <button type="button" aria-expanded={mas} onClick={() => setMas(!mas)}
+          className="h-10 px-4 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5"
+          style={{ background: mas ? "var(--color-surface-2)" : "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-ink)" }}>
+          Más
+          <Icon name={mas ? "chevron-up" : "chevron-down"} size={15} />
+        </button>
       </div>
+
+      {mas && (
+      <div className="flex flex-wrap gap-2">
+        {boton("duplicar", "copy", "Duplicar")}
+        {boton("plantilla", "repeat", "Guardar como plantilla")}
+        {editable && boton("cancelar", "x-circle", "Cancelar reunión", true)}
+        {puedeBorrar && boton("borrar", "close", "Borrar", true)}
+      </div>
+      )}
 
       {panel === "datos" && (
         <form className="card p-4 md:p-5 grid gap-3 md:grid-cols-2"
@@ -127,7 +147,7 @@ export function AccionesReunion({
             <textarea id="d-notas" rows={3} className="input py-2" value={notas} onChange={(e) => setNotas(e.target.value)} />
           </div>
           <p className="text-xs md:col-span-2" style={{ color: "var(--color-faint)" }}>Para cambiar la fecha usa Reprogramar: queda en el historial y se avisa al equipo.</p>
-          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" disabled={pendiente}>Guardar</button>
+          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" aria-busy={pendiente} disabled={pendiente}>Guardar</button>
         </form>
       )}
 
@@ -151,7 +171,7 @@ export function AccionesReunion({
             <label htmlFor="r-motivo" className="field-label block mb-1.5">Motivo (opcional, lo ve el equipo)</label>
             <input id="r-motivo" className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} />
           </div>
-          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" disabled={pendiente}>Reprogramar</button>
+          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" aria-busy={pendiente} disabled={pendiente}>Reprogramar</button>
         </form>
       )}
 
@@ -167,7 +187,7 @@ export function AccionesReunion({
             <label htmlFor="c-motivo" className="field-label block mb-1.5">Motivo (opcional, lo ve el equipo)</label>
             <input id="c-motivo" className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} />
           </div>
-          <button type="submit" className="btn-primary self-start" disabled={pendiente}
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}
             style={{ background: "var(--color-critical)", color: "#F6F5F1" }}>
             Cancelar reunión
           </button>
@@ -185,7 +205,7 @@ export function AccionesReunion({
             <label htmlFor="u-fecha" className="field-label block mb-1.5">Fecha de la copia</label>
             <input id="u-fecha" type="date" className="input md:max-w-[240px]" value={fechaCopia} onChange={(e) => setFechaCopia(e.target.value)} required />
           </div>
-          <button type="submit" className="btn-primary self-start" disabled={pendiente}>Duplicar</button>
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}>Duplicar</button>
         </form>
       )}
 
@@ -200,7 +220,33 @@ export function AccionesReunion({
             <label htmlFor="p-nombre" className="field-label block mb-1.5">Nombre de la plantilla</label>
             <input id="p-nombre" className="input" value={nombrePlantilla} onChange={(e) => setNombrePlantilla(e.target.value)} required maxLength={120} />
           </div>
-          <button type="submit" className="btn-primary self-start" disabled={pendiente}>Guardar plantilla</button>
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}>Guardar plantilla</button>
+        </form>
+      )}
+
+      {panel === "borrar" && (
+        <form className="card p-4 md:p-5 flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            correr(() => eliminarReunion(reunion.id), () => router.push("/servir/reuniones"));
+          }}>
+          <p className="text-[14px]">
+            Se borra «{reunion.name}» con su orden, su equipo asignado y su historial, y se liberan sus espacios. No se puede deshacer.
+          </p>
+          {(reunion.status === "en_vivo" || reunion.status === "cerrada") && (
+            <p className="text-[14px]" style={{ color: "var(--color-critical)" }}>
+              También se borra su asistencia y deja de contar en las estadísticas.
+            </p>
+          )}
+          {reunion.status !== "borrador" && (
+            <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+              Las personas asignadas no reciben aviso. Si el equipo ya la vio, mejor cancélala.
+            </p>
+          )}
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}
+            style={{ background: "var(--color-critical)", color: "#F6F5F1" }}>
+            Borrar reunión
+          </button>
         </form>
       )}
 

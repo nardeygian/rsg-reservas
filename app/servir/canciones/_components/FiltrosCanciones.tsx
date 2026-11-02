@@ -51,18 +51,26 @@ export function FiltrosCanciones({
   );
 
   const hayFiltros = ["q", "etiqueta", "tono", "artista", "bpm", "uso", "archivadas"].some((k) => params.get(k));
+  // En el celular los filtros van plegados para que la lista quede a la vista.
+  const activos = ["etiqueta", "tono", "artista", "bpm", "uso", "orden"].filter((k) => params.get(k)).length;
+  const [abiertos, setAbiertos] = useState(activos > 0);
 
   return (
     <div className="flex flex-col gap-2">
-      <input
-        type="search"
-        className="input"
-        placeholder="Buscar por título o artista"
-        aria-label="Buscar canciones"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
-      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-3">
+      <div className="flex gap-2">
+        <input
+          type="search"
+          className="input flex-1"
+          placeholder="Buscar por título o artista"
+          aria-label="Buscar canciones"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <button type="button" className="btn-secondary flex-none md:hidden" aria-expanded={abiertos} onClick={() => setAbiertos(!abiertos)}>
+          Filtros{activos ? ` (${activos})` : ""}
+        </button>
+      </div>
+      <div className={`${abiertos ? "grid" : "hidden"} grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-3`}>
         {select("etiqueta", "Filtrar por etiqueta", "Todas las etiquetas", etiquetas.map((t) => ({ value: t, label: t })))}
         {select("tono", "Filtrar por tono", "Todos los tonos", tonos.map((t) => ({ value: t, label: t })))}
         {select("bpm", "Filtrar por BPM", "Cualquier BPM", BPM_RANGOS)}

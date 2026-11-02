@@ -80,7 +80,7 @@ export function ActivarPush() {
             role="switch"
             aria-checked={activo}
             aria-label="Notificaciones push en este dispositivo"
-            disabled={pendiente}
+            aria-busy={pendiente} disabled={pendiente}
             onClick={activo ? desactivar : activar}
             className="relative w-[51px] h-[31px] rounded-full flex-none transition-colors disabled:opacity-60"
             style={{ background: activo ? "var(--color-accent)" : "var(--color-line)" }}

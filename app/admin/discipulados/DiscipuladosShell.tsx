@@ -142,7 +142,7 @@ export function DiscipuladosShell({ svData }: { svData: SvData }) {
                 className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
                 style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)", border: "1px solid var(--color-gold)" }}
                 onClick={handleSeedDiscipulados}
-                disabled={pending}
+                aria-busy={pending} disabled={pending}
               >
                 Importar grupos desde resurgencia-web
               </button>

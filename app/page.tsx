@@ -4,10 +4,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile, getUserCaps } from "@/lib/auth";
 import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
-import { getCalendarEvents } from "@/lib/asana";
+import { leerAgenda } from "@/lib/servir/agenda";
+import { ServirInicio } from "@/app/_components/portal/ServirInicio";
+import { SERVICIO_OCULTO } from "@/lib/portal/modulos";
+import { Campanita } from "@/app/_components/portal/Campanita";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { donReadData } from "@/app/donaciones/_lib/data";
-import { donantes } from "@/app/donaciones/_lib/don-logic";
 import { svNorm, svServiciosGrupo, svTablaDiscipulos, svEnPeriodo, periodoActual, MESES } from "@/app/servicio/_lib/sv-logic";
 
 const USE_TYPE_LABELS: Record<string, string> = {
@@ -94,7 +96,7 @@ export default async function HomePage() {
   const todayStart = startOfDayBogota(now);
   const todayEnd   = endOfDayBogota(now);
 
-  const [{ count: pendingCount }, { data: upcomingBookings }, { count: bookingsTodayCount }, svData, donaciones, calendarEvents] = await Promise.all([
+  const [{ count: pendingCount }, { data: upcomingBookings }, { count: bookingsTodayCount }, svData, donaciones, calendarEvents, { count: sinLeer }, { data: versiculos }] = await Promise.all([
     canApprove
       ? supabase
           .from("bookings_staff")
@@ -117,11 +119,19 @@ export default async function HomePage() {
       .lt("starts_at", todayEnd.toISOString()),
     svReadData(),
     donReadData(),
-    getCalendarEvents().catch((e: Error) => {
-      console.error("[inicio] Asana:", e.message);
-      return [] as Awaited<ReturnType<typeof getCalendarEvents>>;
-    }),
+    // Agenda de reuniones de RSG (vive en la app, ya no en Asana).
+    leerAgenda(supabase, now.toLocaleDateString("en-CA", { timeZone: "America/Bogota" }),
+      new Date(now.getTime() + 8 * 86400_000).toLocaleDateString("en-CA", { timeZone: "America/Bogota" }))
+      .catch((e: Error) => {
+        console.error("[inicio] agenda:", e.message);
+        return [] as Awaited<ReturnType<typeof leerAgenda>>;
+      }),
+    // Avisos sin leer para la campanita (RLS: solo los propios).
+    supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null),
+    // Versículo del día: el mismo para todos (lo elige la base por la fecha).
+    supabase.rpc("versiculo_del_dia"),
   ]);
+  const versiculo = versiculos?.[0] ?? null;
 
   const firstName = profile?.full_name?.split(" ")[0] ?? null;
   const today = new Date();
@@ -151,11 +161,6 @@ export default async function HomePage() {
     groupStats = { sirvieron, totMin, totServ, total: miembros.length };
   }
 
-  const donMes = donaciones.filter(d => svEnPeriodo(d.f.slice(0, 10), "mes", perY, perI));
-  const donTotalMes = isAdmin ? donMes.reduce((sum, d) => sum + (d.m ?? 0), 0) : groupDonTotal;
-  const donCountMes = donMes.length;
-  const donantesCountMes = donantes(donMes);
-  const donPromedioMes = donCountMes > 0 ? Math.round(donTotalMes / donCountMes) : 0;
 
   // Sum donations for all discipulado groups. Uses d.di first (authoritative from PHP panel),
   // then falls back to name matching so the Líderes y pastores group (whose members have no d.di)
@@ -216,12 +221,11 @@ export default async function HomePage() {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-end",
+            alignItems: "flex-start",
             gap: "16px",
-            flexWrap: "wrap",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
             <span
               style={{
                 fontSize: 11,
@@ -246,12 +250,15 @@ export default async function HomePage() {
             </h1>
           </div>
 
-          {/* Solo lo accionable: aprobaciones pendientes. Rol, tema y perfil viven en "Tú". */}
-          {canApprove && (pendingCount ?? 0) > 0 && (
-            <Link href="/aprobaciones" prefetch className="chip chip-gold" style={{ textDecoration: "none" }}>
-              {pendingCount} por aprobar
-            </Link>
-          )}
+          {/* Solo lo accionable: aprobaciones pendientes y avisos. Rol, tema y perfil viven en "Tú". */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+            {canApprove && (pendingCount ?? 0) > 0 && (
+              <Link href="/aprobaciones" prefetch className="chip chip-gold" style={{ textDecoration: "none" }}>
+                {pendingCount} por aprobar
+              </Link>
+            )}
+            <Campanita sinLeer={sinLeer ?? 0} />
+          </div>
         </header>
 
         {/* ── Bloque Servicio (HOY EN RESURGENCIA) ── */}
@@ -308,39 +315,26 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Donaciones en la franja */}
-          {(isAdmin || donTotalMes > 0) && caps?.donaciones !== "none" && (
-            <div className="brand-hero-tile" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", fontWeight: 600, opacity: 0.85, color: "#fff" }}>
-                  Recaudado en el mes
-                </span>
-                <Link href="/donaciones" style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", textDecoration: "none", opacity: 0.9 }}>
-                  <span className="inline-flex items-center gap-1">Ver registro<Icon name="arrow-right" size={14} /></span>
-                </Link>
-              </div>
-              <span className="tabular" style={{ fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 600, letterSpacing: "-.035em", lineHeight: 1.05, color: "#fff" }}>
-                {donTotalMes > 0 ? fmtCOP(donTotalMes) : "$ —"}
+          {/* Versículo del día (antes: lo recaudado del mes, que sigue en Dar) */}
+          {versiculo && (
+            <figure className="brand-hero-tile" style={{ margin: 0, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", fontWeight: 600, opacity: 0.85, color: "#fff" }}>
+                Versículo del día
               </span>
-              {isAdmin && donCountMes > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                  {([
-                    [String(donCountMes), "donaciones"],
-                    [String(donantesCountMes), "donantes"],
-                    [donPromedioMes >= 1000000
-                      ? `$${(donPromedioMes / 1000000).toFixed(1).replace(".", ",")} M`
-                      : `$${Math.round(donPromedioMes / 1000)} mil`, "promedio"],
-                  ] as [string, string][]).map(([v, l]) => (
-                    <div key={l} style={{ borderLeft: "1px solid rgba(233,231,226,.22)", padding: "2px 0 2px 12px" }}>
-                      <div className="tabular" style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(16px, 4.6vw, 20px)", letterSpacing: "-.02em", color: "#fff", whiteSpace: "nowrap" }}>{v}</div>
-                      <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.75)", marginTop: 2 }}>{l}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              <blockquote style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: "clamp(19px, 5vw, 23px)", fontWeight: 500, lineHeight: 1.35, letterSpacing: "-.01em", color: "#fff" }}>
+                {versiculo.text}
+              </blockquote>
+              {/* Biblica no pide el aviso completo en medios que no se venden:
+                  basta la sigla de la versión al final de la cita. */}
+              <figcaption style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+                {versiculo.reference} · {versiculo.translation}
+              </figcaption>
+            </figure>
           )}
         </section>
+
+        {/* ── Servir: próximo servicio, pendientes y en vivo ── */}
+        {caps?.servir && <ServirInicio invitarAUnirse={profile?.role === "servidor"} />}
 
         {/* ── Grid de módulos ── */}
         <div
@@ -352,7 +346,7 @@ export default async function HomePage() {
         >
 
           {/* Módulo de Servicio */}
-          {caps?.servicio !== "none" && <div
+          {caps?.servicio !== "none" && !SERVICIO_OCULTO && <div
             className="card"
             style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}
           >

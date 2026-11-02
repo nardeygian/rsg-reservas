@@ -3,19 +3,8 @@
 import { Icon } from "@/app/_components/ui/Icon";
 
 import Link from "next/link";
-import type { AsanaEvent } from "@/lib/asana";
-import type { LinkInfo, BookingOption } from "../page";
-
-const USE_TYPE_LABELS: Record<string, string> = {
-  reunion_departamento: "Reunión de departamento",
-  reunion_ministerio: "Reunión de ministerio",
-  consejeria: "Consejería",
-  discipulado: "Reunión de discipulado",
-  evento: "Evento",
-  externo: "Externo",
-  studio_negocio: "Studio (negocio)",
-  otro: "Otro",
-};
+import type { EventoAgenda } from "@/lib/servir/agenda";
+import type { LinkInfo, ReunionCal } from "../page";
 
 const MONTH_NAMES = [
   "enero","febrero","marzo","abril","mayo","junio",
@@ -37,14 +26,6 @@ function formatTimeBogota(iso: string): string {
   });
 }
 
-function toLocalDatePrefix(iso: string): string {
-  const d = new Date(iso);
-  const y = d.toLocaleString("en-CA", { year: "numeric", timeZone: "America/Bogota" });
-  const m = d.toLocaleString("en-CA", { month: "2-digit", timeZone: "America/Bogota" });
-  const day = d.toLocaleString("en-CA", { day: "2-digit", timeZone: "America/Bogota" });
-  return `${y}-${m}-${day}`;
-}
-
 function categoryStyle(cat: string | null) {
   const PALETTE = [
     { bg: "var(--color-accent-soft)", color: "var(--color-accent)" },
@@ -64,26 +45,17 @@ function categoryStyle(cat: string | null) {
 export function EventPanel({
   event,
   link,
-  bookingOptions,
-  canLink,
-  linkAction,
-  unlinkAction,
+  reunion,
   onClose,
 }: {
-  event: AsanaEvent | null;
+  event: EventoAgenda | null;
   link: LinkInfo | null;
-  bookingOptions: BookingOption[];
-  canLink: boolean;
-  linkAction: (fd: FormData) => Promise<void>;
-  unlinkAction: (fd: FormData) => Promise<void>;
+  reunion: ReunionCal | null;
   onClose: () => void;
 }) {
   if (!event) return null;
 
   const { bg, color } = categoryStyle(event.category);
-
-  // Solo reservas del mismo día
-  const sameDay = bookingOptions.filter((b) => toLocalDatePrefix(b.starts_at) === event.due_on);
 
   return (
     <>
@@ -148,7 +120,7 @@ export function EventPanel({
               </span>
             </div>
             <div>
-              <p className="font-semibold text-sm capitalize" style={{ color: "var(--color-ink)" }}>
+              <p className="font-semibold text-sm first-letter:uppercase" style={{ color: "var(--color-ink)" }}>
                 {formatDateFull(event.due_on)}
               </p>
               {link?.starts_at && link?.ends_at && (
@@ -159,86 +131,32 @@ export function EventPanel({
             </div>
           </div>
 
-          {/* Reserva enlazada */}
-          {link ? (
-            <div className="flex flex-col gap-2">
-              <span className="eyebrow">Espacio reservado</span>
-              <div className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 py-3"
-                style={{ background: "var(--color-accent-soft)", border: "1px solid var(--color-accent)" }}>
-                <div>
-                  <p className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>
-                    {link.space_name ?? "Espacio"}
-                  </p>
-                  {link.starts_at && link.ends_at && (
-                    <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>
-                      {formatTimeBogota(link.starts_at)} – {formatTimeBogota(link.ends_at)}
-                    </p>
-                  )}
-                </div>
-                <Link
-                  href={`/reservas/${link.booking_id}`}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
-                  style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
-                  onClick={onClose}
-                >
-                  Ver reserva
-                </Link>
-              </div>
+          {/* Reunión de Servir */}
+          {reunion && <ReunionServir reunion={reunion} />}
 
-              {canLink && (
-                <form action={unlinkAction}>
-                  <input type="hidden" name="asana_gid" value={event.gid} />
-                  <button
-                    type="submit"
-                    className="text-xs font-semibold"
-                    style={{ color: "var(--color-down)" }}
+          {event.asignado && (
+            <p className="chip chip-up self-start">Estás asignado</p>
+          )}
+
+          {/* Espacios de la reunión (no los ve un servidor) */}
+          {link?.space_name && (
+            <div className="flex flex-col gap-2">
+              <span className="eyebrow">Espacios</span>
+              <div className="flex items-center gap-3 rounded-[var(--radius-card)] px-4 py-3"
+                style={{ background: "var(--color-accent-soft)", border: "1px solid var(--color-accent)" }}>
+                <p className="flex-1 min-w-0 font-semibold text-sm" style={{ color: "var(--color-ink)" }}>{link.space_name}</p>
+                {link.booking_id && (
+                  <Link
+                    href={`/reservas/${link.booking_id}`}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)] flex-none"
+                    style={{ background: "var(--color-accent)", color: "var(--color-accent-ink)" }}
+                    onClick={onClose}
                   >
-                    Quitar enlace
-                  </button>
-                </form>
-              )}
-            </div>
-          ) : (
-            canLink && (
-              <div className="flex flex-col gap-2">
-                <span className="eyebrow">Enlazar con reserva</span>
-                {sameDay.length > 0 ? (
-                  <form action={linkAction} className="flex flex-col gap-2">
-                    <input type="hidden" name="asana_gid" value={event.gid} />
-                    <select
-                      name="booking_id"
-                      required
-                      className="input text-sm"
-                      defaultValue=""
-                    >
-                      <option value="" disabled>Elige una reserva…</option>
-                      {sameDay.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.space_name} · {formatTimeBogota(b.starts_at)}–{formatTimeBogota(b.ends_at)}
-                          {b.display_owner ? ` · ${b.display_owner}` : ""}
-                          {b.use_type ? ` · ${USE_TYPE_LABELS[b.use_type] ?? b.use_type}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                    <button type="submit" className="btn-primary w-full" style={{ height: 40 }}>
-                      Guardar enlace
-                    </button>
-                  </form>
-                ) : (
-                  <p className="text-xs" style={{ color: "var(--color-muted)" }}>
-                    No hay reservas aprobadas para este día.
-                  </p>
+                    Ver reserva
+                  </Link>
                 )}
-                <Link
-                  href={`/reservas/nueva?date=${event.due_on}`}
-                  className="text-sm font-medium text-center rounded-[var(--radius-control)] px-4 py-2.5 block"
-                  style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }}
-                  onClick={onClose}
-                >
-                  + Crear reserva para este día
-                </Link>
               </div>
-            )
+            </div>
           )}
 
           {/* Notas */}
@@ -251,13 +169,47 @@ export function EventPanel({
             </div>
           )}
 
-          {!link && !canLink && (
-            <p className="text-xs text-center" style={{ color: "var(--color-faint)" }}>
-              Sin reserva de espacio enlazada
-            </p>
-          )}
         </div>
       </div>
     </>
+  );
+}
+
+const ESTADO_ASIG: Record<string, { t: string; c: string }> = {
+  aceptada: { t: "Aceptó", c: "chip-up" },
+  pendiente: { t: "Pendiente", c: "chip-gold" },
+  rechazada: { t: "Rechazó", c: "chip-down" },
+};
+
+function ReunionServir({ reunion }: { reunion: ReunionCal }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="eyebrow">Reunión de Servir</span>
+        <Link href={reunion.status === "en_vivo" ? `/servir/${reunion.id}/vivo` : `/servir/reuniones/${reunion.id}`}
+          className="text-[13px] font-semibold inline-flex items-center gap-1" style={{ color: "var(--color-accent)" }}>
+          {reunion.status === "en_vivo" ? "En vivo" : "Ver detalle"} <Icon name="arrow-right" size={14} />
+        </Link>
+      </div>
+      {reunion.orden.length > 0 && (
+        <ol className="rounded-[var(--radius-card)] px-4 py-3 text-[14px] flex flex-col gap-1" style={{ background: "var(--color-bg)", border: "1px solid var(--color-line)", color: "var(--color-ink)" }}>
+          {reunion.orden.slice(0, 8).map((t, i) => <li key={i} className="truncate"><span className="tabular mr-2" style={{ color: "var(--color-faint)" }}>{i + 1}</span>{t}</li>)}
+          {reunion.orden.length > 8 && <li style={{ color: "var(--color-muted)" }}>y {reunion.orden.length - 8} más</li>}
+        </ol>
+      )}
+      {reunion.equipo.map((d) => (
+        <div key={d.departamento} className="flex flex-col gap-1">
+          <span className="text-[12px] font-semibold" style={{ color: "var(--color-muted)" }}>{d.departamento}</span>
+          <ul className="flex flex-col gap-1">
+            {d.personas.map((p, i) => (
+              <li key={i} className="flex items-center gap-2 text-[14px]" style={{ color: "var(--color-ink)" }}>
+                <span className="flex-1 min-w-0 truncate">{p.nombre} <span style={{ color: "var(--color-muted)" }}>· {p.posicion}</span></span>
+                <span className={`chip ${ESTADO_ASIG[p.estado]?.c ?? "chip-muted"} flex-none`}>{ESTADO_ASIG[p.estado]?.t ?? p.estado}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }

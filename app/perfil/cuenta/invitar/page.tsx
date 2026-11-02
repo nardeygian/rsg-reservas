@@ -33,25 +33,32 @@ export default async function InvitarPage() {
     );
   }
 
+  // Nombres con RLS; correo y teléfono por contacto_personas, que solo los da
+  // a quien le corresponde (su líder, Planeación, pastor de sede).
   let candidatas: Candidata[] = [];
   if (global) {
-    const { data } = await supabase.from("people").select("id, full_name, email, phone")
+    const { data } = await supabase.from("people").select("id, full_name")
       .is("profile_id", null).eq("active", true).order("full_name").limit(300);
-    candidatas = data ?? [];
+    candidatas = (data ?? []).map((p) => ({ ...p, email: null, phone: null }));
   } else {
     const filtros = [
       deptos.length ? `ministry_id.in.(${deptos.join(",")})` : null,
       areas.length ? `area_id.in.(${areas.join(",")})` : null,
     ].filter(Boolean).join(",");
     const { data } = await supabase.from("team_members")
-      .select("people!inner(id, full_name, email, phone, profile_id, active)")
+      .select("people!inner(id, full_name, profile_id, active)")
       .eq("active", true).or(filtros);
     const vistas = new Map<string, Candidata>();
     for (const tm of data ?? []) {
       const p = tm.people;
-      if (p && p.profile_id === null && p.active) vistas.set(p.id, { id: p.id, full_name: p.full_name, email: p.email, phone: p.phone });
+      if (p && p.profile_id === null && p.active) vistas.set(p.id, { id: p.id, full_name: p.full_name, email: null, phone: null });
     }
     candidatas = [...vistas.values()].sort((a, b) => a.full_name.localeCompare(b.full_name, "es"));
+  }
+  if (candidatas.length) {
+    const { data: contactos } = await supabase.rpc("contacto_personas", { p_ids: candidatas.map((c) => c.id) });
+    const porId = new Map((contactos ?? []).map((c) => [c.id, c]));
+    candidatas = candidatas.map((c) => ({ ...c, email: porId.get(c.id)?.email ?? null, phone: porId.get(c.id)?.phone ?? null }));
   }
 
   const { data: pendientes } = await supabase.from("account_invitations")
@@ -62,7 +69,7 @@ export default async function InvitarPage() {
   return (
     <Pagina titulo="Invitar a mi equipo" volver={{ href: "/perfil/cuenta", label: "Cuenta" }}>
       <p className="text-[14px] -mt-2" style={{ color: "var(--color-muted)" }}>
-        Cada persona recibe un enlace personal. Al abrirlo entra con Google, Apple o su correo y su cuenta queda unida a su registro.
+        Cada persona recibe un enlace personal. Al abrirlo entra con Google o su correo y su cuenta queda unida a su registro.
       </p>
 
       {(pendientes?.length ?? 0) > 0 && (

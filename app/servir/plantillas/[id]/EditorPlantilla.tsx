@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ItemOrdenPlantilla } from "@/lib/servir/contratos";
 import { EditorOrden } from "../../reuniones/_components/EditorOrden";
 import { borrarPlantilla, guardarPlantilla, usarPorDefecto } from "../actions";
 
 export function EditorPlantilla({
-  plantilla, editable, canciones, tipo, esPorDefecto,
+  plantilla, editable, canciones, tipo, esPorDefecto, espacios,
 }: {
   plantilla: { id: string; name: string; version: number; run_sheet: ItemOrdenPlantilla[] };
   editable: boolean;
   canciones: { id: string; title: string }[];
   tipo: { id: string; name: string } | null;
   esPorDefecto: boolean;
+  espacios?: ReactNode;
 }) {
   const router = useRouter();
   const [nombre, setNombre] = useState(plantilla.name);
@@ -67,13 +68,15 @@ export function EditorPlantilla({
           )}
         </section>
 
+        {espacios}
+
         {editable && tipo && (
           <section className="card p-4 md:p-5 flex flex-col gap-3">
             <h2 className="text-[15px] font-semibold">{tipo.name}</h2>
             {esPorDefecto ? (
               <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>Es la plantilla por defecto de este tipo: las reuniones nuevas llegan con este orden.</p>
             ) : (
-              <button type="button" className="btn-secondary self-start" disabled={pendiente}
+              <button type="button" className="btn-secondary self-start" aria-busy={pendiente} disabled={pendiente}
                 onClick={() => correr(() => usarPorDefecto(tipo.id, plantilla.id), () => { setAviso("Ahora es la plantilla por defecto."); router.refresh(); })}>
                 Usar por defecto
               </button>
@@ -82,7 +85,7 @@ export function EditorPlantilla({
         )}
 
         {editable && (
-          <button type="button" className="btn-ghost self-start" disabled={pendiente} style={{ color: "var(--color-critical)" }}
+          <button type="button" className="btn-ghost self-start" aria-busy={pendiente} disabled={pendiente} style={{ color: "var(--color-critical)" }}
             onClick={() => {
               if (!confirm(`¿Borrar ${plantilla.name} v${plantilla.version}? Las reuniones creadas con ella no cambian.`)) return;
               correr(() => borrarPlantilla(plantilla.id), () => router.push("/servir/plantillas"));

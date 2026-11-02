@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { clienteServir } from "@/app/servir/equipo/_lib/supabase";
-import { fechaCorta, fechaReunion, hoyBogota, misEquipos } from "@/app/servir/equipo/_lib/datos";
-import { SubnavServir } from "@/app/servir/equipo/_components/ui";
+import { fechaCorta, fechaReunion, hoyBogota } from "@/app/servir/equipo/_lib/datos";
 import { ServicioTarjeta, type ServicioFila } from "./_components/ServicioTarjeta";
 import { Bloqueos, type BloqueoFila } from "./_components/Bloqueos";
+import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
+import { filtroEn } from "@/lib/supabase/filtros";
 
 type AsignacionRaw = {
   id: string; status: string; decline_reason: string | null; position_id: string; meeting_id: string;
@@ -20,13 +22,11 @@ export default async function MisServiciosPage() {
   const { data: claims } = await db.auth.getClaims();
   if (!claims?.claims.sub) redirect("/login");
 
-  const [{ data: personId }, equipos] = await Promise.all([db.rpc("current_person_id"), misEquipos(db)]);
-  const esLider = equipos.length > 0;
+  const [{ data: personId }, { data: esPastor }] = await Promise.all([db.rpc("current_person_id"), db.rpc("soy_pastor")]);
   const hoy = hoyBogota();
 
   const encabezado = (
     <>
-      <SubnavServir actual="mis-servicios" esLider={esLider} />
       <header className="flex flex-col gap-1">
         <p className="eyebrow">Servir</p>
         <h1 className="page-title">Mis servicios</h1>
@@ -40,11 +40,24 @@ export default async function MisServiciosPage() {
     </main>
   );
 
-  if (!personId) {
+  // Un pastor no se une a un departamento: Planeación lo asigna a predicar
+  // o a un rol general (VIO, Escenario).
+  if (!personId && esPastor) {
     return marco(
       <p className="card px-4 py-5 text-[14px]" style={{ color: "var(--color-muted)" }}>
-        Tu cuenta aún no está unida a tu registro de servidor. Pídele a tu líder la invitación del portal; cuando la abras, aquí verás tus servicios.
+        Aquí verás las reuniones donde predicas o sirves en VIO o Escenario, cuando Planeación te asigne.
       </p>,
+    );
+  }
+
+  if (!personId) {
+    return marco(
+      <div className="card px-4 py-5 flex flex-col gap-3">
+        <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+          Tu cuenta aún no está en un equipo. Escoge tu departamento y tu líder aprobará tu solicitud. Si tu líder te mandó una invitación, ábrela y quedará unida.
+        </p>
+        <Link href="/servir/unirme" className="btn-primary self-start">Unirme a un departamento</Link>
+      </div>,
     );
   }
 
@@ -83,6 +96,7 @@ export default async function MisServiciosPage() {
     posicion: a.positions?.name ?? "—",
     departamento: a.ministries?.name ?? "",
     pasado,
+    enVivo: !pasado && (a.meetings!.status === "en_vivo" || a.meetings!.meeting_date === hoy),
     checklist: (itemsR.data ?? []).filter((i) => i.assignment_id === a.id)
       .map((i) => ({ id: i.id, moment: i.moment, text: i.text, done: !!i.done_at })),
     orden: pasado ? [] : (ordenR.data ?? []).filter((o) => o.meeting_id === a.meeting_id)
@@ -98,6 +112,16 @@ export default async function MisServiciosPage() {
 
   return marco(
     <>
+      {/* Nuevas asignaciones, cambios de fecha, orden y checklist llegan sin recargar. */}
+      <ActualizarEnVivo
+        canal={`mis-servicios-${personId}`}
+        escuchas={[
+          { tabla: "assignments", filtro: `person_id=eq.${personId}` },
+          { tabla: "meetings", filtro: filtroEn("id", asignaciones.map((a) => a.meeting_id)) },
+          { tabla: "run_items", filtro: filtroEn("meeting_id", reunionIds) },
+          { tabla: "checklist_items", filtro: filtroEn("assignment_id", aceptadasIds) },
+        ].filter((e) => e.filtro)}
+      />
       {pendientes > 0 && (
         <p className="card px-4 py-3 text-[14px] font-medium" style={{ background: "var(--color-gold-soft)", color: "var(--color-gold-text)", borderColor: "transparent" }}>
           Tienes {pendientes} {pendientes === 1 ? "asignación" : "asignaciones"} por responder.
@@ -108,7 +132,9 @@ export default async function MisServiciosPage() {
         <h2 className="eyebrow px-1">Próximos</h2>
         {proximas.length === 0 ? (
           <p className="card px-4 py-5 text-[14px]" style={{ color: "var(--color-muted)" }}>
-            No tienes servicios próximos. Cuando tu líder te asigne, aparecerán aquí para que aceptes.
+            {esPastor
+              ? "No tienes servicios próximos. Cuando Planeación te asigne a predicar, VIO o Escenario, aparecerán aquí."
+              : "No tienes servicios próximos. Cuando tu líder te asigne, aparecerán aquí para que aceptes."}
           </p>
         ) : (
           <div className="flex flex-col gap-3">
@@ -118,6 +144,12 @@ export default async function MisServiciosPage() {
       </section>
 
       <Bloqueos bloqueos={bloqueos} hoy={hoy} />
+
+      {!esPastor && (
+        <Link href="/servir/unirme" className="text-[14px] font-semibold px-1 self-start" style={{ color: "var(--color-accent)" }}>
+          Unirme a otro departamento
+        </Link>
+      )}
 
       {pasadas.length > 0 && (
         <section className="flex flex-col gap-2">

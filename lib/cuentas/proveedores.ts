@@ -2,9 +2,11 @@ import "server-only";
 
 export type Proveedor = "google" | "apple";
 
+// Los que se ofrecen en pantalla. Apple queda fuera hasta configurarlo
+// (decisión de Gian, 29 oct): el resto del código ya lo soporta, basta con
+// volver a agregarlo aquí.
 export const PROVEEDORES: { id: Proveedor; label: string }[] = [
   { id: "google", label: "Google" },
-  { id: "apple", label: "Apple" },
 ];
 
 export function esProveedor(v: unknown): v is Proveedor {

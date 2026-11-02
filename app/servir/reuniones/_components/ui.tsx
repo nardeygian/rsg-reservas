@@ -56,7 +56,7 @@ export function Encabezado({
           {volver.label}
         </Link>
       )}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-col items-start gap-3">
         <div className="flex flex-col gap-1 min-w-0">
           <h1 className="page-title">{titulo}</h1>
           {subtitulo && <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>{subtitulo}</p>}

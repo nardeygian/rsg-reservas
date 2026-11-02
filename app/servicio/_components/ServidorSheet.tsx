@@ -95,7 +95,7 @@ export function ServidorSheet({ sid, svData, canEdit, onClose, onSaved, onOpenRe
                 <h3 className="font-semibold text-sm" style={{ color: "var(--color-ink)" }}>Corregir nombre</h3>
                 <form onSubmit={handleGuardarNombre} className="flex gap-2">
                   <input className="input text-sm flex-1" value={nombre} onChange={e => setNombre(e.target.value)} required />
-                  <button type="submit" className="btn-primary text-sm px-4 py-2" disabled={saving}>Guardar</button>
+                  <button type="submit" className="btn-primary text-sm px-4 py-2" aria-busy={saving} disabled={saving}>Guardar</button>
                 </form>
               </div>
 
@@ -106,13 +106,13 @@ export function ServidorSheet({ sid, svData, canEdit, onClose, onSaved, onOpenRe
                     <option value="">Elegir para unir…</option>
                     {otros.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
                   </select>
-                  <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleUnir} disabled={saving}>Unir</button>
+                  <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleUnir} aria-busy={saving} disabled={saving}>Unir</button>
                 </div>
               </div>
 
               <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)] self-start"
                 style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
-                onClick={handleQuitar} disabled={saving}>
+                onClick={handleQuitar} aria-busy={saving} disabled={saving}>
                 {confirmQuitar ? "Confirmar: se quita de todos los listados" : "Eliminar servidor"}
               </button>
 

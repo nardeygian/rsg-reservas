@@ -34,7 +34,7 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
   if (posiciones.length === 0) {
     return (
       <p className="card px-4 py-6 text-sm text-center" style={{ color: "var(--color-muted)" }}>
-        Tu equipo aún no tiene posiciones. Créalas en Mi equipo › Posiciones.
+        Todavía no hay roles aquí. Los crea el líder de Planeación en Servir › Estructura.
       </p>
     );
   }
@@ -47,25 +47,26 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
           const activos = p.asignados.filter((a) => a.status !== "rechazada");
           const falta = p.requeridas != null && activos.length < p.requeridas;
           return (
-            <li key={p.id} className="card px-4 py-3 flex flex-col gap-2">
-              <div className="flex items-center gap-2">
+            <li key={p.id} className="card px-4 py-2.5 flex flex-col gap-1">
+              <div className="flex items-center gap-2 min-h-[44px]">
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[15px] font-semibold" style={{ color: "var(--color-ink)" }}>{p.name}</span>
-                  {p.requeridas != null && (
+                  <span className="block text-[15px] font-semibold truncate" style={{ color: "var(--color-ink)" }}>{p.name}</span>
+                  {p.requeridas != null ? (
                     <span className="block text-[12px] tabular" style={{ color: falta ? "var(--color-gold-text)" : "var(--color-muted)" }}>
                       {activos.length} de {p.requeridas} {falta ? "· falta cubrir" : "· cubierta"}
                     </span>
+                  ) : p.asignados.length === 0 && (
+                    <span className="block text-[12px]" style={{ color: "var(--color-faint)" }}>Sin asignar</span>
                   )}
                 </span>
                 {editable && (
-                  <button type="button" className="btn-secondary min-h-[40px] px-3 text-[14px]" onClick={() => setAbierta(p)}>
+                  <button type="button" className="btn-secondary flex-none min-h-[40px] px-3 text-[14px]" onClick={() => setAbierta(p)}
+                    aria-label={`Asignar en ${p.name}`}>
                     <Icon name="plus" size={14} /> Asignar
                   </button>
                 )}
               </div>
-              {p.asignados.length === 0 ? (
-                <p className="text-[13px]" style={{ color: "var(--color-faint)" }}>Sin asignar</p>
-              ) : (
+              {p.asignados.length > 0 && (
                 <ul className="flex flex-col">
                   {p.asignados.map((a) => (
                     <li key={a.id} className="flex items-center gap-2.5 min-h-[48px] py-1">
@@ -83,7 +84,7 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
                       </span>
                       <EstadoChip estado={a.status} />
                       {editable && (
-                        <button type="button" className="icon-btn" aria-label={`Quitar a ${a.full_name}`} disabled={pendiente} onClick={() => quitar(a.id)}>
+                        <button type="button" className="icon-btn icon-btn-danger" aria-label={`Quitar a ${a.full_name}`} aria-busy={pendiente} disabled={pendiente} onClick={() => quitar(a.id)}>
                           <Icon name="close" size={14} />
                         </button>
                       )}
@@ -137,7 +138,7 @@ function SugerenciasHoja({ meetingId, reunionNombre, posicion, onClose }: {
         )}
         {lista && lista.length === 0 && (
           <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
-            Nadie más del equipo tiene esta posición. Márcala en la ficha de cada persona (Mi equipo › Miembros).
+            Nadie más del equipo tiene este rol. Márcalo en la ficha de cada persona (Mi equipo › Miembros).
           </p>
         )}
         {lista && lista.length > 0 && (
@@ -146,7 +147,7 @@ function SugerenciasHoja({ meetingId, reunionNombre, posicion, onClose }: {
             <ul className="flex flex-col">
               {lista.map((s) => (
                 <li key={s.person_id}>
-                  <button type="button" disabled={pendiente} onClick={() => elegir(s)}
+                  <button type="button" aria-busy={pendiente} disabled={pendiente} onClick={() => elegir(s)}
                     className="w-full flex items-center gap-3 min-h-[56px] py-2 text-left rounded-[var(--radius-control)] px-2 -mx-2 transition hover:bg-[var(--color-surface-2)]"
                     style={s.bloqueado ? { opacity: 0.6 } : undefined}>
                     <Avatar nombre={s.full_name} size={34} />
@@ -157,8 +158,8 @@ function SugerenciasHoja({ meetingId, reunionNombre, posicion, onClose }: {
                       </span>
                     </span>
                     {s.bloqueado && <span className="chip chip-down flex-none"><Icon name="lock" size={11} style={{ marginRight: 4 }} />No puede</span>}
-                    {!s.bloqueado && s.ya_asignado && <span className="chip chip-gold flex-none">Ya sirve</span>}
-                    {!s.bloqueado && !s.ya_asignado && <Icon name="plus" style={{ color: "var(--color-accent)" }} />}
+                    {!s.bloqueado && s.ya_asignado && <span className="chip chip-gold flex-none">Tiene otro rol</span>}
+                    {!s.bloqueado && <Icon name="plus" style={{ color: "var(--color-accent)" }} />}
                   </button>
                 </li>
               ))}

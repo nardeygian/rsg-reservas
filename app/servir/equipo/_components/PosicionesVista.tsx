@@ -9,12 +9,16 @@ import { Aviso, Hoja, MOMENTO_TEXTO } from "./ui";
 
 const MOMENTOS: MomentoChecklist[] = ["antes", "durante", "despues"];
 
-export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo; posiciones: PosicionFila[]; areas: AreaFila[] }) {
+// Crear, renombrar, mover y archivar roles y áreas es de Estructura (super
+// admin y líder de Planeación). Los demás líderes solo editan el checklist.
+export function PosicionesVista({ equipo, posiciones, areas, puedeEstructura }: {
+  equipo: Equipo; posiciones: PosicionFila[]; areas: AreaFila[]; puedeEstructura: boolean;
+}) {
   const [abierta, setAbierta] = useState<string | "nueva" | null>(null);
   const [nuevaArea, setNuevaArea] = useState("");
   const [error, setError] = useState("");
   const [pendiente, start] = useTransition();
-  const esDepto = !equipo.area_id;
+  const esDepto = !!equipo.ministry_id && !equipo.area_id && puedeEstructura;
 
   // Agrupadas por área (las sin área primero, como "Generales").
   const grupos: { id: string | null; nombre: string; items: PosicionFila[] }[] = [];
@@ -30,6 +34,7 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
     e.preventDefault();
     setError("");
     start(async () => {
+      if (!equipo.ministry_id) return;
       const r = await crearArea(equipo.ministry_id, nuevaArea);
       if (r.ok) setNuevaArea(""); else setError(r.error);
     });
@@ -37,20 +42,23 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col items-start gap-2">
+        {puedeEstructura && (
+          <button type="button" className="btn-primary" onClick={() => setAbierta("nueva")}>
+            <Icon name="plus" /> Rol
+          </button>
+        )}
         <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-          Cada posición trae su checklist: se copia al servidor cuando acepta.
+          Cada rol trae su checklist: se copia al servidor cuando acepta.
+          {!puedeEstructura && " Los roles los crea el líder de Planeación en Servir › Estructura."}
         </p>
-        <button type="button" className="btn-primary flex-none" onClick={() => setAbierta("nueva")}>
-          <Icon name="plus" /> Posición
-        </button>
       </div>
 
       {error && <Aviso texto={error} onClose={() => setError("")} />}
 
       {grupos.length === 0 && (
         <p className="card px-4 py-6 text-sm text-center" style={{ color: "var(--color-muted)" }}>
-          Aún no hay posiciones. Crea las del equipo (por ejemplo “Guitarra eléctrica”, “Luces”, “Ujier puerta 1”).
+          {equipo.ministry_id ? "Aún no hay roles. Crea los del equipo (por ejemplo “Guitarra eléctrica”, “Luces”, “Ujier puerta 1”)." : "Aún no hay roles generales. Créalos aquí (por ejemplo “VIO” o “Escenario”): se asignan a cualquier servidor de cualquier departamento."}
         </p>
       )}
 
@@ -58,7 +66,7 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
         <div key={g.id ?? "general"} className="flex flex-col gap-2">
           <h3 className="eyebrow px-1">{g.nombre}</h3>
           {g.items.length === 0 ? (
-            <p className="text-[13px] px-1" style={{ color: "var(--color-faint)" }}>Sin posiciones en esta área.</p>
+            <p className="text-[13px] px-1" style={{ color: "var(--color-faint)" }}>Sin roles en esta área.</p>
           ) : (
             <ul className="grid gap-2 md:grid-cols-2">
               {g.items.map((p) => (
@@ -83,26 +91,28 @@ export function PosicionesVista({ equipo, posiciones, areas }: { equipo: Equipo;
         <form onSubmit={agregarArea} className="card px-4 py-3 flex flex-col gap-2">
           <label className="field-label" htmlFor="nueva-area">Áreas del departamento</label>
           <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-            Un área agrupa posiciones y tiene su propio líder (por ejemplo “Banda” y “Voces”).
+            Un área agrupa roles y tiene su propio líder (por ejemplo “Banda” y “Voces”).
           </p>
           <div className="flex gap-2">
             <input id="nueva-area" className="input flex-1" placeholder="Nueva área" value={nuevaArea} onChange={(e) => setNuevaArea(e.target.value)} />
-            <button type="submit" className="btn-secondary flex-none" disabled={pendiente || !nuevaArea.trim()}>Crear</button>
+            <button type="submit" className="btn-secondary flex-none" aria-busy={pendiente} disabled={pendiente || !nuevaArea.trim()}>Crear</button>
           </div>
         </form>
       )}
 
       {abierta === "nueva" && (
-        <PosicionHoja equipo={equipo} areas={areas} onClose={() => setAbierta(null)} />
+        <PosicionHoja equipo={equipo} areas={areas} puedeEstructura onClose={() => setAbierta(null)} />
       )}
       {actual && (
-        <PosicionHoja key={actual.id} equipo={equipo} areas={areas} posicion={actual} onClose={() => setAbierta(null)} />
+        <PosicionHoja key={actual.id} equipo={equipo} areas={areas} posicion={actual} puedeEstructura={puedeEstructura} onClose={() => setAbierta(null)} />
       )}
     </section>
   );
 }
 
-function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; areas: AreaFila[]; posicion?: PosicionFila; onClose: () => void }) {
+function PosicionHoja({ equipo, areas, posicion, puedeEstructura, onClose }: {
+  equipo: Equipo; areas: AreaFila[]; posicion?: PosicionFila; puedeEstructura: boolean; onClose: () => void;
+}) {
   const [nombre, setNombre] = useState(posicion?.name ?? "");
   const [area, setArea] = useState(posicion?.area_id ?? equipo.area_id ?? "");
   const [momento, setMomento] = useState<MomentoChecklist>("antes");
@@ -140,15 +150,15 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
   }
 
   return (
-    <Hoja titulo={posicion ? posicion.name : "Nueva posición"} subtitulo={equipo.area_name ? `${equipo.ministry_name} · ${equipo.area_name}` : equipo.ministry_name} onClose={onClose}
-      pie={posicion && (
-        <button type="button" className="btn-ghost w-full" style={{ color: posicion.active ? "var(--color-down)" : "var(--color-accent)" }} disabled={pendiente} onClick={archivar}>
-          {posicion.active ? "Archivar posición" : "Volver a activar"}
+    <Hoja titulo={posicion ? posicion.name : "Nuevo rol"} subtitulo={equipo.area_name ? `${equipo.ministry_name} · ${equipo.area_name}` : equipo.ministry_name} onClose={onClose}
+      pie={posicion && puedeEstructura && (
+        <button type="button" className="btn-ghost w-full" style={{ color: posicion.active ? "var(--color-down)" : "var(--color-accent)" }} aria-busy={pendiente} disabled={pendiente} onClick={archivar}>
+          {posicion.active ? "Archivar rol" : "Volver a activar"}
         </button>
       )}>
       <div className="flex flex-col gap-5">
         {err && <Aviso texto={err} />}
-        <form onSubmit={guardar} className="flex flex-col gap-3">
+        {puedeEstructura && <form onSubmit={guardar} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="field-label">Nombre</span>
             <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Guitarra eléctrica" autoFocus={!posicion} />
@@ -162,10 +172,10 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
               </select>
             </label>
           )}
-          <button type="submit" className="btn-primary" disabled={pendiente || !nombre.trim()}>
-            {posicion ? "Guardar cambios" : "Crear posición"}
+          <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !nombre.trim()}>
+            {posicion ? "Guardar cambios" : "Crear rol"}
           </button>
-        </form>
+        </form>}
 
         {posicion && (
           <div className="flex flex-col gap-3">
@@ -182,7 +192,7 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
                       {items.map((c) => (
                         <li key={c.id} className="flex items-center gap-2 min-h-[40px]">
                           <span className="flex-1 text-[14px]" style={{ color: "var(--color-ink)" }}>{c.text}</span>
-                          <button type="button" className="icon-btn" aria-label={`Quitar “${c.text}”`} disabled={pendiente} onClick={() => borrarPunto(c.id)}>
+                          <button type="button" className="icon-btn icon-btn-danger" aria-label={`Quitar “${c.text}”`} aria-busy={pendiente} disabled={pendiente} onClick={() => borrarPunto(c.id)}>
                             <Icon name="close" size={14} />
                           </button>
                         </li>
@@ -200,7 +210,7 @@ function PosicionHoja({ equipo, areas, posicion, onClose }: { equipo: Equipo; ar
               </div>
               <div className="flex gap-2">
                 <input className="input flex-1" value={punto} onChange={(e) => setPunto(e.target.value)} placeholder="Nuevo punto" aria-label="Nuevo punto del checklist" />
-                <button type="submit" className="btn-secondary flex-none" disabled={pendiente || !punto.trim()}>Agregar</button>
+                <button type="submit" className="btn-secondary flex-none" aria-busy={pendiente} disabled={pendiente || !punto.trim()}>Agregar</button>
               </div>
             </form>
           </div>

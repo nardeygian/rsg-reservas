@@ -623,6 +623,8 @@ summary.list-none::-webkit-details-marker { display: none; }
 }
 .icon-btn:active { transform: scale(0.94); }
 .icon-btn:disabled { opacity: 0.35; }
+/* Botones de icono que quitan o borran algo: en rojo. */
+.icon-btn-danger { color: var(--color-critical); }
 .icon-btn-accent {
   background: var(--color-action-bg);
   color: var(--color-action-fg);
@@ -833,3 +835,27 @@ a, button, summary, select, input, label { touch-action: manipulation; }
 }
 /* La animación de la barra solo recalcula la barra, no la página */
 .tabbar { contain: layout style; }
+
+/* ── Respuesta inmediata (RespuestaInmediata.tsx) ───────────────────────── */
+/* Barra de carga arriba mientras llega la pantalla nueva. */
+.barra-carga {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 100;
+  background: var(--color-accent); opacity: 0; pointer-events: none;
+  transition: width 200ms ease, opacity 300ms ease;
+}
+.barra-carga[data-activa] { opacity: 1; width: 85%; transition: width 6s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 100ms ease; }
+
+/* El botón tocado que quedó ocupado muestra un indicador de carga. */
+@keyframes girar { to { transform: rotate(360deg); } }
+button[aria-busy="true"][data-tocado] { cursor: progress; }
+button[aria-busy="true"][data-tocado]::before {
+  content: ""; display: inline-block; flex: none; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: girar 0.7s linear infinite;
+}
+/* Toque inmediato: los botones y enlaces responden al presionar. */
+button:not(:disabled):active, a.btn-primary:active, a.btn-secondary:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  button[aria-busy="true"][data-tocado]::before { animation-duration: 2s; }
+  button:not(:disabled):active { transform: none; }
+}

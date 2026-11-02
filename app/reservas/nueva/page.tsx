@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   nextHourBogota,
@@ -45,6 +46,9 @@ export default async function NewBookingPage({
         .eq("id", user.id)
         .single()
     : { data: null };
+
+  // Un servidor no reserva espacios: la política de inserción de bookings no lo deja.
+  if (profile?.role === "servidor") redirect("/");
 
   const isStudioAdmin = profile?.role === "studio_admin";
 

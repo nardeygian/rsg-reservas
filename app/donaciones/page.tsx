@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserCaps } from "@/lib/auth";
-import { donVincularAction } from "./actions";
+import { donVincular } from "./_lib/vincular";
 import { donReadData } from "./_lib/data";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { DonacionesShell } from "./_components/DonacionesShell";
@@ -36,7 +36,7 @@ export default async function DonacionesPage() {
 
     // Auto-link obvious matches silently (only for full-access users)
     if (!readOnly && donaciones.some(d => !d.di && !d.ext) && miembros.length > 0) {
-      const { vinculadas } = await donVincularAction();
+      const { vinculadas } = await donVincular();
       if (vinculadas > 0) donaciones = await donReadData();
     }
 

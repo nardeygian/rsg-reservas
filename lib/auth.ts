@@ -11,6 +11,7 @@ export type NavCaps = {
   inicio:          boolean;
   calendario:      boolean;
   reservas:        boolean;
+  servir:          boolean;
   servicio:        ServicioAccess;
   donaciones:      DonacionesAccess;
   discipulos:      boolean;
@@ -40,11 +41,15 @@ export function computeNavCaps(
     extraRows.some(r => r.role === "lider_departamento" &&
       (r.ministries as { name: string } | null)?.name === "Planeación");
   const isStudio = role === "studio_admin";
+  // Rol básico de quien entra con Google o Apple sin invitación: sirve,
+  // pero no reserva espacios (la base tampoco lo deja).
+  const isServidor = role === "servidor" && extra.length === 0;
 
   return {
     inicio:          true,
     calendario:      !isStudio,
-    reservas:        !isPlan,
+    reservas:        !isPlan && !isServidor,
+    servir:          !isStudio,
     servicio:        (isSuper || isPSede || isPlan) ? "edit"
                    : (isLD    || isLDept || isPMin) ? "read"
                    : "none",

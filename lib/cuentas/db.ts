@@ -6,18 +6,16 @@ import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
-// El cliente del servidor está tipado con types/supabase.ts, que no trae
-// las tablas de Servir ni las de Cuentas. Estos lo reusan con los tipos de
-// lib/database.types.ts; la sesión y RLS son las mismas.
+// El cliente del servidor, con la sesión del usuario: RLS decide.
 export type CuentasClient = SupabaseClient<Database>;
 
 export async function cuentasClient(): Promise<CuentasClient> {
-  return (await createClient()) as unknown as CuentasClient;
+  return createClient();
 }
 
 // service_role: solo para "Eliminar mi cuenta" (marcado así en el contrato).
 export function cuentasServiceClient(): CuentasClient {
-  return createServiceClient() as unknown as CuentasClient;
+  return createServiceClient();
 }
 
 // Origen de esta petición (para las URL de retorno de OAuth y de los

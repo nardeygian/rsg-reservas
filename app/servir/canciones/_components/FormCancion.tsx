@@ -212,7 +212,7 @@ export function FormCancion({ inicial, sugerenciasEtiquetas }: { inicial: DatosC
         <p role="alert" className="text-[14px] font-semibold" style={{ color: "var(--color-down)" }}>{error}</p>
       )}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" className="btn-primary" disabled={pendiente}>
+        <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente}>
           {pendiente ? "Guardando…" : d.id ? "Guardar cambios" : "Crear canción"}
         </button>
         {guardado && (

@@ -60,7 +60,19 @@ export type BookingBlock = {
   use_type: string | null;
   title: string | null;
   isOwn: boolean;
+  // Franja ocupada con montaje y desmonte (puede ser más ancha que la reserva).
+  occupied_from?: string | null;
+  occupied_until?: string | null;
 };
+
+// ¿La reserva ocupa más que su horario (montaje o desmonte)?
+function conMontaje(b: BookingBlock): boolean {
+  return !!(b.occupied_from && b.occupied_until
+    && (Date.parse(b.occupied_from) < Date.parse(b.starts_at) || Date.parse(b.occupied_until) > Date.parse(b.ends_at)));
+}
+
+// Fondo rayado para montaje y desmonte: ocupado, pero no es la reunión.
+const RAYADO = "repeating-linear-gradient(135deg, var(--color-line-strong) 0 2px, transparent 2px 7px)";
 
 export type SpaceInfo = {
   id: string;
@@ -208,6 +220,13 @@ export function ReservasDayView({
                   className="relative flex-1 rounded-[var(--radius-control)] overflow-hidden"
                   style={{ height: "28px", background: "var(--color-surface-2)" }}
                 >
+                  {spaceBookings.filter(conMontaje).map((b) => {
+                    const l = toTimeline(b.occupied_from!);
+                    return (
+                      <span key={`m-${b.id}`} aria-hidden className="absolute top-0 bottom-0 pointer-events-none"
+                        style={{ left: `${l}%`, width: `${Math.max(1, toTimeline(b.occupied_until!) - l)}%`, background: RAYADO }} />
+                    );
+                  })}
                   {spaceBookings.map((b) => {
                     if (!b.starts_at || !b.ends_at) return null;
                     const left = toTimeline(b.starts_at);
@@ -372,6 +391,12 @@ export function ReservasDayView({
                   <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>Horario</dt>
                   <dd className="font-medium">{formatTime(selected.starts_at)} – {formatTime(selected.ends_at)}</dd>
                 </div>
+                {conMontaje(selected) && (
+                  <div className="flex gap-3">
+                    <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>Ocupado</dt>
+                    <dd>{formatTime(selected.occupied_from!)} – {formatTime(selected.occupied_until!)} <span style={{ color: "var(--color-muted)" }}>(con montaje y desmonte)</span></dd>
+                  </div>
+                )}
                 {selected.use_type && (
                   <div className="flex gap-3">
                     <dt className="w-[80px] flex-none" style={{ color: "var(--color-muted)" }}>Tipo</dt>
@@ -534,6 +559,14 @@ function DesktopDay({
                 {D_HOURS.map((h, i) => (
                   <span key={h} className="absolute top-0 bottom-0 w-px" style={{ left: `${(i / (D_HOURS.length - 1)) * 100}%`, background: "var(--color-line)", opacity: i % 2 === 0 ? 1 : 0.5 }} />
                 ))}
+                {/* Montaje y desmonte: franja rayada alrededor de la reserva */}
+                {list.filter(conMontaje).map((b) => {
+                  const l = pctOf(b.occupied_from!);
+                  return (
+                    <span key={`m-${b.id}`} aria-hidden className="absolute top-2 bottom-2 rounded-[10px] pointer-events-none"
+                      style={{ left: `calc(${l}% + 2px)`, width: `calc(${Math.max(1, pctOf(b.occupied_until!) - l)}% - 4px)`, background: RAYADO, opacity: 0.8 }} />
+                  );
+                })}
                 {/* Reservas */}
                 {list.map((b) => {
                   const left = pctOf(b.starts_at);

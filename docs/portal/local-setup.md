@@ -53,8 +53,19 @@ SLACK_RESERVAS_CHANNEL_ID=desactivado
 npm run supabase:reset
 ```
 
-Aplica las 28 migraciones en orden + seed.sql. Úsalo cuando quieras volver
+Aplica las migraciones en orden + seed.sql. Úsalo cuando quieras volver
 a un estado limpio.
+
+> La primera migración (`20260622000000_permisos_por_defecto.sql`) da los mismos
+> permisos por defecto que tiene producción. La CLI está fijada en 2.107.0 en
+> `package.json`; se puede actualizar sin romper la base local.
+
+Para el módulo Servir hay usuarios de prueba (un rol por usuario; la contraseña
+está en el script):
+
+```bash
+node --env-file=.env.local scripts/semilla-qa-etapa5.ts
+```
 
 ### 5. Arrancar la app
 

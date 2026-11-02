@@ -193,11 +193,13 @@ export function AddRoleForm({
   userId,
   ministries,
   grupos,
+  areas,
   addAction,
 }: {
   userId: string;
   ministries: Ministry[];
   grupos: GrupoOption[];
+  areas: { id: string; name: string }[];
   addAction: (formData: FormData) => Promise<void>;
 }) {
   const [role, setRole] = useState("lider_departamento");
@@ -219,7 +221,17 @@ export function AddRoleForm({
         <option value="pastor_ministerio">Pastor de ministerio</option>
         <option value="pastor_sede">Pastor de sede</option>
         <option value="lider_discipulado">Líder de discipulado</option>
+        <option value="lider_area">Líder de área (Servir)</option>
+        <option value="servidor_planeacion">Planeación (Servir)</option>
       </select>
+
+      {role === "lider_area" && (
+        <select name="area_id" required className="input text-sm min-w-0" aria-label="Área"
+          style={{ height: 36, paddingTop: 0, paddingBottom: 0 }}>
+          <option value="">— escoge el área —</option>
+          {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      )}
 
       {role === "lider_departamento" && (
         <select name="ministry_id" className="input text-sm min-w-0" aria-label="Departamento"

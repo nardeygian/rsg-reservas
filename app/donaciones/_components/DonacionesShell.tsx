@@ -1046,7 +1046,7 @@ function VincularBtn({ onDone }: { onDone: (msg: string) => void }) {
   return (
     <button
       type="button"
-      disabled={loading}
+      aria-busy={loading} disabled={loading}
       className="text-xs font-semibold px-3 py-1.5 rounded-[var(--radius-control)]"
       style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)", color: "var(--color-muted)" }}
       onClick={handleClick}
@@ -1096,7 +1096,7 @@ function ImportarPane({ onDone }: { onDone: (msg: string) => void }) {
           {status.msg}
         </p>
       )}
-      <button type="submit" className="btn-primary" disabled={loading || !text.trim()}>
+      <button type="submit" className="btn-primary" aria-busy={loading} disabled={loading || !text.trim()}>
         {loading ? "Importando…" : "Importar"}
       </button>
     </form>
@@ -1232,7 +1232,7 @@ function FilaPorVincular({
         </div>
         <button
           type="button"
-          disabled={pending}
+          aria-busy={pending} disabled={pending}
           onClick={() => { setPending(true); onExterno(); }}
           className="flex-none text-[11px] font-semibold px-2 py-1 rounded-[var(--radius-control)]"
           style={{ background: "var(--color-surface-2)", color: "var(--color-faint)", border: "1px solid var(--color-line)" }}
@@ -1250,7 +1250,7 @@ function FilaPorVincular({
               <button
                 key={m.id}
                 type="button"
-                disabled={pending}
+                aria-busy={pending} disabled={pending}
                 onClick={() => { setPending(true); onVincular(m.id, m.grupo_id); }}
                 className="text-[12px] font-semibold px-2.5 py-1 rounded-full"
                 style={{ background: "var(--color-accent-soft)", color: "var(--color-accent)", border: "1px solid var(--color-accent)" }}
@@ -1283,7 +1283,7 @@ function FilaPorVincular({
                 <button
                   key={m.id}
                   type="button"
-                  disabled={pending}
+                  aria-busy={pending} disabled={pending}
                   onClick={() => { setBusq(""); setPending(true); onVincular(m.id, m.grupo_id); }}
                   className="flex items-center gap-2 px-3 py-2.5 text-left hover:opacity-75"
                   style={{ borderBottom: "1px solid var(--color-line)" }}

@@ -7,7 +7,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Excluye estáticos y endpoints internos de Next.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Excluye estáticos y endpoints internos de Next. El service worker y el
+    // manifiesto tampoco pasan por el login: el navegador no registra un
+    // service worker que redirige y la PWA no se instala sin manifiesto.
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

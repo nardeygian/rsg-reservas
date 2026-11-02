@@ -1,6 +1,6 @@
 # Etapa 5: Servir (reuniones, equipos y servicio en vivo)
 
-> **Estado: plan propuesto, pendiente de aprobación de Gian.** No se escribe código ni se corre ninguna migración hasta que se apruebe y se respondan las decisiones abiertas (al final).
+> **Estado: aprobado y en construcción.** Fases A, B y C construidas; avance en `estado-etapa5.md`. Respuestas de Gian a las decisiones abiertas al final.
 
 Objetivo: que Planeación arme cada reunión de punta a punta, que pastores y líderes midan cómo están sus reuniones y la salud de sus servidores, y que todo quede listo para publicarse como app en Google Play y App Store. En detalle: que Planeación arme cada reunión de punta a punta, que cada líder asigne a su gente, que cada servidor sepa qué hace, lo acepte y lo cumpla en vivo con su checklist, y que todo quede conectado con Discipulados, el Calendario, Reservas y las estadísticas de Servicio que ya existen. Referencia de producto: Planning de WorshipTools (orden del culto con tiempos, canciones, equipos por rol, aceptar/rechazar con un toque, recordatorios).
 
@@ -221,7 +221,7 @@ Todo con el sistema visual actual (vidrio, radios 12/22/30, Instrument Sans, íc
 - **Bandeja en la app** siempre (toda notificación queda ahí).
 - **Correo** de respaldo para quien no tiene push activo (proveedor transaccional; las llaves van en Vercel/Supabase, nunca en el código).
 - **Slack** sigue para el staff como hoy.
-- **Programación:** en Vercel Hobby los crons corren solo una vez al día, así que los recordatorios los dispara **`pg_cron` de Supabase cada 5 minutos**, que llama a una **Edge Function** `notificador` que lee `recordatorios` y `envios` pendientes y despacha. WhatsApp queda fuera de esta etapa (tiene costo por mensaje); se puede sumar después en el mismo `notificador`.
+- **Programación:** en Vercel Hobby los crons corren solo una vez al día, así que los recordatorios los dispara **`pg_cron` de Supabase cada minuto**, y cada aviso o envío nuevo lo pide **al instante** con un trigger y `pg_net` (cambio del 30 oct: antes tardaba hasta 5 minutos). Ambos llaman a una **Edge Function** `notificador` que lee `recordatorios` y `envios` pendientes y despacha. WhatsApp queda fuera de esta etapa (tiene costo por mensaje); se puede sumar después en el mismo `notificador`.
 
 ---
 
@@ -292,10 +292,20 @@ El trabajo se divide en **frentes con dueños de carpetas distintas**, para que 
 | **E2 Tiendas** | Cuentas de organización, política de privacidad, fichas de privacidad, capturas, prueba interna (TestFlight y prueba cerrada de Google Play) | `docs/apps/**` |
 
 ### Fase D · Paso a producción
-1. Migraciones a producción **con permiso de Gian** y respaldo del día. Migración del histórico.
-2. **Piloto** con un departamento (sugerido: LMRSG o Creativos) durante 2 domingos, en paralelo al listado en PDF.
-3. Comparar conteos: deben coincidir con el método actual.
-4. Abrir a todos los departamentos; el listado en PDF queda como respaldo y después se retira.
+1. Migraciones a producción **con permiso de Gian** y respaldo del día. Migración del histórico: el JSON `servicio_data` pasa a tablas con `scripts/migrar-servicio.ts` (reuniones, servidores → `people`, listados → asistencia histórica, discipulados → `discipleship_groups`).
+2. **Comunidad sobre las tablas nuevas:** `/discipulos`, Donaciones (atribución a discípulos), el Inicio y `/admin` (discipulados, usuarios, vista previa) dejan de leer el JSON.
+3. **Retirar el módulo Servicio (`/servicio`)** (decisión de Gian, 29 oct): todo lo que hace ya está en Servir.
+   - Reuniones de Asana → Reuniones y agenda de la app.
+   - Servidores → directorio, Mi equipo y roles.
+   - Listados → asistencia confirmada en En vivo.
+   - Ausencias → "Fechas en que no puedo" y asistencia "ausente".
+   - Conteos y último servicio → Estadísticas, salud del equipo y ficha del servidor.
+   - Vista del pastor de ministerio → Reuniones y Estadísticas de su ministerio.
+
+   Comunidad queda para Discípulos (y Donaciones del grupo). Durante la transición, Comunidad muestra un enlace a *Servir → Reuniones / Estadísticas* para los líderes y pastores que entraban a Servicio. El JSON queda como respaldo de solo lectura y `lib/asana.ts` se borra.
+4. **Piloto** con un departamento (sugerido: LMRSG o Creativos) durante 2 domingos, en paralelo al listado en PDF.
+5. Comparar conteos: deben coincidir con el método actual.
+6. Abrir a todos los departamentos; el listado en PDF queda como respaldo y después se retira.
 
 ---
 
@@ -311,6 +321,18 @@ El trabajo se divide en **frentes con dueños de carpetas distintas**, para que 
 8. **Quién edita las plantillas.** Recomendado: Planeación edita todas y cada pastor de ministerio las de su ministerio. ¿Los líderes de departamento pueden ajustar las posiciones que su departamento aporta a una plantilla?
 9. **Umbrales de salud del servidor.** Recomendado para empezar: sobrecargado con más de 4 servicios al mes, alejándose si baja a la mitad frente a su promedio de 3 meses, inactivo tras 6 semanas sin servir. Planeación los ajusta después.
 10. **Apps.** Inicio de sesión **decidido: Google y Apple** (además del correo actual). Falta confirmar Capacitor y que las cuentas de desarrollador sean a nombre de la iglesia (organización, con D-U-N-S).
+
+### Respuestas de Gian (28 oct 2026)
+
+- **1 · Cuentas:** quien entra con Google o Apple sin invitación recibe el rol básico `servidor`, escoge su departamento y el líder de departamento, un pastor de sede o un super admin aprueba si se une.
+- **3 · Navegación:** Servir va como destino nuevo.
+- **4 · Asistencia:** los líderes de departamento también confirman la de su gente; Planeación cierra.
+- **5 · Fundadores:** hay dos (ver abajo).
+- **9 · Umbrales:** "3 es mucho, 1 es poco". Se configuró así: sobrecargado con 3 o más en 30 días; alejándose con 1 o menos; inactivo tras 6 semanas. Confirmado por Gian (29 oct).
+- **Eliminar cuenta con reservas:** se pregunta y se borran también las reservas a su nombre.
+- **Fundadores (29 oct):** hay dos; se asignan en `/admin` al pasar a producción.
+- **Umbrales (29 oct):** confirmados; ajustables por Planeación (tabla `servir_ajustes`).
+- **Espacios de la reunión (29 oct):** al crear la reunión se escogen los espacios de Reservas, con montaje (2 h) y desmonte (1 h) ajustables por reunión, tipo y plantilla. Bloquea al publicar; reunión de ministerio aprobada directo; un espacio ocupado no se puede escoger; montaje lo editan Planeación, pastor de sede y super admin. Detalle en `estado-etapa5.md`.
 
 ## Terminado cuando
 

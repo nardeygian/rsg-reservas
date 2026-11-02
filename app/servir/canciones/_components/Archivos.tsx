@@ -113,7 +113,7 @@ export function Archivos({ songId, archivos, editor }: { songId: string; archivo
                       aria-label={`Tipo de ${a.name}`}
                       className="bg-transparent text-[12px] font-semibold -ml-0.5"
                       value={a.kind}
-                      disabled={pendiente}
+                      aria-busy={pendiente} disabled={pendiente}
                       onChange={(e) => correr(() => cambiarTipoArchivo(songId, a.path, e.target.value as TipoArchivo))}
                     >
                       {TIPOS_ARCHIVO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -130,10 +130,10 @@ export function Archivos({ songId, archivos, editor }: { songId: string; archivo
               {editor && (
                 <button
                   type="button"
-                  className="icon-btn"
+                  className="icon-btn icon-btn-danger"
                   aria-label={`Borrar ${a.name}`}
                   title="Borrar"
-                  disabled={pendiente}
+                  aria-busy={pendiente} disabled={pendiente}
                   onClick={() => {
                     if (confirm(`¿Borrar "${a.name}"? No se puede deshacer.`)) correr(() => borrarArchivoCancion(songId, a.path));
                   }}

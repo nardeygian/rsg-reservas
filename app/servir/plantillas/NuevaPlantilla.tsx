@@ -36,7 +36,7 @@ export function NuevaPlantilla({ meetingTypeId, sugerido }: { meetingTypeId: str
       }}>
       <div className="flex gap-2">
         <input aria-label="Nombre de la plantilla" className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre" autoFocus required />
-        <button type="submit" className="btn-primary flex-none" disabled={pendiente}>Crear</button>
+        <button type="submit" className="btn-primary flex-none" aria-busy={pendiente} disabled={pendiente}>Crear</button>
         <button type="button" className="icon-btn self-center" onClick={() => setAbierto(false)}>
           <Icon name="close" size={15} label="Cerrar" />
         </button>

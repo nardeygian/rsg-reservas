@@ -3,6 +3,7 @@
 import { useEffect, useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { suscribirConSesion } from "@/lib/supabase/realtime";
 import { marcarLeidas } from "@/lib/notificaciones/acciones";
 import { ICONOS, ICONO_TIPO, IconoFila, Grupo, svg } from "./_ui";
 
@@ -41,12 +42,9 @@ export function ListaNotificaciones({ filas, userId }: { filas: FilaBandeja[]; u
 
   // Una notificación nueva aparece sin recargar (Realtime con RLS).
   useEffect(() => {
-    const sb = createClient();
-    const canal = sb
+    return suscribirConSesion(createClient(), (sb) => sb
       .channel(`bandeja-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => router.refresh())
-      .subscribe();
-    return () => { sb.removeChannel(canal); };
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => router.refresh()));
   }, [router, userId]);
 
   const nuevas = vista.filter((f) => !f.read_at);
@@ -110,7 +108,7 @@ export function ListaNotificaciones({ filas, userId }: { filas: FilaBandeja[]; u
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between px-4">
             <h2 className="text-[13px] font-medium" style={{ color: "var(--color-muted)" }}>Nuevas · {nuevas.length}</h2>
-            <button type="button" onClick={marcarTodas} disabled={pendiente} className="text-[13px] font-medium min-h-[44px] -my-3 flex items-center gap-1" style={{ color: "var(--color-accent)" }}>
+            <button type="button" onClick={marcarTodas} aria-busy={pendiente} disabled={pendiente} className="text-[13px] font-medium min-h-[44px] -my-3 flex items-center gap-1" style={{ color: "var(--color-accent)" }}>
               {svg(ICONOS.check, 15)} Marcar todas como leídas
             </button>
           </div>
