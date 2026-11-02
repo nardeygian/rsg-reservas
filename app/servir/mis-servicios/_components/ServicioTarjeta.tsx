@@ -81,10 +81,10 @@ export function ServicioTarjeta({ s }: { s: ServicioFila }) {
 
       {!s.pasado && s.status === "pendiente" && !rechazando && (
         <div className="grid grid-cols-2 gap-2">
-          <button type="button" className="btn-primary" disabled={pendiente} onClick={() => responder(true)}>
+          <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente} onClick={() => responder(true)}>
             <Icon name="check" /> Aceptar
           </button>
-          <button type="button" className="btn-secondary" disabled={pendiente} onClick={() => setRechazando(true)}>
+          <button type="button" className="btn-secondary" aria-busy={pendiente} disabled={pendiente} onClick={() => setRechazando(true)}>
             No puedo
           </button>
         </div>
@@ -97,8 +97,8 @@ export function ServicioTarjeta({ s }: { s: ServicioFila }) {
             <input className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={300} placeholder="Estoy de viaje" autoFocus />
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" className="btn-primary" style={{ background: "var(--color-down)" }} disabled={pendiente} onClick={() => responder(false)}>Rechazar</button>
-            <button type="button" className="btn-secondary" disabled={pendiente} onClick={() => setRechazando(false)}>Volver</button>
+            <button type="button" className="btn-primary" style={{ background: "var(--color-down)" }} aria-busy={pendiente} disabled={pendiente} onClick={() => responder(false)}>Rechazar</button>
+            <button type="button" className="btn-secondary" aria-busy={pendiente} disabled={pendiente} onClick={() => setRechazando(false)}>Volver</button>
           </div>
         </div>
       )}
@@ -106,7 +106,7 @@ export function ServicioTarjeta({ s }: { s: ServicioFila }) {
       {s.status === "rechazada" && (
         <div className="flex items-center gap-2 flex-wrap text-[13px]" style={{ color: "var(--color-muted)" }}>
           <span className="flex-1">Rechazaste{s.decline_reason ? `: “${s.decline_reason}”` : "."}</span>
-          {!s.pasado && <button type="button" className="btn-ghost min-h-[40px] px-3 text-[14px]" disabled={pendiente} onClick={() => responder(true)}>Sí puedo</button>}
+          {!s.pasado && <button type="button" className="btn-ghost min-h-[40px] px-3 text-[14px]" aria-busy={pendiente} disabled={pendiente} onClick={() => responder(true)}>Sí puedo</button>}
         </div>
       )}
 

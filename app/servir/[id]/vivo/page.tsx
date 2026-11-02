@@ -29,7 +29,9 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
   if (!m) redirect("/");
 
   const tiene = async (p: string) => (await db.rpc("has_permission", { p_permission: p })).data === true;
-  const [puedeVivo, puedeAsistencia, alcancesAsignar, { data: personId }, itemsR, asignR, proyR, cambiosR, quitaCanciones] = await Promise.all([
+  // Todo en paralelo: cada consulta es un viaje a la base.
+  const [puedeVivo, puedeAsistencia, alcancesAsignar, { data: personId }, itemsR, asignR, proyR, cambiosR, quitaCanciones,
+    { data: jornadasR }, { data: puedeContar }, { data: deptosAviso }, { data: personasAviso }, { data: alertasR }] = await Promise.all([
     tiene("servir.vivo"),
     tiene("servir.asistencia"),
     db.rpc("permission_scopes", { p_permission: "servir.asignar" }).then((r) => r.data ?? []),
@@ -43,15 +45,15 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
     db.from("meeting_live_changes").select("id, kind, minutes, item_title, created_at, reason_category, reason, profiles(full_name)")
       .eq("meeting_id", id).or("kind.neq.avanzar,minutes.neq.1").order("created_at", { ascending: false }).limit(30),
     db.rpc("puede_quitar_canciones", { p_meeting_id: id }).then((r) => r.data === true),
-  ]);
-  const [{ data: jornadasR }, { data: puedeContar }, { data: deptosAviso }, { data: personasAviso }, { data: alertasR }, cancionesR] = await Promise.all([
     db.rpc("jornadas_reunion", { p_meeting_id: id }),
     db.rpc("puede_registrar_asistentes", { p_meeting_id: id }),
     db.rpc("departamentos_para_avisar", { p_meeting_id: id }),
     db.rpc("personas_para_avisar", { p_meeting_id: id }),
     db.from("meeting_alerts").select("id, anchor, minutes, ministry_ids, message, sent_at, skipped, run_items(title)").eq("meeting_id", id).order("created_at"),
-    quitaCanciones ? db.from("songs").select("id, title, default_key").eq("active", true).order("title").limit(500) : Promise.resolve({ data: [] }),
   ]);
+  const cancionesR = quitaCanciones
+    ? await db.from("songs").select("id, title, default_key").eq("active", true).order("title").limit(500)
+    : { data: [] };
   const idsAlerta = [...new Set((alertasR ?? []).flatMap((a) => a.ministry_ids))];
   const { data: nombresDepto } = idsAlerta.length
     ? await db.from("ministries").select("id, name").in("id", idsAlerta)

@@ -125,7 +125,7 @@ function AgregarHoja({ equipo, personas, miembros, onClose, onError }: {
         <ul className="flex flex-col divide-y" style={{ borderColor: "var(--color-line)" }}>
           {resultados.map((p) => (
             <li key={p.id}>
-              <button type="button" disabled={pendiente} className="w-full flex items-center gap-3 py-2.5 min-h-[48px] text-left"
+              <button type="button" aria-busy={pendiente} disabled={pendiente} className="w-full flex items-center gap-3 py-2.5 min-h-[48px] text-left"
                 onClick={() => correr(() => agregarMiembro({ ministry_id: equipo.ministry_id ?? "", area_id: equipo.area_id, person_id: p.id }))}>
                 <Avatar nombre={p.full_name} size={32} />
                 <span className="flex-1 min-w-0">
@@ -140,7 +140,7 @@ function AgregarHoja({ equipo, personas, miembros, onClose, onError }: {
           ))}
         </ul>
         {q.trim().length >= 2 && !exacto && (
-          <button type="button" disabled={pendiente} className="btn-secondary"
+          <button type="button" aria-busy={pendiente} disabled={pendiente} className="btn-secondary"
             onClick={() => correr(() => agregarMiembro({ ministry_id: equipo.ministry_id ?? "", area_id: equipo.area_id, full_name: q }))}>
             <Icon name="plus" /> Crear a “{q.trim()}” y agregarlo
           </button>
@@ -193,7 +193,7 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
   return (
     <Hoja titulo={miembro.full_name} subtitulo={equipo.area_name ?? equipo.ministry_name} onClose={onClose}
       pie={
-        <button type="button" className="btn-ghost w-full" style={{ color: "var(--color-down)" }} disabled={pendiente} onClick={quitar}>
+        <button type="button" className="btn-ghost w-full" style={{ color: "var(--color-down)" }} aria-busy={pendiente} disabled={pendiente} onClick={quitar}>
           {confirmar ? "Toca otra vez para quitarlo del equipo" : "Quitar del equipo"}
         </button>
       }>
@@ -224,7 +224,7 @@ function MiembroHoja({ equipo, miembro, posiciones, areas, onClose, onError }: {
         {!equipo.area_id && areas.length > 0 && (
           <label className="flex flex-col gap-2">
             <span className="field-label">Área</span>
-            <select className="input" defaultValue={miembro.area_id ?? ""} disabled={pendiente} onChange={(e) => mover(e.target.value)}>
+            <select className="input" defaultValue={miembro.area_id ?? ""} aria-busy={pendiente} disabled={pendiente} onChange={(e) => mover(e.target.value)}>
               <option value="">Sin área</option>
               {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>

@@ -68,7 +68,7 @@ export function FormUnirme({ departamentos, solicitudes }: { departamentos: Depa
                 </span>
                 <span className={`chip ${ESTADO[s.status]?.clase ?? "chip-muted"} flex-none`}>{ESTADO[s.status]?.texto ?? s.status}</span>
                 {s.status === "pendiente" && (
-                  <button type="button" className="btn-ghost min-h-[40px] px-3 text-[14px]" disabled={pendiente} onClick={() => cancelar(s.id)}>
+                  <button type="button" className="btn-ghost min-h-[40px] px-3 text-[14px]" aria-busy={pendiente} disabled={pendiente} onClick={() => cancelar(s.id)}>
                     Cancelar
                   </button>
                 )}
@@ -122,7 +122,7 @@ export function FormUnirme({ departamentos, solicitudes }: { departamentos: Depa
               placeholder="Por ejemplo: toco guitarra y puedo los domingos"
             />
           </label>
-          <button type="button" className="btn-primary" disabled={pendiente} onClick={enviar}>
+          <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente} onClick={enviar}>
             {pendiente ? "Enviando…" : "Enviar solicitud"}
           </button>
         </section>

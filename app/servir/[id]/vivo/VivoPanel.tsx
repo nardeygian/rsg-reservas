@@ -188,7 +188,7 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
         {quitado && (
           <div className="card px-4 py-3 flex items-center gap-3" role="status">
             <span className="flex-1 min-w-0 text-[14px] truncate" style={{ color: "var(--color-ink)" }}>Se quitó {quitado.title}</span>
-            <button type="button" className="btn-secondary min-h-[36px] px-3 text-[14px]" disabled={pendiente} onClick={() => quitar(quitado, false)}>Deshacer</button>
+            <button type="button" className="btn-secondary min-h-[36px] px-3 text-[14px]" aria-busy={pendiente} disabled={pendiente} onClick={() => quitar(quitado, false)}>Deshacer</button>
           </div>
         )}
 
@@ -203,7 +203,7 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
               {puede.vivo ? "Cuando empiece la reunión, ábrela en vivo: todos verán el orden y el punto actual." : "La reunión todavía no está en vivo. Aquí verás el punto actual cuando empiece."}
             </p>
             {puede.vivo && (
-              <button type="button" className="btn-primary self-start" disabled={pendiente} onClick={() => correr(() => iniciarReunion(meeting.id))}>
+              <button type="button" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente} onClick={() => correr(() => iniciarReunion(meeting.id))}>
                 {pendiente ? "Abriendo…" : "Abrir en vivo"}
               </button>
             )}
@@ -245,11 +245,11 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
             )}
             {puede.vivo && (
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <button type="button" className="btn-secondary" disabled={pendiente || idxActual <= 0}
+                <button type="button" className="btn-secondary" aria-busy={pendiente} disabled={pendiente || idxActual <= 0}
                   onClick={() => items[idxActual - 1] && saltar(items[idxActual - 1].id)}>
                   <Icon name="chevron-left" /> Anterior
                 </button>
-                <button type="button" className="btn-primary" disabled={pendiente || items.length === 0}
+                <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente || items.length === 0}
                   onClick={() => correr(() => avanzarItem(meeting.id, items[idxActual + 1]?.id ?? null))}>
                   {idxActual + 1 >= items.length ? "Fin del orden" : "Siguiente"} <Icon name="chevron-right" />
                 </button>
@@ -270,7 +270,7 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
         {cambios.length > 0 && <Cambios cambios={cambios} />}
 
         {puede.vivo && enVivo && (
-          <button type="button" className="btn-secondary self-start" disabled={pendiente}
+          <button type="button" className="btn-secondary self-start" aria-busy={pendiente} disabled={pendiente}
             onClick={() => { if (confirm("¿Terminar la reunión? Se guarda la hora real de fin.")) correr(() => terminarReunion(meeting.id)); }}>
             Terminar reunión
           </button>
@@ -366,7 +366,7 @@ function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, pue
             <li key={i.id} className="border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
               <div className="flex items-stretch" style={estilo}>
                 {puedeSaltar && !MARCA.includes(i.kind) && !i.removed ? (
-                  <button type="button" disabled={pendiente} onClick={() => onSaltar(i.id)} aria-current={esActual ? "step" : undefined}
+                  <button type="button" aria-busy={pendiente} disabled={pendiente} onClick={() => onSaltar(i.id)} aria-current={esActual ? "step" : undefined}
                     className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 min-h-[52px] text-left">{contenido}</button>
                 ) : (
                   <div className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 min-h-[48px]" aria-current={esActual ? "step" : undefined}>{contenido}</div>
@@ -375,7 +375,7 @@ function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, pue
                   i.removed ? (
                     puedeQuitar(i) && (
                       <button type="button" className="px-3 text-[13px] font-semibold flex-none" style={{ color: "var(--color-accent)" }}
-                        disabled={pendiente} onClick={() => onQuitar(i, false)}>Devolver</button>
+                        aria-busy={pendiente} disabled={pendiente} onClick={() => onQuitar(i, false)}>Devolver</button>
                     )
                   ) : (
                     <button type="button" className="icon-btn self-center mr-2" aria-expanded={abierto === i.id}
@@ -420,22 +420,22 @@ function AjustePunto({ item, pendiente, ajustar, quitar, canciones, cambiar }: {
               <option key={c.id} value={c.id}>{c.title}{c.default_key ? ` (${c.default_key})` : ""}</option>
             ))}
           </select>
-          <button type="submit" className="btn-secondary min-h-[40px] px-3 flex-none" disabled={pendiente || !otra}>Cambiar</button>
+          <button type="submit" className="btn-secondary min-h-[40px] px-3 flex-none" aria-busy={pendiente} disabled={pendiente || !otra}>Cambiar</button>
         </form>
       )}
       {ajustar && (
         <>
-          <button type="button" className="btn-secondary min-h-[40px] px-3" disabled={pendiente} onClick={() => ajustar(item.id, -5)}>−5</button>
-          <button type="button" className="btn-secondary min-h-[40px] px-3" disabled={pendiente} onClick={() => ajustar(item.id, 5)}>+5</button>
+          <button type="button" className="btn-secondary min-h-[40px] px-3" aria-busy={pendiente} disabled={pendiente} onClick={() => ajustar(item.id, -5)}>−5</button>
+          <button type="button" className="btn-secondary min-h-[40px] px-3" aria-busy={pendiente} disabled={pendiente} onClick={() => ajustar(item.id, 5)}>+5</button>
           <form className="flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); if (valor) { ajustar(item.id, valor); setMin(""); } }}>
             <input className="input w-[76px] min-h-[40px] tabular" inputMode="numeric" placeholder="±min" value={min}
               onChange={(e) => setMin(e.target.value.replace(/[^\d-]/g, ""))} aria-label={`Minutos para ${item.title}`} />
-            <button type="submit" className="btn-secondary min-h-[40px] px-3" disabled={pendiente || !valor}>Aplicar</button>
+            <button type="submit" className="btn-secondary min-h-[40px] px-3" aria-busy={pendiente} disabled={pendiente || !valor}>Aplicar</button>
           </form>
         </>
       )}
       {quitar && (
-        <button type="button" className="btn-ghost min-h-[40px] px-3" style={{ color: "var(--color-down)" }} disabled={pendiente} onClick={quitar}>
+        <button type="button" className="btn-ghost min-h-[40px] px-3" style={{ color: "var(--color-down)" }} aria-busy={pendiente} disabled={pendiente} onClick={quitar}>
           Quitar
         </button>
       )}
@@ -464,12 +464,12 @@ function Atraso({ atraso, finProyectado, finPlaneado, pendiente, onPedir }: {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {[5, 10, 15].map((m) => (
-          <button key={m} type="button" className="btn-secondary min-h-[40px] px-3" disabled={pendiente} onClick={() => onPedir(m)}>+{m}</button>
+          <button key={m} type="button" className="btn-secondary min-h-[40px] px-3" aria-busy={pendiente} disabled={pendiente} onClick={() => onPedir(m)}>+{m}</button>
         ))}
         <form className="flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); if (valor) { onPedir(valor); setMin(""); } }}>
           <input className="input w-[76px] min-h-[40px] tabular" inputMode="numeric" placeholder="min" value={min}
             onChange={(e) => setMin(e.target.value.replace(/[^\d-]/g, ""))} aria-label="Minutos de atraso" />
-          <button type="submit" className="btn-primary min-h-[40px] px-3" disabled={pendiente || !valor}>Anunciar</button>
+          <button type="submit" className="btn-primary min-h-[40px] px-3" aria-busy={pendiente} disabled={pendiente || !valor}>Anunciar</button>
         </form>
       </div>
       <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>Se avisa a todos los servidores asignados.</p>
@@ -674,7 +674,7 @@ function Asistencia({ meetingId, filas, puedeCerrar, cerrada }: { meetingId: str
               {OPCIONES.map((o) => (
                 <button key={o.v} type="button" role="radio" aria-checked={estados[f.person_id] === o.v}
                   className="segmented-link" aria-current={estados[f.person_id] === o.v ? "page" : undefined}
-                  disabled={pendiente || (cerrada && !puedeCerrar)}
+                  aria-busy={pendiente} disabled={pendiente || (cerrada && !puedeCerrar)}
                   onClick={() => { tocados.current.add(f.person_id); setEstados((e) => ({ ...e, [f.person_id]: o.v })); }}>
                   {o.t}
                 </button>
@@ -684,11 +684,11 @@ function Asistencia({ meetingId, filas, puedeCerrar, cerrada }: { meetingId: str
         ))}
       </ul>
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn-secondary" disabled={pendiente || (cerrada && !puedeCerrar)} onClick={() => guardar(false)}>
+        <button type="button" className="btn-secondary" aria-busy={pendiente} disabled={pendiente || (cerrada && !puedeCerrar)} onClick={() => guardar(false)}>
           Guardar
         </button>
         {puedeCerrar && !cerrada && (
-          <button type="button" className="btn-primary" disabled={pendiente || faltan > 0} onClick={() => guardar(true)}
+          <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente || faltan > 0} onClick={() => guardar(true)}
             title={faltan > 0 ? `${faltan === 1 ? "Falta" : "Faltan"} ${faltan} por marcar` : undefined}>
             Confirmar y cerrar{faltan > 0 ? ` (${faltan === 1 ? "falta" : "faltan"} ${faltan})` : ""}
           </button>
@@ -727,7 +727,7 @@ function MotivoHoja({ pedido, pendiente, onClose, onAplicar }: {
           <span className="field-label">Nota (opcional)</span>
           <input className="input" value={nota} onChange={(e) => setNota(e.target.value)} maxLength={300} placeholder="Ej.: el predicador pidió 5 minutos más" />
         </label>
-        <button type="submit" className="btn-primary" disabled={pendiente || !categoria}>Aplicar</button>
+        <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !categoria}>Aplicar</button>
         <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>El motivo queda en el reporte y en las estadísticas de atrasos.</p>
       </form>
     </Hoja>
@@ -834,7 +834,7 @@ function AvisoHoja({ departamentos, personas, todos, pendiente, onClose, onEnvia
           <textarea className="input py-2" rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={500}
             placeholder="Ej.: LMRSG, suban al escenario" />
         </label>
-        <button type="submit" className="btn-primary" disabled={pendiente || !texto.trim() || marcadas.length === 0}>
+        <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !texto.trim() || marcadas.length === 0}>
           {pendiente ? "Enviando…" : marcadas.length ? `Enviar a ${marcadas.length} ${marcadas.length === 1 ? "persona" : "personas"}` : "Enviar"}
         </button>
       </form>

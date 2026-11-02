@@ -725,3 +725,36 @@ export async function borrarAvisoAuto(meetingId: string, id: string): Promise<Re
   revalidatePath(`/servir/${meetingId}/vivo`);
   return { ok: true, data: undefined };
 }
+
+// ── En lote (lista de Reuniones) ──────────────────────────────────────────
+// RLS decide reunión por reunión: lo que no se pudo vuelve como "no".
+
+const UUID_LOTE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function idsValidos(ids: string[]): string[] {
+  return [...new Set(ids)].filter((id) => UUID_LOTE.test(id)).slice(0, 200);
+}
+
+export async function archivarReuniones(ids: string[], archivar: boolean): Promise<Resultado<{ hechas: number; no: number }>> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  const lista = idsValidos(ids);
+  if (!lista.length) return fallo("Escoge al menos una reunión.");
+  const { data, error } = await ctx.supabase.from("meetings")
+    .update({ archived_at: archivar ? new Date().toISOString() : null }).in("id", lista).select("id");
+  if (error) return fallo(errorBase(error));
+  revalidar();
+  return { ok: true, data: { hechas: data?.length ?? 0, no: lista.length - (data?.length ?? 0) } };
+}
+
+// Pasadas: solo super admin; futuras: también Planeación y pastor de sede.
+export async function eliminarReuniones(ids: string[]): Promise<Resultado<{ hechas: number; no: number }>> {
+  const ctx = await contexto();
+  if (!ctx) return fallo("Tu sesión expiró. Vuelve a entrar.");
+  const lista = idsValidos(ids);
+  if (!lista.length) return fallo("Escoge al menos una reunión.");
+  const { data, error } = await ctx.supabase.from("meetings").delete().in("id", lista).select("id");
+  if (error) return fallo(errorBase(error));
+  revalidar();
+  return { ok: true, data: { hechas: data?.length ?? 0, no: lista.length - (data?.length ?? 0) } };
+}

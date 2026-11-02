@@ -19,7 +19,7 @@ export function Archivar({ id, activa }: { id: string; activa: boolean }) {
       <button
         type="button"
         className="btn-secondary self-start"
-        disabled={pendiente}
+        aria-busy={pendiente} disabled={pendiente}
         style={activa ? { color: "var(--color-down)" } : undefined}
         onClick={() => {
           if (activa && !confirm("¿Archivar esta canción?")) return;

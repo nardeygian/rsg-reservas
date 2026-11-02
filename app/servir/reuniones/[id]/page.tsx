@@ -49,7 +49,12 @@ export default async function ReunionPage({ params, searchParams }: {
   // RLS: si no la puede ver, para él no existe.
   if (!m) redirect("/");
 
-  const [{ data: items }, { data: cambios }, { data: canciones }, puede, plantilla, { data: espacios }, { data: escogidos }, { data: reservas }, { data: montajeGlobal }] = await Promise.all([
+  // Todo en paralelo: cada consulta es un viaje a la base y aquí no
+  // dependen unas de otras.
+  const [
+    { data: items }, { data: cambios }, { data: canciones }, puede, plantilla, { data: espacios }, { data: escogidos }, { data: reservas }, { data: montajeGlobal },
+    equipos, { data: superAdmin }, { data: conteos }, { data: puedeContar }, { data: avisosR }, { data: deptosR },
+  ] = await Promise.all([
     supabase
       .from("run_items")
       .select("id, sort, kind, title, duration_sec, song_id, responsible_position_id")
@@ -69,21 +74,16 @@ export default async function ReunionPage({ params, searchParams }: {
     supabase.from("meeting_spaces").select("space_id").eq("meeting_id", id),
     supabase.rpc("reservas_de_reunion", { p_meeting_id: id }),
     supabase.rpc("has_global_permission", { p_permission: "servir.planear" }),
-  ]);
-  // Pestaña Servidores: solo para quien tiene algún equipo que asignar.
-  const [equipos, { data: superAdmin }] = await Promise.all([misEquipos(supabase), supabase.rpc("is_super_admin")]);
-  const asignaAlgo = equipos.length > 0;
-  const [{ data: conteos }, { data: puedeContar }] = await Promise.all([
+    // Pestaña Servidores: solo para quien tiene algún equipo que asignar.
+    misEquipos(supabase),
+    supabase.rpc("is_super_admin"),
     supabase.rpc("jornadas_reunion", { p_meeting_id: id }),
     supabase.rpc("puede_registrar_asistentes", { p_meeting_id: id }),
+    // Avisos automáticos (RLS: los ve quien ve la reunión; solo Planeación los edita).
+    supabase.from("meeting_alerts").select("id, run_item_id, anchor, minutes, ministry_ids, message, sent_at, skipped").eq("meeting_id", id).order("created_at"),
+    supabase.from("ministries").select("id, name").eq("type", "departamento").order("name"),
   ]);
-  // Avisos automáticos (solo quien planea los ve y edita aquí).
-  const [{ data: avisosR }, { data: deptosR }] = puede.planear && !(vista === "servidores")
-    ? await Promise.all([
-        supabase.from("meeting_alerts").select("id, run_item_id, anchor, minutes, ministry_ids, message, sent_at, skipped").eq("meeting_id", id).order("created_at"),
-        supabase.from("ministries").select("id, name").eq("type", "departamento").order("name"),
-      ])
-    : [{ data: [] }, { data: [] }];
+  const asignaAlgo = equipos.length > 0;
   const enServidores = asignaAlgo && vista === "servidores";
   const idsEscogidos = (escogidos ?? []).map((e) => e.space_id);
   // Activos, más los ya escogidos aunque luego se hayan deshabilitado.

@@ -274,17 +274,17 @@ export function ReunionSheet({ rid, svData, canEdit, onClose, onSaved }: {
 
               {/* Save / delete */}
               <div className="flex flex-col gap-2">
-                <button type="button" className="btn-primary w-full py-2.5 font-semibold" disabled={saving} onClick={handleGuardar}>
+                <button type="button" className="btn-primary w-full py-2.5 font-semibold" aria-busy={saving} disabled={saving} onClick={handleGuardar}>
                   {saving ? "Guardando…" : "Guardar listado"}
                 </button>
                 <div className="flex gap-2 flex-wrap">
                   {reg && (
-                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleBorrar} disabled={saving}>
+                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleBorrar} aria-busy={saving} disabled={saving}>
                       {confirmBorrar ? "Confirmar: borrar el listado" : "Borrar el listado guardado"}
                     </button>
                   )}
                   {(r.origen === "manual" || r.fuera_de_asana) && (
-                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleQuitar} disabled={saving}>
+                    <button type="button" className="text-xs font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }} onClick={handleQuitar} aria-busy={saving} disabled={saving}>
                       {confirmQuitar ? "Confirmar: eliminar la reunión" : "Eliminar esta reunión"}
                     </button>
                   )}

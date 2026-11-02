@@ -55,7 +55,7 @@ function Fila({ meetingId, jornada, editable }: { meetingId: string; jornada: Jo
           }}>
             <input className="input w-[92px] min-h-[40px] tabular text-right" inputMode="numeric" placeholder="0" value={valor}
               onChange={(e) => setValor(e.target.value.replace(/\D/g, "").slice(0, 6))} aria-label={`Asistentes de ${jornada.titulo}`} />
-            <button type="submit" className="btn-primary min-h-[40px] px-3" disabled={pendiente || !cambio}>Guardar</button>
+            <button type="submit" className="btn-primary min-h-[40px] px-3" aria-busy={pendiente} disabled={pendiente || !cambio}>Guardar</button>
           </form>
         ) : (
           <span className="text-[15px] font-semibold tabular" style={{ color: "var(--color-ink)" }}>{jornada.cantidad ?? "—"}</span>

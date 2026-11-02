@@ -76,7 +76,7 @@ export function EditorPlantilla({
             {esPorDefecto ? (
               <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>Es la plantilla por defecto de este tipo: las reuniones nuevas llegan con este orden.</p>
             ) : (
-              <button type="button" className="btn-secondary self-start" disabled={pendiente}
+              <button type="button" className="btn-secondary self-start" aria-busy={pendiente} disabled={pendiente}
                 onClick={() => correr(() => usarPorDefecto(tipo.id, plantilla.id), () => { setAviso("Ahora es la plantilla por defecto."); router.refresh(); })}>
                 Usar por defecto
               </button>
@@ -85,7 +85,7 @@ export function EditorPlantilla({
         )}
 
         {editable && (
-          <button type="button" className="btn-ghost self-start" disabled={pendiente} style={{ color: "var(--color-critical)" }}
+          <button type="button" className="btn-ghost self-start" aria-busy={pendiente} disabled={pendiente} style={{ color: "var(--color-critical)" }}
             onClick={() => {
               if (!confirm(`¿Borrar ${plantilla.name} v${plantilla.version}? Las reuniones creadas con ella no cambian.`)) return;
               correr(() => borrarPlantilla(plantilla.id), () => router.push("/servir/plantillas"));

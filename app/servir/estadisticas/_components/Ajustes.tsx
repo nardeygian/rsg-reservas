@@ -40,11 +40,11 @@ export function Ajustes({ ajustes }: { ajustes: Valores }) {
         ))}
       </div>
       <div className="flex gap-2">
-        <button type="button" className="btn-primary" disabled={pendiente}
+        <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente}
           onClick={() => { setErr(""); setOk(""); start(async () => { const r = await guardarAjustes(v); if (r.ok) setOk("Umbrales guardados."); else setErr(r.error); }); }}>
           {pendiente ? "Guardando…" : "Guardar"}
         </button>
-        <button type="button" className="btn-secondary" disabled={pendiente} onClick={() => { setAbierto(false); setV(ajustes); }}>Cerrar</button>
+        <button type="button" className="btn-secondary" aria-busy={pendiente} disabled={pendiente} onClick={() => { setAbierto(false); setV(ajustes); }}>Cerrar</button>
       </div>
     </section>
   );

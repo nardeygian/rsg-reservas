@@ -86,7 +86,7 @@ export function EstructuraVista({ deptos, roles, planeacionId, autorizables }: {
             {autorizables.map((p) => (
               <li key={p.profile_id} className="flex items-center gap-3 min-h-[48px]" style={{ borderTop: "1px solid var(--color-line)" }}>
                 <span className="flex-1 text-[14px]">{p.full_name}</span>
-                <button type="button" disabled={pendiente}
+                <button type="button" aria-busy={pendiente} disabled={pendiente}
                   className={p.autorizado ? "btn-ghost min-h-[36px] px-3 text-[13px]" : "btn-secondary min-h-[36px] px-3 text-[13px]"}
                   style={p.autorizado ? { color: "var(--color-critical)" } : undefined}
                   onClick={() => correr(() => p.autorizado ? quitarAutorizacionPlaneacion(p.profile_id) : autorizarPlaneacion(p.profile_id))}>
@@ -207,7 +207,7 @@ function RolHoja({ deptos, grupos, editando, onClose }: { deptos: Depto[]; grupo
   return (
     <Hoja titulo={rol ? rol.name : "Nuevo rol"} subtitulo={depto?.name ?? "Rol general"} onClose={onClose}
       pie={rol && (
-        <button type="button" className="btn-ghost w-full" style={{ color: rol.active ? "var(--color-down)" : "var(--color-accent)" }} disabled={pendiente} onClick={archivar}>
+        <button type="button" className="btn-ghost w-full" style={{ color: rol.active ? "var(--color-down)" : "var(--color-accent)" }} aria-busy={pendiente} disabled={pendiente} onClick={archivar}>
           {rol.active ? "Archivar rol" : "Volver a activar"}
         </button>
       )}>
@@ -243,7 +243,7 @@ function RolHoja({ deptos, grupos, editando, onClose }: { deptos: Depto[]; grupo
             <datalist id="grupos-generales">{grupos.map((g) => <option key={g} value={g} />)}</datalist>
           </label>
         )}
-        <button type="submit" className="btn-primary" disabled={pendiente || !nombre.trim()}>{rol ? "Guardar cambios" : "Crear rol"}</button>
+        <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !nombre.trim()}>{rol ? "Guardar cambios" : "Crear rol"}</button>
         {rol && <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>El checklist del rol se edita en Mi equipo › Roles.</p>}
       </form>
     </Hoja>
@@ -262,7 +262,7 @@ function NombreForm({ etiqueta, placeholder, inicial = "", boton, pendiente, com
       <div className="flex gap-2 flex-1">
         <input id={`f-${etiqueta}`} className="input flex-1" value={texto} placeholder={placeholder} aria-label={etiqueta}
           onChange={(e) => setTexto(e.target.value)} maxLength={80} />
-        <button type="submit" className="btn-secondary flex-none" disabled={pendiente || !texto.trim()}>{boton}</button>
+        <button type="submit" className="btn-secondary flex-none" aria-busy={pendiente} disabled={pendiente || !texto.trim()}>{boton}</button>
       </div>
     </form>
   );

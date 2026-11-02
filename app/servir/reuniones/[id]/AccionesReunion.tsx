@@ -86,7 +86,7 @@ export function AccionesReunion({
         {reunion.status === "borrador" && (
           <button type="button" className="h-10 px-4 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5"
             style={{ background: "var(--color-action-bg)", color: "var(--color-action-fg)", opacity: pendiente ? 0.6 : 1 }}
-            disabled={pendiente}
+            aria-busy={pendiente} disabled={pendiente}
             onClick={() => correr(() => publicarReunion(reunion.id), () => { setAviso("Publicada."); router.refresh(); })}>
             <Icon name="check" size={15} />
             Publicar
@@ -97,7 +97,7 @@ export function AccionesReunion({
         {reunion.status === "cancelada" && (
           <button type="button" className="h-10 px-4 rounded-full text-[14px] font-semibold"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-line)" }}
-            disabled={pendiente}
+            aria-busy={pendiente} disabled={pendiente}
             onClick={() => correr(() => restaurarReunion(reunion.id), () => { setAviso("Restaurada como borrador."); router.refresh(); })}>
             Restaurar
           </button>
@@ -147,7 +147,7 @@ export function AccionesReunion({
             <textarea id="d-notas" rows={3} className="input py-2" value={notas} onChange={(e) => setNotas(e.target.value)} />
           </div>
           <p className="text-xs md:col-span-2" style={{ color: "var(--color-faint)" }}>Para cambiar la fecha usa Reprogramar: queda en el historial y se avisa al equipo.</p>
-          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" disabled={pendiente}>Guardar</button>
+          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" aria-busy={pendiente} disabled={pendiente}>Guardar</button>
         </form>
       )}
 
@@ -171,7 +171,7 @@ export function AccionesReunion({
             <label htmlFor="r-motivo" className="field-label block mb-1.5">Motivo (opcional, lo ve el equipo)</label>
             <input id="r-motivo" className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} />
           </div>
-          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" disabled={pendiente}>Reprogramar</button>
+          <button type="submit" className="btn-primary md:col-span-2 md:justify-self-start" aria-busy={pendiente} disabled={pendiente}>Reprogramar</button>
         </form>
       )}
 
@@ -187,7 +187,7 @@ export function AccionesReunion({
             <label htmlFor="c-motivo" className="field-label block mb-1.5">Motivo (opcional, lo ve el equipo)</label>
             <input id="c-motivo" className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} />
           </div>
-          <button type="submit" className="btn-primary self-start" disabled={pendiente}
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}
             style={{ background: "var(--color-critical)", color: "#F6F5F1" }}>
             Cancelar reunión
           </button>
@@ -205,7 +205,7 @@ export function AccionesReunion({
             <label htmlFor="u-fecha" className="field-label block mb-1.5">Fecha de la copia</label>
             <input id="u-fecha" type="date" className="input md:max-w-[240px]" value={fechaCopia} onChange={(e) => setFechaCopia(e.target.value)} required />
           </div>
-          <button type="submit" className="btn-primary self-start" disabled={pendiente}>Duplicar</button>
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}>Duplicar</button>
         </form>
       )}
 
@@ -220,7 +220,7 @@ export function AccionesReunion({
             <label htmlFor="p-nombre" className="field-label block mb-1.5">Nombre de la plantilla</label>
             <input id="p-nombre" className="input" value={nombrePlantilla} onChange={(e) => setNombrePlantilla(e.target.value)} required maxLength={120} />
           </div>
-          <button type="submit" className="btn-primary self-start" disabled={pendiente}>Guardar plantilla</button>
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}>Guardar plantilla</button>
         </form>
       )}
 
@@ -243,7 +243,7 @@ export function AccionesReunion({
               Las personas asignadas no reciben aviso. Si el equipo ya la vio, mejor cancélala.
             </p>
           )}
-          <button type="submit" className="btn-primary self-start" disabled={pendiente}
+          <button type="submit" className="btn-primary self-start" aria-busy={pendiente} disabled={pendiente}
             style={{ background: "var(--color-critical)", color: "#F6F5F1" }}>
             Borrar reunión
           </button>

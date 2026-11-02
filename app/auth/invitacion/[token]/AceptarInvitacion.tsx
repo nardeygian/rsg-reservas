@@ -33,7 +33,7 @@ export function AceptarInvitacion({ token, cuenta, yaUnida }: { token: string; c
       <button
         type="button"
         className="btn-primary w-full"
-        disabled={pendiente}
+        aria-busy={pendiente} disabled={pendiente}
         onClick={() =>
           start(async () => {
             setError(null);

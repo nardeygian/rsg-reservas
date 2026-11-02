@@ -10,7 +10,7 @@ export function AnalisisAtrasos({ desde, hasta, hayDatos }: { desde: string; has
   const [pendiente, start] = useTransition();
   return (
     <div className="flex flex-col gap-1.5 items-start">
-      <button type="button" className="btn-primary" disabled={pendiente || !hayDatos}
+      <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !hayDatos}
         onClick={() => { setError(""); start(async () => { const r = await analizarAtrasosDelPeriodo(desde, hasta); if (!r.ok) setError(r.error); }); }}>
         {pendiente ? "Analizando… (puede tardar un minuto)" : "Analizar"}
       </button>

@@ -60,7 +60,7 @@ export function Bloqueos({ bloqueos, hoy }: { bloqueos: BloqueoFila[]; hoy: stri
             <input className="input" value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={200} placeholder="Viaje, exámenes…" />
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <button type="submit" className="btn-primary" disabled={pendiente || !desde}>Guardar</button>
+            <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !desde}>Guardar</button>
             <button type="button" className="btn-secondary" onClick={() => setAbierto(false)}>Cancelar</button>
           </div>
         </form>
@@ -79,7 +79,7 @@ export function Bloqueos({ bloqueos, hoy }: { bloqueos: BloqueoFila[]; hoy: stri
                 <span className="block text-[15px]" style={{ color: "var(--color-ink)" }}>{b.rango}</span>
                 {b.reason && <span className="block text-[13px] truncate" style={{ color: "var(--color-muted)" }}>{b.reason}</span>}
               </span>
-              <button type="button" className="icon-btn icon-btn-danger" aria-label={`Borrar bloqueo ${b.rango}`} disabled={pendiente} onClick={() => borrar(b.id)}>
+              <button type="button" className="icon-btn icon-btn-danger" aria-label={`Borrar bloqueo ${b.rango}`} aria-busy={pendiente} disabled={pendiente} onClick={() => borrar(b.id)}>
                 <Icon name="close" size={14} />
               </button>
             </li>

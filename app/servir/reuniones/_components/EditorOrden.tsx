@@ -258,7 +258,7 @@ export function EditorOrden({
           </div>
           {onGuardar && (
             <div className="flex flex-wrap items-center gap-3 pt-3 border-t" style={{ borderColor: "var(--color-line)" }}>
-              <button type="button" className="btn-primary" disabled={pendiente || !guardable} onClick={guardar} style={{ opacity: pendiente || !guardable ? 0.5 : 1 }}>
+              <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !guardable} onClick={guardar} style={{ opacity: pendiente || !guardable ? 0.5 : 1 }}>
                 {pendiente ? "Guardando…" : textoGuardar}
               </button>
               {guardable && !mensaje && <span className="text-[13px]" style={{ color: "var(--color-muted)" }}>Hay cambios sin guardar.</span>}

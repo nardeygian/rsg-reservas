@@ -313,10 +313,10 @@ function Revision({
             {canciones.length > 0 && <>; {enlazadas} {enlazadas === 1 ? "canción enlazada" : "canciones enlazadas"} y {nuevas} {nuevas === 1 ? "nueva" : "nuevas"} en el catálogo</>}.
           </p>
           {error && <p role="alert" className="text-[14px] font-medium" style={{ color: "var(--color-critical)" }}>{error}</p>}
-          <button type="button" className="btn-primary w-full" disabled={pendiente} onClick={confirmar} style={{ opacity: pendiente ? 0.6 : 1 }}>
+          <button type="button" className="btn-primary w-full" aria-busy={pendiente} disabled={pendiente} onClick={confirmar} style={{ opacity: pendiente ? 0.6 : 1 }}>
             {pendiente ? "Creando…" : "Crear reunión"}
           </button>
-          <button type="button" className="btn-ghost w-full" disabled={pendiente} onClick={onOtro}>Subir otro PDF</button>
+          <button type="button" className="btn-ghost w-full" aria-busy={pendiente} disabled={pendiente} onClick={onOtro}>Subir otro PDF</button>
         </section>
       </div>
     </div>

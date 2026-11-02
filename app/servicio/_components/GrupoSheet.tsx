@@ -107,7 +107,7 @@ export function GrupoSheet({
               <label className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>Nombre del líder (texto)</label>
               <input className="input text-sm" value={lider} onChange={e => setLider(e.target.value)} />
             </div>
-            <button type="submit" className="btn-primary text-sm px-4 py-2 self-start" disabled={saving}>Guardar</button>
+            <button type="submit" className="btn-primary text-sm px-4 py-2 self-start" aria-busy={saving} disabled={saving}>Guardar</button>
           </form>
 
           {/* Leader user assignment */}
@@ -133,7 +133,7 @@ export function GrupoSheet({
                 value={userId}
                 onChange={e => setUserId(e.target.value)}
               />
-              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleAsignarLider} disabled={saving}>+ Agregar</button>
+              <button type="button" className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)]" style={{ background: "var(--color-surface-2)", color: "var(--color-ink)", border: "1px solid var(--color-line)" }} onClick={handleAsignarLider} aria-busy={saving} disabled={saving}>+ Agregar</button>
             </div>
           </div>
 
@@ -150,7 +150,7 @@ export function GrupoSheet({
                       aria-label={`Quitar ${m.nombre}`}
                       style={{ color: "var(--color-faint)", lineHeight: 1 }}
                       onClick={() => handleQuitarMiembro(m.id)}
-                      disabled={saving}
+                      aria-busy={saving} disabled={saving}
                     ><Icon name="close" size={16} label="Cerrar" /></button>
                   </span>
                 ))}
@@ -171,7 +171,7 @@ export function GrupoSheet({
               value={nuevosNombres}
               onChange={e => setNuevos(e.target.value)}
             />
-            <button type="submit" className="btn-primary text-sm px-4 py-2 self-start" disabled={saving}>Agregar</button>
+            <button type="submit" className="btn-primary text-sm px-4 py-2 self-start" aria-busy={saving} disabled={saving}>Agregar</button>
           </form>
 
           {/* Delete group */}
@@ -181,7 +181,7 @@ export function GrupoSheet({
               className="text-sm font-semibold px-3 py-2 rounded-[var(--radius-control)] self-start"
               style={{ background: "var(--color-down-soft)", color: "var(--color-down)" }}
               onClick={handleQuitarGrupo}
-              disabled={saving}
+              aria-busy={saving} disabled={saving}
             >
               {confirmDelete ? "Confirmar: se elimina el grupo y sus discípulos" : "Eliminar discipulado"}
             </button>

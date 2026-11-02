@@ -53,7 +53,7 @@ export function EspaciosPlantilla({
       />
       {error && <p role="alert" className="text-[14px] font-medium" style={{ color: "var(--color-critical)" }}>{error}</p>}
       {ok && <p role="status" className="text-[14px] font-medium" style={{ color: "var(--color-up)" }}>Guardado.</p>}
-      {editable && <button type="button" className="btn-secondary self-start" disabled={pendiente} onClick={guardar}>Guardar espacios</button>}
+      {editable && <button type="button" className="btn-secondary self-start" aria-busy={pendiente} disabled={pendiente} onClick={guardar}>Guardar espacios</button>}
     </section>
   );
 }

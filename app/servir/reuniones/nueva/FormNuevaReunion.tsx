@@ -268,7 +268,7 @@ export function FormNuevaReunion({
 
         {error && <p role="alert" className="text-[14px] font-medium" style={{ color: "var(--color-critical)" }}>{error}</p>}
 
-        <button type="submit" className="btn-primary w-full" disabled={pendiente} style={{ opacity: pendiente ? 0.6 : 1 }}>
+        <button type="submit" className="btn-primary w-full" aria-busy={pendiente} disabled={pendiente} style={{ opacity: pendiente ? 0.6 : 1 }}>
           {pendiente ? "Creando…" : modo === "una" ? "Crear reunión" : `Crear ${serie.length || ""} reuniones`}
         </button>
         <p className="text-xs -mt-2" style={{ color: "var(--color-faint)" }}>Se crean en borrador. Publícalas cuando el orden esté listo.</p>

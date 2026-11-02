@@ -130,7 +130,7 @@ export function FormTipo({
         </label>
 
         {error && <p role="alert" className="text-[14px] font-medium" style={{ color: "var(--color-critical)" }}>{error}</p>}
-        <button type="submit" className="btn-primary w-full" disabled={pendiente} style={{ opacity: pendiente ? 0.6 : 1 }}>
+        <button type="submit" className="btn-primary w-full" aria-busy={pendiente} disabled={pendiente} style={{ opacity: pendiente ? 0.6 : 1 }}>
           {pendiente ? "Guardando…" : d.id ? "Guardar tipo" : "Crear tipo"}
         </button>
       </div>

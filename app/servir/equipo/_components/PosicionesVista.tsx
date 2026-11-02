@@ -95,7 +95,7 @@ export function PosicionesVista({ equipo, posiciones, areas, puedeEstructura }: 
           </p>
           <div className="flex gap-2">
             <input id="nueva-area" className="input flex-1" placeholder="Nueva área" value={nuevaArea} onChange={(e) => setNuevaArea(e.target.value)} />
-            <button type="submit" className="btn-secondary flex-none" disabled={pendiente || !nuevaArea.trim()}>Crear</button>
+            <button type="submit" className="btn-secondary flex-none" aria-busy={pendiente} disabled={pendiente || !nuevaArea.trim()}>Crear</button>
           </div>
         </form>
       )}
@@ -152,7 +152,7 @@ function PosicionHoja({ equipo, areas, posicion, puedeEstructura, onClose }: {
   return (
     <Hoja titulo={posicion ? posicion.name : "Nuevo rol"} subtitulo={equipo.area_name ? `${equipo.ministry_name} · ${equipo.area_name}` : equipo.ministry_name} onClose={onClose}
       pie={posicion && puedeEstructura && (
-        <button type="button" className="btn-ghost w-full" style={{ color: posicion.active ? "var(--color-down)" : "var(--color-accent)" }} disabled={pendiente} onClick={archivar}>
+        <button type="button" className="btn-ghost w-full" style={{ color: posicion.active ? "var(--color-down)" : "var(--color-accent)" }} aria-busy={pendiente} disabled={pendiente} onClick={archivar}>
           {posicion.active ? "Archivar rol" : "Volver a activar"}
         </button>
       )}>
@@ -172,7 +172,7 @@ function PosicionHoja({ equipo, areas, posicion, puedeEstructura, onClose }: {
               </select>
             </label>
           )}
-          <button type="submit" className="btn-primary" disabled={pendiente || !nombre.trim()}>
+          <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !nombre.trim()}>
             {posicion ? "Guardar cambios" : "Crear rol"}
           </button>
         </form>}
@@ -192,7 +192,7 @@ function PosicionHoja({ equipo, areas, posicion, puedeEstructura, onClose }: {
                       {items.map((c) => (
                         <li key={c.id} className="flex items-center gap-2 min-h-[40px]">
                           <span className="flex-1 text-[14px]" style={{ color: "var(--color-ink)" }}>{c.text}</span>
-                          <button type="button" className="icon-btn icon-btn-danger" aria-label={`Quitar “${c.text}”`} disabled={pendiente} onClick={() => borrarPunto(c.id)}>
+                          <button type="button" className="icon-btn icon-btn-danger" aria-label={`Quitar “${c.text}”`} aria-busy={pendiente} disabled={pendiente} onClick={() => borrarPunto(c.id)}>
                             <Icon name="close" size={14} />
                           </button>
                         </li>
@@ -210,7 +210,7 @@ function PosicionHoja({ equipo, areas, posicion, puedeEstructura, onClose }: {
               </div>
               <div className="flex gap-2">
                 <input className="input flex-1" value={punto} onChange={(e) => setPunto(e.target.value)} placeholder="Nuevo punto" aria-label="Nuevo punto del checklist" />
-                <button type="submit" className="btn-secondary flex-none" disabled={pendiente || !punto.trim()}>Agregar</button>
+                <button type="submit" className="btn-secondary flex-none" aria-busy={pendiente} disabled={pendiente || !punto.trim()}>Agregar</button>
               </div>
             </form>
           </div>

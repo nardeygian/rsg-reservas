@@ -74,7 +74,7 @@ export function AvisosAutomaticos({ meetingId, avisos, puntos, departamentos, ed
                 </span>
               </span>
               {editable && !a.sent_at && (
-                <button type="button" className="icon-btn icon-btn-danger flex-none" aria-label={`Borrar aviso “${a.message}”`} disabled={pendiente} onClick={() => borrar(a.id)}>
+                <button type="button" className="icon-btn icon-btn-danger flex-none" aria-label={`Borrar aviso “${a.message}”`} aria-busy={pendiente} disabled={pendiente} onClick={() => borrar(a.id)}>
                   <Icon name="close" size={14} />
                 </button>
               )}
@@ -125,7 +125,7 @@ export function AvisosAutomaticos({ meetingId, avisos, puntos, departamentos, ed
           </label>
           {error && <p role="alert" className="text-[13px]" style={{ color: "var(--color-critical)" }}>{error}</p>}
           <div className="flex gap-2">
-            <button type="submit" className="btn-primary" disabled={pendiente || !item || !mensaje.trim() || deptos.size === 0}>Guardar aviso</button>
+            <button type="submit" className="btn-primary" aria-busy={pendiente} disabled={pendiente || !item || !mensaje.trim() || deptos.size === 0}>Guardar aviso</button>
             <button type="button" className="btn-ghost" onClick={() => { setAbierto(false); setError(""); }}>Cancelar</button>
           </div>
         </form>

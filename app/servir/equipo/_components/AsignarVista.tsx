@@ -84,7 +84,7 @@ export function AsignarVista({ meetingId, reunionNombre, posiciones, editable }:
                       </span>
                       <EstadoChip estado={a.status} />
                       {editable && (
-                        <button type="button" className="icon-btn icon-btn-danger" aria-label={`Quitar a ${a.full_name}`} disabled={pendiente} onClick={() => quitar(a.id)}>
+                        <button type="button" className="icon-btn icon-btn-danger" aria-label={`Quitar a ${a.full_name}`} aria-busy={pendiente} disabled={pendiente} onClick={() => quitar(a.id)}>
                           <Icon name="close" size={14} />
                         </button>
                       )}
@@ -147,7 +147,7 @@ function SugerenciasHoja({ meetingId, reunionNombre, posicion, onClose }: {
             <ul className="flex flex-col">
               {lista.map((s) => (
                 <li key={s.person_id}>
-                  <button type="button" disabled={pendiente} onClick={() => elegir(s)}
+                  <button type="button" aria-busy={pendiente} disabled={pendiente} onClick={() => elegir(s)}
                     className="w-full flex items-center gap-3 min-h-[56px] py-2 text-left rounded-[var(--radius-control)] px-2 -mx-2 transition hover:bg-[var(--color-surface-2)]"
                     style={s.bloqueado ? { opacity: 0.6 } : undefined}>
                     <Avatar nombre={s.full_name} size={34} />

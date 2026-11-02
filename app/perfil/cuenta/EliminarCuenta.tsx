@@ -68,7 +68,7 @@ export function EliminarCuenta({ resumen }: { resumen: ResumenEliminacion }) {
               </p>
             )}
             <div className="flex gap-2">
-              <button type="button" className="btn-secondary flex-1" onClick={() => { setAbierto(false); setTexto(""); setError(null); }} disabled={pendiente}>
+              <button type="button" className="btn-secondary flex-1" onClick={() => { setAbierto(false); setTexto(""); setError(null); }} aria-busy={pendiente} disabled={pendiente}>
                 Cancelar
               </button>
               <button

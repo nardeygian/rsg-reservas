@@ -54,16 +54,16 @@ export function SolicitudesVista({ solicitudes }: { solicitudes: SolicitudFila[]
                 <input className="input" value={nota} onChange={(e) => setNota(e.target.value)} maxLength={300}
                   placeholder="Nota para la persona (opcional)" autoFocus aria-label="Nota para la persona" />
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" className="btn-primary" style={{ background: "var(--color-down)" }} disabled={pendiente} onClick={() => responder(s.id, false)}>No aprobar</button>
-                  <button type="button" className="btn-secondary" disabled={pendiente} onClick={() => setRechazando(null)}>Volver</button>
+                  <button type="button" className="btn-primary" style={{ background: "var(--color-down)" }} aria-busy={pendiente} disabled={pendiente} onClick={() => responder(s.id, false)}>No aprobar</button>
+                  <button type="button" className="btn-secondary" aria-busy={pendiente} disabled={pendiente} onClick={() => setRechazando(null)}>Volver</button>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="btn-primary" disabled={pendiente} onClick={() => responder(s.id, true)}>
+                <button type="button" className="btn-primary" aria-busy={pendiente} disabled={pendiente} onClick={() => responder(s.id, true)}>
                   <Icon name="check" /> Aprobar
                 </button>
-                <button type="button" className="btn-secondary" disabled={pendiente} onClick={() => { setRechazando(s.id); setNota(""); }}>
+                <button type="button" className="btn-secondary" aria-busy={pendiente} disabled={pendiente} onClick={() => { setRechazando(s.id); setNota(""); }}>
                   No aprobar
                 </button>
               </div>

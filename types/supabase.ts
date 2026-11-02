@@ -1513,6 +1513,7 @@ export type Database = {
         Row: {
           actual_end: string | null
           actual_start: string | null
+          archived_at: string | null
           asana_gid: string | null
           attendance_closed_at: string | null
           attendance_closed_by: string | null
@@ -1544,6 +1545,7 @@ export type Database = {
         Insert: {
           actual_end?: string | null
           actual_start?: string | null
+          archived_at?: string | null
           asana_gid?: string | null
           attendance_closed_at?: string | null
           attendance_closed_by?: string | null
@@ -1575,6 +1577,7 @@ export type Database = {
         Update: {
           actual_end?: string | null
           actual_start?: string | null
+          archived_at?: string | null
           asana_gid?: string | null
           attendance_closed_at?: string | null
           attendance_closed_by?: string | null
@@ -3054,6 +3057,7 @@ export type Database = {
         Returns: {
           actual_end: string | null
           actual_start: string | null
+          archived_at: string | null
           asana_gid: string | null
           attendance_closed_at: string | null
           attendance_closed_by: string | null
@@ -3094,6 +3098,7 @@ export type Database = {
         Returns: {
           actual_end: string | null
           actual_start: string | null
+          archived_at: string | null
           asana_gid: string | null
           attendance_closed_at: string | null
           attendance_closed_by: string | null
@@ -3333,6 +3338,7 @@ export type Database = {
         Returns: {
           actual_end: string | null
           actual_start: string | null
+          archived_at: string | null
           asana_gid: string | null
           attendance_closed_at: string | null
           attendance_closed_by: string | null
@@ -3672,6 +3678,7 @@ export type Database = {
         Returns: {
           actual_end: string | null
           actual_start: string | null
+          archived_at: string | null
           asana_gid: string | null
           attendance_closed_at: string | null
           attendance_closed_by: string | null

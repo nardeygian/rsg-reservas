@@ -108,7 +108,7 @@ export function ListaNotificaciones({ filas, userId }: { filas: FilaBandeja[]; u
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between px-4">
             <h2 className="text-[13px] font-medium" style={{ color: "var(--color-muted)" }}>Nuevas · {nuevas.length}</h2>
-            <button type="button" onClick={marcarTodas} disabled={pendiente} className="text-[13px] font-medium min-h-[44px] -my-3 flex items-center gap-1" style={{ color: "var(--color-accent)" }}>
+            <button type="button" onClick={marcarTodas} aria-busy={pendiente} disabled={pendiente} className="text-[13px] font-medium min-h-[44px] -my-3 flex items-center gap-1" style={{ color: "var(--color-accent)" }}>
               {svg(ICONOS.check, 15)} Marcar todas como leídas
             </button>
           </div>
