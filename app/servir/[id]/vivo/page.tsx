@@ -43,8 +43,9 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
       .eq("meeting_id", id).or("kind.neq.avanzar,minutes.neq.1").order("created_at", { ascending: false }).limit(30),
     db.rpc("puede_quitar_canciones", { p_meeting_id: id }).then((r) => r.data === true),
   ]);
-  const [{ data: deptosAviso }, { data: alertasR }, cancionesR] = await Promise.all([
+  const [{ data: deptosAviso }, { data: personasAviso }, { data: alertasR }, cancionesR] = await Promise.all([
     db.rpc("departamentos_para_avisar", { p_meeting_id: id }),
+    db.rpc("personas_para_avisar", { p_meeting_id: id }),
     db.from("meeting_alerts").select("id, anchor, minutes, ministry_ids, message, sent_at, skipped, run_items(title)").eq("meeting_id", id).order("created_at"),
     quitaCanciones ? db.from("songs").select("id, title, default_key").eq("active", true).order("title").limit(500) : Promise.resolve({ data: [] }),
   ]);
@@ -141,7 +142,11 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
         finProyectado={finProyectado}
         finPlaneado={finPlaneado}
         canciones={(cancionesR.data ?? []) as { id: string; title: string; default_key: string | null }[]}
-        avisos={{ departamentos: (deptosAviso ?? []).map((d) => ({ id: d.ministry_id, nombre: d.nombre })), todos: puedeVivo || alcancesAsignar.length > 0 }}
+        avisos={{
+          departamentos: (deptosAviso ?? []).map((d) => ({ id: d.ministry_id, nombre: d.nombre })),
+          personas: (personasAviso ?? []).map((x) => ({ id: x.person_id, nombre: x.nombre, ministry_id: x.ministry_id, asignado: x.asignado, con_cuenta: x.con_cuenta })),
+          todos: puedeVivo || alcancesAsignar.length > 0,
+        }}
         alertas={alertas}
       />
       {m.report && <ReporteReunion reporte={m.report as unknown as Reporte} />}

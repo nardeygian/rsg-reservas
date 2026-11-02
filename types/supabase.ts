@@ -3176,7 +3176,12 @@ export type Database = {
         Returns: undefined
       }
       enviar_aviso_reunion: {
-        Args: { p_meeting_id: string; p_ministerios: string[]; p_texto: string }
+        Args: {
+          p_meeting_id: string
+          p_ministerios: string[]
+          p_personas?: string[]
+          p_texto: string
+        }
         Returns: number
       }
       es_lider_planeacion: { Args: never; Returns: boolean }
@@ -3349,6 +3354,16 @@ export type Database = {
         Returns: {
           scope_id: string
           scope_type: string
+        }[]
+      }
+      personas_para_avisar: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          asignado: boolean
+          con_cuenta: boolean
+          ministry_id: string
+          nombre: string
+          person_id: string
         }[]
       }
       promote_user_role: {

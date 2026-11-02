@@ -28,6 +28,8 @@ export type CambioVivo = {
 };
 export type AlertaVivo = { id: string; item: string; cuando: string; mensaje: string; departamentos: string; enviada: string | null; omitida: boolean };
 export type CancionOpcion = { id: string; title: string; default_key: string | null };
+// ministry_id nulo: asignado a un rol general. asignado false: viene del equipo.
+export type PersonaAviso = { id: string; nombre: string; ministry_id: string | null; asignado: boolean; con_cuenta: boolean };
 export type MiServicio = { posiciones: string[]; checklist: { id: string; moment: string; text: string; done: boolean }[] };
 export type ServidorVivo = {
   person_id: string; nombre: string; posiciones: string[]; departamento: string;
@@ -49,7 +51,7 @@ type Props = {
   assignmentIds: string[];
   cambios: CambioVivo[];
   canciones: CancionOpcion[];      // catálogo, para cambiar una canción (solo si puede)
-  avisos: { departamentos: { id: string; nombre: string }[]; todos: boolean };
+  avisos: { departamentos: { id: string; nombre: string }[]; personas: PersonaAviso[]; todos: boolean };
   alertas: AlertaVivo[];
   finProyectado: string | null;
   finPlaneado: string | null;
@@ -293,11 +295,11 @@ export function VivoPanel({ meeting, items: todos, mio, equipo, asistencia, pued
           }} />
       )}
       {avisando && (
-        <AvisoHoja departamentos={avisos.departamentos} todos={avisos.todos} pendiente={pendiente} onClose={() => setAvisando(false)}
-          onEnviar={(deptos, texto) => {
+        <AvisoHoja departamentos={avisos.departamentos} personas={avisos.personas} todos={avisos.todos} pendiente={pendiente} onClose={() => setAvisando(false)}
+          onEnviar={(deptos, texto, personas) => {
             setErr("");
             start(async () => {
-              const r = await enviarAviso(meeting.id, deptos, texto);
+              const r = await enviarAviso(meeting.id, deptos, texto, personas);
               if (!r.ok) return setErr(r.error);
               setAvisando(false);
               setOk(r.data.destinatarios === 1 ? "Aviso enviado a 1 persona." : `Aviso enviado a ${r.data.destinatarios} personas.`);
@@ -730,49 +732,107 @@ function MotivoHoja({ pedido, pendiente, onClose, onAplicar }: {
 }
 
 // Aviso a los servidores de la reunión. Quien conduce y los líderes
-// escogen departamentos (o todos); un servidor avisa a su departamento.
-function AvisoHoja({ departamentos, todos, pendiente, onClose, onEnviar }: {
-  departamentos: { id: string; nombre: string }[]; todos: boolean; pendiente: boolean; onClose: () => void;
-  onEnviar: (deptos: string[] | null, texto: string) => void;
+// escogen cualquier departamento (o todos); un servidor, el suyo. Debajo,
+// las personas de lo escogido, todas marcadas: se desmarca a quien no.
+// A un departamento le llegan sus asignados de la reunión o, si no tiene,
+// su equipo (lo decide la base).
+function AvisoHoja({ departamentos, personas, todos, pendiente, onClose, onEnviar }: {
+  departamentos: { id: string; nombre: string }[]; personas: PersonaAviso[]; todos: boolean; pendiente: boolean; onClose: () => void;
+  onEnviar: (deptos: string[] | null, texto: string, personas: string[] | null) => void;
 }) {
   const [texto, setTexto] = useState("");
-  const [sel, setSel] = useState<Set<string>>(() => new Set(todos ? [] : departamentos.map((d) => d.id)));
+  const [sel, setSel] = useState<Set<string>>(() => new Set(todos || departamentos.length !== 1 ? [] : [departamentos[0].id]));
+  const [fuera, setFuera] = useState<Set<string>>(new Set());   // personas desmarcadas
   const aTodos = todos && sel.size === 0;
-  const cambiar = (id: string) => {
+  const visibles = personas.filter((p) => p.con_cuenta && (aTodos ? true : p.ministry_id !== null && sel.has(p.ministry_id)));
+  const unicas = [...new Map(visibles.map((p) => [p.id, p])).values()].sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
+  const marcadas = unicas.filter((p) => !fuera.has(p.id));
+  const sinCuenta = new Set(personas.filter((p) => !p.con_cuenta && (aTodos || (p.ministry_id && sel.has(p.ministry_id)))).map((p) => p.id)).size;
+
+  const chip = (on: boolean) => on
+    ? { background: "var(--color-action-bg)", color: "var(--color-action-fg)" }
+    : { background: "var(--color-surface-2)", color: "var(--color-ink)" };
+  const cambiarDepto = (id: string) => {
     const n = new Set(sel);
     if (n.has(id)) n.delete(id); else n.add(id);
     setSel(n);
   };
+  const cambiarPersona = (id: string) => {
+    const n = new Set(fuera);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    setFuera(n);
+  };
+
+  function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    const deptos = aTodos ? null : [...sel];
+    // Todas marcadas: por departamento (así entra quien se sume después).
+    onEnviar(deptos, texto, marcadas.length === unicas.length ? null : marcadas.map((p) => p.id));
+  }
+
   return (
-    <Hoja titulo="Enviar aviso" subtitulo="Llega como notificación a los servidores de esta reunión." onClose={onClose}>
-      <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); onEnviar(aTodos ? null : [...sel], texto); }}>
+    <Hoja titulo="Enviar aviso" subtitulo="Llega como notificación a quienes escojas." onClose={onClose}>
+      <form className="flex flex-col gap-4" onSubmit={enviar}>
         <fieldset className="flex flex-col gap-2">
-          <legend className="field-label mb-1.5">Para</legend>
+          <legend className="field-label mb-1.5">Departamentos</legend>
           <div className="flex flex-wrap gap-2">
             {todos && (
-              <button type="button" aria-pressed={aTodos} onClick={() => setSel(new Set())}
-                className="min-h-[40px] px-3 rounded-full text-[14px] font-semibold"
-                style={aTodos ? { background: "var(--color-action-bg)", color: "var(--color-action-fg)" } : { background: "var(--color-surface-2)", color: "var(--color-ink)" }}>
+              <button type="button" aria-pressed={aTodos} onClick={() => { setSel(new Set()); setFuera(new Set()); }}
+                className="min-h-[40px] px-3 rounded-full text-[14px] font-semibold" style={chip(aTodos)}>
                 Todos
               </button>
             )}
             {departamentos.map((d) => (
-              <button key={d.id} type="button" aria-pressed={sel.has(d.id)} onClick={() => (todos || departamentos.length > 1) && cambiar(d.id)}
-                className="min-h-[40px] px-3 rounded-full text-[14px] font-semibold"
-                style={sel.has(d.id) ? { background: "var(--color-action-bg)", color: "var(--color-action-fg)" } : { background: "var(--color-surface-2)", color: "var(--color-ink)" }}>
+              <button key={d.id} type="button" aria-pressed={sel.has(d.id)} onClick={() => { cambiarDepto(d.id); setFuera(new Set()); }}
+                className="min-h-[40px] px-3 rounded-full text-[14px] font-semibold" style={chip(sel.has(d.id))}>
                 {d.nombre}
               </button>
             ))}
           </div>
-          {!todos && <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>Como servidor, avisas a tu departamento en esta reunión.</p>}
+          {!todos && <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>Como servidor, avisas a tu departamento.</p>}
         </fieldset>
+
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="field-label mb-1.5 flex items-center gap-2">
+            Personas · {marcadas.length} de {unicas.length}
+            {unicas.length > 0 && (
+              <button type="button" className="text-[13px] font-semibold" style={{ color: "var(--color-accent)" }}
+                onClick={() => setFuera(marcadas.length ? new Set(unicas.map((p) => p.id)) : new Set())}>
+                {marcadas.length ? "Ninguna" : "Todas"}
+              </button>
+            )}
+          </legend>
+          {unicas.length === 0 ? (
+            <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+              {aTodos || sel.size ? "Nadie con cuenta en lo escogido todavía." : "Escoge uno o más departamentos."}
+            </p>
+          ) : (
+            <ul className="flex flex-col max-h-[220px] overflow-y-auto rounded-xl" style={{ border: "1px solid var(--color-line)" }}>
+              {unicas.map((p) => (
+                <li key={p.id} className="border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
+                  <label className="flex items-center gap-3 px-3 min-h-[44px] text-[14px]">
+                    <input type="checkbox" checked={!fuera.has(p.id)} onChange={() => cambiarPersona(p.id)} />
+                    <span className="flex-1 min-w-0 truncate" style={{ color: "var(--color-ink)" }}>{p.nombre}</span>
+                    {p.asignado && <span className="text-[12px]" style={{ color: "var(--color-muted)" }}>en esta reunión</span>}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+          {sinCuenta > 0 && (
+            <p className="text-[12px]" style={{ color: "var(--color-faint)" }}>
+              {sinCuenta === 1 ? "1 persona no tiene cuenta y no recibe avisos." : `${sinCuenta} personas no tienen cuenta y no reciben avisos.`}
+            </p>
+          )}
+        </fieldset>
+
         <label className="flex flex-col gap-1.5">
           <span className="field-label">Mensaje</span>
           <textarea className="input py-2" rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={500}
-            placeholder="Ej.: LMRSG, suban al escenario" autoFocus />
+            placeholder="Ej.: LMRSG, suban al escenario" />
         </label>
-        <button type="submit" className="btn-primary" disabled={pendiente || !texto.trim() || (!aTodos && sel.size === 0)}>
-          {pendiente ? "Enviando…" : "Enviar"}
+        <button type="submit" className="btn-primary" disabled={pendiente || !texto.trim() || marcadas.length === 0}>
+          {pendiente ? "Enviando…" : marcadas.length ? `Enviar a ${marcadas.length} ${marcadas.length === 1 ? "persona" : "personas"}` : "Enviar"}
         </button>
       </form>
     </Hoja>

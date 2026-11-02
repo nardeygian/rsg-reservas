@@ -150,14 +150,17 @@ export async function reemplazarCancion(meetingId: string, itemId: string, songI
 
 // Aviso a los servidores de la reunión. ministerios null = todos los que
 // el usuario puede avisar (la base decide cuáles son).
-export async function enviarAviso(meetingId: string, ministerios: string[] | null, texto: string): Promise<Resultado<{ destinatarios: number }>> {
+// personas: si viene, solo a esas (dentro de lo que el usuario puede avisar).
+export async function enviarAviso(meetingId: string, ministerios: string[] | null, texto: string, personas: string[] | null = null): Promise<Resultado<{ destinatarios: number }>> {
   if (!UUID.test(meetingId)) return { ok: false, error: MENSAJES.no_encontrada };
   if (ministerios && !ministerios.every((m) => UUID.test(m))) return { ok: false, error: MENSAJES.sin_permiso };
+  if (personas && (!personas.length || !personas.every((p) => UUID.test(p)))) return { ok: false, error: "Escoge al menos una persona." };
   const limpio = texto.trim().slice(0, 500);
   if (!limpio) return { ok: false, error: MENSAJES.texto_requerido };
   const db = await createClient();
   const { data, error } = await db.rpc("enviar_aviso_reunion", {
     p_meeting_id: meetingId, p_ministerios: (ministerios ?? null) as string[], p_texto: limpio,
+    ...(personas ? { p_personas: personas } : {}),
   });
   if (error) return fallo(error);
   refrescar(meetingId);
