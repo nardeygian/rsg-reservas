@@ -67,7 +67,7 @@ export default async function CalendarioPage({
     reunionesByGid[r.id] = {
       id: r.id,
       status: r.status,
-      orden: [...(r.run_items ?? [])].sort((x, y) => x.sort - y.sort).filter((i) => i.kind !== "encabezado" && !i.removed_at).map((i) => i.title),
+      orden: [...(r.run_items ?? [])].sort((x, y) => x.sort - y.sort).filter((i) => i.kind !== "encabezado" && i.kind !== "jornada" && !i.removed_at).map((i) => i.title),
       equipo: [...deps.entries()].sort(([a], [b]) => a.localeCompare(b, "es")).map(([departamento, personas]) => ({ departamento, personas })),
     };
   }

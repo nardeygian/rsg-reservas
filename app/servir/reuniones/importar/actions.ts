@@ -12,7 +12,7 @@ import { servirClient, usuarioActual, type ServirClient } from "../_lib/db";
 import { esFecha, esHora, instanteBogota } from "../_lib/fechas";
 import { normalizar, type DecisionCancion } from "./_lib/revision";
 
-const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "otro"];
+const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "jornada", "otro"];
 const MAX_ITEMS = 120;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

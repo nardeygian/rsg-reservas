@@ -88,7 +88,9 @@ export default async function EstadisticasPage({
           desde={desde}
           hoy={hoy}
         />
-      ) : (
+      ) : null}
+      {vista === "reuniones" && <AsistentesPeriodo desde={desde} hoy={hoy} tipoId={tipoId} />}
+      {vista === "salud" && (
         <Salud
           filas={((await db.rpc("salud_servidores", depId ? { p_ministry_id: depId } : {})).data ?? []) as SaludServidor[]}
           ajustes={ajustesR.data}
@@ -336,5 +338,76 @@ async function Atrasos({ desde, hoy }: { desde: string; hoy: string }) {
         </section>
       )}
     </div>
+  );
+}
+
+// Asistentes de cada reunión del día (lo registra Protocolo en vivo). Por
+// tipo: promedio de la primera, segunda… reunión; y las últimas fechas.
+async function AsistentesPeriodo({ desde, hoy, tipoId }: { desde: string; hoy: string; tipoId?: string }) {
+  const db = await createClient();
+  const { data } = await db.rpc("asistentes_reuniones", { p_desde: desde, p_hasta: hoy });
+  const filas = (data ?? []).filter((f) => !tipoId || f.meeting_type_id === tipoId);
+  if (filas.length === 0) {
+    return (
+      <section className="card p-4 md:p-5 flex flex-col gap-1">
+        <h2 className="text-[15px] font-semibold">Asistentes</h2>
+        <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+          Todavía no hay asistentes registrados en este periodo. Los registra el líder de Protocolo en vivo, al terminar cada reunión.
+        </p>
+      </section>
+    );
+  }
+  const total = filas.reduce((a, f) => a + f.asistentes, 0);
+  const promedio = Math.round(total / filas.length);
+  const porDia = new Map<string, { fecha: string; reunion: string; jornadas: { titulo: string; n: number; asistentes: number }[] }>();
+  for (const f of filas) {
+    const d = porDia.get(f.meeting_id) ?? { fecha: f.fecha, reunion: f.reunion, jornadas: [] };
+    d.jornadas.push({ titulo: f.jornada, n: f.n, asistentes: f.asistentes });
+    porDia.set(f.meeting_id, d);
+  }
+  const porTipo = new Map<string, Map<number, number[]>>();
+  for (const f of filas) {
+    const t = porTipo.get(f.tipo ?? "Sin tipo") ?? new Map<number, number[]>();
+    t.set(f.n, [...(t.get(f.n) ?? []), f.asistentes]);
+    porTipo.set(f.tipo ?? "Sin tipo", t);
+  }
+  const prom = (l: number[]) => Math.round(l.reduce((a, b) => a + b, 0) / l.length);
+
+  return (
+    <section className="card p-4 md:p-5 flex flex-col gap-4">
+      <h2 className="text-[15px] font-semibold">Asistentes</h2>
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+        <Cifra titulo="Asistentes en el periodo" valor={total} detalle={`${porDia.size} ${porDia.size === 1 ? "fecha" : "fechas"}`} />
+        <Cifra titulo="Promedio por reunión" valor={promedio} detalle={`${filas.length} reuniones con conteo`} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <h3 className="eyebrow">Promedio por tipo</h3>
+        <ul className="flex flex-col">
+          {[...porTipo].map(([tipo, js]) => (
+            <li key={tipo} className="flex flex-wrap items-baseline justify-between gap-2 py-1.5 text-[14px] border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
+              <span style={{ color: "var(--color-ink)" }}>{tipo}</span>
+              <span className="tabular" style={{ color: "var(--color-muted)" }}>
+                {[...js].sort(([a], [b]) => a - b).map(([n, l]) => js.size > 1 ? `${n}.ª ${prom(l)}` : `${prom(l)}`).join(" · ")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="flex flex-col gap-2">
+        <h3 className="eyebrow">Últimas fechas</h3>
+        <ul className="flex flex-col">
+          {[...porDia.values()].slice(0, 12).map((d, i) => (
+            <li key={i} className="flex gap-3 py-1.5 text-[13px] border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
+              <span className="tabular flex-none w-[64px]" style={{ color: "var(--color-muted)" }}>{fechaCorta(d.fecha)}</span>
+              <span className="flex-1 min-w-0 truncate" style={{ color: "var(--color-ink)" }}>{d.reunion}</span>
+              <span className="tabular flex-none" style={{ color: "var(--color-ink)" }}>
+                {d.jornadas.sort((a, b) => a.n - b.n).map((j) => j.asistentes).join(" + ")}
+                {d.jornadas.length > 1 ? ` = ${d.jornadas.reduce((a, j) => a + j.asistentes, 0)}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }

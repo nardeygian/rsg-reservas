@@ -9,7 +9,7 @@ import type { ClaseReunion, Conteo, ItemOrdenPlantilla, Resultado, TipoItemOrden
 import { servirClient, usuarioActual } from "../reuniones/_lib/db";
 import { esHora } from "../reuniones/_lib/fechas";
 
-const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "otro"];
+const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "jornada", "otro"];
 const CLASES: ClaseReunion[] = ["ministerio", "servolucion", "evento"];
 const CONTEOS: Conteo[] = ["min", "serv"];
 

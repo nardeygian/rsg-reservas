@@ -1100,6 +1100,62 @@ export type Database = {
           },
         ]
       }
+      meeting_headcounts: {
+        Row: {
+          count: number
+          id: string
+          jornada_item_id: string | null
+          meeting_id: string
+          recorded_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          count: number
+          id?: string
+          jornada_item_id?: string | null
+          meeting_id: string
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          count?: number
+          id?: string
+          jornada_item_id?: string | null
+          meeting_id?: string
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_headcounts_jornada_item_id_fkey"
+            columns: ["jornada_item_id"]
+            isOneToOne: false
+            referencedRelation: "run_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_headcounts_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_headcounts_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "service_units"
+            referencedColumns: ["meeting_id"]
+          },
+          {
+            foreignKeyName: "meeting_headcounts_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_imports: {
         Row: {
           created_at: string
@@ -2207,6 +2263,7 @@ export type Database = {
           inactivo_semanas: number
           ministerio_creativos_id: string | null
           ministerio_musica_id: string | null
+          ministerio_protocolo_id: string | null
           sobrecargado_desde: number
           updated_at: string
           updated_by: string | null
@@ -2218,6 +2275,7 @@ export type Database = {
           inactivo_semanas?: number
           ministerio_creativos_id?: string | null
           ministerio_musica_id?: string | null
+          ministerio_protocolo_id?: string | null
           sobrecargado_desde?: number
           updated_at?: string
           updated_by?: string | null
@@ -2229,6 +2287,7 @@ export type Database = {
           inactivo_semanas?: number
           ministerio_creativos_id?: string | null
           ministerio_musica_id?: string | null
+          ministerio_protocolo_id?: string | null
           sobrecargado_desde?: number
           updated_at?: string
           updated_by?: string | null
@@ -2245,6 +2304,13 @@ export type Database = {
           {
             foreignKeyName: "servir_ajustes_ministerio_musica_id_fkey"
             columns: ["ministerio_musica_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servir_ajustes_ministerio_protocolo_id_fkey"
+            columns: ["ministerio_protocolo_id"]
             isOneToOne: false
             referencedRelation: "ministries"
             referencedColumns: ["id"]
@@ -2965,6 +3031,19 @@ export type Database = {
           suggested: string
         }[]
       }
+      asistentes_reuniones: {
+        Args: { p_desde: string; p_hasta: string }
+        Returns: {
+          asistentes: number
+          fecha: string
+          jornada: string
+          meeting_id: string
+          meeting_type_id: string
+          n: number
+          reunion: string
+          tipo: string
+        }[]
+      }
       atrasar_reunion: {
         Args: {
           p_categoria: string
@@ -3063,6 +3142,10 @@ export type Database = {
       }
       avisar_cambio_vivo: {
         Args: { p_cuerpo: string; p_meeting_id: string; p_titulo: string }
+        Returns: undefined
+      }
+      avisar_conteo: {
+        Args: { p_jornada_item_id: string; p_meeting_id: string }
         Returns: undefined
       }
       avisar_creativos: {
@@ -3295,6 +3378,19 @@ export type Database = {
           name: string
         }[]
       }
+      jornada_de_item: { Args: { p_item_id: string }; Returns: string }
+      jornadas_reunion: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          count: number
+          jornada_item_id: string
+          n: number
+          registrado_at: string
+          registrado_por: string
+          sort: number
+          titulo: string
+        }[]
+      }
       meeting_start: {
         Args: { m: Database["public"]["Tables"]["meetings"]["Row"] }
         Returns: string
@@ -3388,6 +3484,10 @@ export type Database = {
         Args: { p_meeting_id: string }
         Returns: boolean
       }
+      puede_registrar_asistentes: {
+        Args: { p_meeting_id: string }
+        Returns: boolean
+      }
       puede_ver_estadisticas: { Args: never; Returns: boolean }
       quitar_item: {
         Args: { p_item_id: string; p_quitar?: boolean }
@@ -3457,6 +3557,14 @@ export type Database = {
           p_token?: string
         }
         Returns: string
+      }
+      registrar_asistentes: {
+        Args: {
+          p_count: number
+          p_jornada_item_id: string
+          p_meeting_id: string
+        }
+        Returns: undefined
       }
       reservas_de_reunion: {
         Args: { p_meeting_id: string }

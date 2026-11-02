@@ -19,7 +19,7 @@ import type {
 import { servirClient, usuarioActual, type ServirClient } from "./_lib/db";
 import { esFecha, fechaLarga, instanteBogota, moverAFecha } from "./_lib/fechas";
 
-const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "otro"];
+const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "jornada", "otro"];
 const MAX_SERIE = 60;
 const MAX_ITEMS = 80;
 

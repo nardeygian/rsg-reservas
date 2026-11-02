@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fechaLarga, hoyBogota } from "@/app/servir/reuniones/_lib/fechas";
 import { Encabezado, EstadoChip, Pagina } from "@/app/servir/reuniones/_components/ui";
 import { ReporteReunion, type Reporte } from "@/app/servir/reuniones/_components/ReporteReunion";
+import { Asistentes, type JornadaConteo } from "./Asistentes";
 import { VivoPanel, type AlertaVivo, type AsistenciaFila, type CambioVivo, type ItemVivo, type MiServicio, type ServidorVivo } from "./VivoPanel";
 
 export const metadata = { title: "En vivo · Servir" };
@@ -43,7 +44,9 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
       .eq("meeting_id", id).or("kind.neq.avanzar,minutes.neq.1").order("created_at", { ascending: false }).limit(30),
     db.rpc("puede_quitar_canciones", { p_meeting_id: id }).then((r) => r.data === true),
   ]);
-  const [{ data: deptosAviso }, { data: personasAviso }, { data: alertasR }, cancionesR] = await Promise.all([
+  const [{ data: jornadasR }, { data: puedeContar }, { data: deptosAviso }, { data: personasAviso }, { data: alertasR }, cancionesR] = await Promise.all([
+    db.rpc("jornadas_reunion", { p_meeting_id: id }),
+    db.rpc("puede_registrar_asistentes", { p_meeting_id: id }),
     db.rpc("departamentos_para_avisar", { p_meeting_id: id }),
     db.rpc("personas_para_avisar", { p_meeting_id: id }),
     db.from("meeting_alerts").select("id, anchor, minutes, ministry_ids, message, sent_at, skipped, run_items(title)").eq("meeting_id", id).order("created_at"),
@@ -78,6 +81,21 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
   const finPlaneado = m.starts_at
     ? new Date(Date.parse(m.starts_at) + items.reduce((t, i) => t + i.planned_duration_sec, 0) * 1000).toISOString()
     : null;
+  // Una reunión del día "terminó" cuando el punto actual ya está en una
+  // posterior, o cuando la reunión se cerró o pasó el final del orden.
+  const posicion = new Map((itemsR.data ?? []).map((i) => [i.id, i.sort]));
+  const sortActual = m.current_item_id ? posicion.get(m.current_item_id) ?? null : null;
+  const acabo = m.status === "cerrada" || (m.status === "en_vivo" && m.actual_start !== null && m.current_item_id === null);
+  const filasJ = jornadasR ?? [];
+  const jornadas: JornadaConteo[] = filasJ.map((j, k) => {
+    const siguiente = filasJ[k + 1];
+    return {
+      id: j.jornada_item_id, titulo: j.titulo, cantidad: j.count, quien: j.registrado_por,
+      terminada: acabo || (j.jornada_item_id !== null && !!siguiente && sortActual !== null && sortActual >= siguiente.sort),
+    };
+  });
+  const verAsistentes = (puedeContar === true && ["en_vivo", "cerrada", "publicada"].includes(m.status)) || jornadas.some((j) => j.cantidad !== null);
+
   const cambios: CambioVivo[] = (cambiosR.data ?? []).map((c) => ({
     id: c.id, kind: c.kind, minutes: c.minutes, item_title: c.item_title, created_at: c.created_at,
     categoria: c.reason_category, motivo: c.reason, quien: (c.profiles as { full_name: string | null } | null)?.full_name ?? null,
@@ -130,6 +148,7 @@ export default async function VivoPage({ params }: { params: Promise<{ id: strin
       >
         <EstadoChip status={m.status} />
       </Encabezado>
+      {verAsistentes && <Asistentes meetingId={m.id} jornadas={jornadas} editable={puedeContar === true} />}
       <VivoPanel
         meeting={{ id: m.id, status: m.status, current_item_id: m.current_item_id, actual_start: m.actual_start, cerrada: !!m.attendance_closed_at, delay_minutes: m.delay_minutes }}
         items={items}

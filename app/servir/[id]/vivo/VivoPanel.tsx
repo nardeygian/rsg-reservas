@@ -63,6 +63,8 @@ const hora = (iso: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) : "";
 
 const MOMENTOS = ["antes", "durante", "despues"];
+// Encabezados e "Inicio de reunión": no se numeran ni se ajustan.
+const MARCA = ["encabezado", "jornada"];
 
 function reloj(seg: number): string {
   const s = Math.max(0, Math.floor(Math.abs(seg)));
@@ -89,7 +91,8 @@ function useEnVivo(meetingId: string, assignmentIds: string[]) {
         .on("postgres_changes", { event: "*", schema: "public", table: "meetings", filter: `id=eq.${meetingId}` }, refrescar)
         .on("postgres_changes", { event: "*", schema: "public", table: "run_items", filter: `meeting_id=eq.${meetingId}` }, refrescar)
         .on("postgres_changes", { event: "*", schema: "public", table: "assignments", filter: `meeting_id=eq.${meetingId}` }, refrescar)
-        .on("postgres_changes", { event: "*", schema: "public", table: "attendance", filter: `meeting_id=eq.${meetingId}` }, refrescar);
+        .on("postgres_changes", { event: "*", schema: "public", table: "attendance", filter: `meeting_id=eq.${meetingId}` }, refrescar)
+        .on("postgres_changes", { event: "*", schema: "public", table: "meeting_headcounts", filter: `meeting_id=eq.${meetingId}` }, refrescar);
       if (ids) {
         canal = canal.on("postgres_changes", { event: "*", schema: "public", table: "checklist_items", filter: `assignment_id=in.(${ids})` }, refrescar);
       }
@@ -331,20 +334,20 @@ function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, pue
           const esActual = i.id === actualId;
           const hecho = !!i.actual_end && !esActual && !i.removed;
           const real = i.actual_start && i.actual_end ? (Date.parse(i.actual_end) - Date.parse(i.actual_start)) / 1000 : null;
-          const editable = i.kind !== "encabezado" && (ajustar !== null || puedeQuitar(i));
-          if (i.kind !== "encabezado" && !i.removed) n += 1;
+          const editable = !MARCA.includes(i.kind) && (ajustar !== null || puedeQuitar(i));
+          if (!MARCA.includes(i.kind) && !i.removed) n += 1;
           const contenido = (
             <>
               <span className="w-6 text-right tabular text-[12px] flex-none" style={{ color: "var(--color-faint)" }}>
-                {i.kind === "encabezado" || i.removed ? "" : hecho ? <Icon name="check" size={14} style={{ color: "var(--color-up)" }} /> : n}
+                {MARCA.includes(i.kind) || i.removed ? "" : hecho ? <Icon name="check" size={14} style={{ color: "var(--color-up)" }} /> : n}
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[15px] truncate"
-                  style={{ color: hecho || i.removed ? "var(--color-muted)" : "var(--color-ink)", fontWeight: esActual || i.kind === "encabezado" ? 600 : 400,
+                  style={{ color: hecho || i.removed ? "var(--color-muted)" : "var(--color-ink)", fontWeight: esActual || MARCA.includes(i.kind) ? 600 : 400,
                            textDecoration: i.removed ? "line-through" : undefined }}>
                   {i.title}
                 </span>
-                {!i.removed && !hecho && i.proyectado && i.kind !== "encabezado" && (
+                {!i.removed && !hecho && i.proyectado && !MARCA.includes(i.kind) && (
                   <span className="block text-[12px] tabular" style={{ color: "var(--color-muted)" }}>{hora(i.proyectado)}</span>
                 )}
               </span>
@@ -362,7 +365,7 @@ function Orden({ items, actualId, puedeSaltar, pendiente, onSaltar, ajustar, pue
           return (
             <li key={i.id} className="border-b last:border-b-0" style={{ borderColor: "var(--color-line)" }}>
               <div className="flex items-stretch" style={estilo}>
-                {puedeSaltar && i.kind !== "encabezado" && !i.removed ? (
+                {puedeSaltar && !MARCA.includes(i.kind) && !i.removed ? (
                   <button type="button" disabled={pendiente} onClick={() => onSaltar(i.id)} aria-current={esActual ? "step" : undefined}
                     className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 min-h-[52px] text-left">{contenido}</button>
                 ) : (

@@ -9,6 +9,7 @@ export type ItemEditable = ItemOrdenPlantilla & { id?: string };
 type Fila = ItemEditable & { key: string };
 
 export const TIPOS_ITEM: { value: TipoItemOrden; label: string }[] = [
+  { value: "jornada", label: "Inicio de reunión" },
   { value: "encabezado", label: "Encabezado" },
   { value: "cancion", label: "Canción" },
   { value: "predica", label: "Prédica" },
@@ -94,7 +95,7 @@ export function EditorOrden({
 
   function agregar(kind: TipoItemOrden) {
     const key = nuevaKey();
-    const dur = kind === "cancion" ? 300 : kind === "encabezado" ? 0 : 600;
+    const dur = kind === "cancion" ? 300 : kind === "encabezado" || kind === "jornada" ? 0 : 600;
     setTextos((t) => ({ ...t, [key]: escribirDuracion(dur) }));
     cambiar([...filas, { key, kind, title: "", duration_sec: dur, song_id: null, responsible_position_id: null }]);
   }
@@ -130,7 +131,8 @@ export function EditorOrden({
 
       <ol className="flex flex-col gap-2">
         {filas.map((f, i) => {
-          const esEncabezado = f.kind === "encabezado";
+          // "Inicio de reunión" separa las reuniones del día: se ve como un encabezado marcado.
+          const esEncabezado = f.kind === "encabezado" || f.kind === "jornada";
           return (
             <li
               key={f.key}
@@ -147,7 +149,7 @@ export function EditorOrden({
               className={`flex gap-3 rounded-[var(--radius-control)] px-3 ${editable ? "flex-col md:flex-row md:items-start py-3" : "items-start py-2.5"}`}
               style={{
                 background: esEncabezado ? "var(--color-surface-2)" : "var(--color-bg-elev)",
-                border: "1px solid var(--color-line)",
+                border: f.kind === "jornada" ? "1.5px solid var(--color-accent)" : "1px solid var(--color-line)",
                 opacity: arrastrando === f.key ? 0.5 : 1,
               }}
             >

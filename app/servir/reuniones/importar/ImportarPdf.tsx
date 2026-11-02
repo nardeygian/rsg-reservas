@@ -17,7 +17,7 @@ import {
 type Tipo = { id: string; name: string; usual_time: string | null; duration_min: number | null };
 
 const KIND_LABEL: Record<TipoItemOrden, string> = {
-  cancion: "Canción", predica: "Prédica", oracion: "Oración", anuncio: "Anuncio", encabezado: "Encabezado", otro: "Otro",
+  cancion: "Canción", predica: "Prédica", oracion: "Oración", anuncio: "Anuncio", encabezado: "Encabezado", jornada: "Inicio de reunión", otro: "Otro",
 };
 const MAX_MB = 4;
 

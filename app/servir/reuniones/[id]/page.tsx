@@ -14,6 +14,7 @@ import { ActualizarEnVivo } from "@/app/_components/ActualizarEnVivo";
 import { misEquipos } from "../../equipo/_lib/datos";
 import { ServidoresReunion } from "./ServidoresReunion";
 import { AvisosAutomaticos, type AvisoAuto } from "./AvisosAutomaticos";
+import { Asistentes } from "../../[id]/vivo/Asistentes";
 
 export const metadata = { title: "Reunión · Servir" };
 
@@ -72,6 +73,10 @@ export default async function ReunionPage({ params, searchParams }: {
   // Pestaña Servidores: solo para quien tiene algún equipo que asignar.
   const [equipos, { data: superAdmin }] = await Promise.all([misEquipos(supabase), supabase.rpc("is_super_admin")]);
   const asignaAlgo = equipos.length > 0;
+  const [{ data: conteos }, { data: puedeContar }] = await Promise.all([
+    supabase.rpc("jornadas_reunion", { p_meeting_id: id }),
+    supabase.rpc("puede_registrar_asistentes", { p_meeting_id: id }),
+  ]);
   // Avisos automáticos (solo quien planea los ve y edita aquí).
   const [{ data: avisosR }, { data: deptosR }] = puede.planear && !(vista === "servidores")
     ? await Promise.all([
@@ -190,11 +195,15 @@ export default async function ReunionPage({ params, searchParams }: {
               editable={montajeGlobal === true && (m.status === "borrador" || m.status === "publicada")}
             />
           )}
+          {(m.status === "cerrada" || m.status === "en_vivo" || (conteos ?? []).some((j) => j.count !== null)) && (
+            <Asistentes meetingId={m.id} editable={puedeContar === true}
+              jornadas={(conteos ?? []).map((j) => ({ id: j.jornada_item_id, titulo: j.titulo, cantidad: j.count, quien: j.registrado_por, terminada: m.status === "cerrada" }))} />
+          )}
           {puede.planear && (
             <AvisosAutomaticos
               meetingId={m.id}
               avisos={(avisosR ?? []) as AvisoAuto[]}
-              puntos={(items ?? []).filter((i) => i.kind !== "encabezado").map((i) => ({ id: i.id, title: i.title }))}
+              puntos={(items ?? []).filter((i) => i.kind !== "encabezado" && i.kind !== "jornada").map((i) => ({ id: i.id, title: i.title }))}
               departamentos={(deptosR ?? []) as { id: string; name: string }[]}
               editable={m.status !== "cerrada" && m.status !== "cancelada"}
             />

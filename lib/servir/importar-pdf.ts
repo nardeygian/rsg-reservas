@@ -38,7 +38,7 @@ export type Lectura = {
   advertencias: string[];
 };
 
-const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "otro"];
+const KINDS: TipoItemOrden[] = ["cancion", "predica", "oracion", "anuncio", "encabezado", "jornada", "otro"];
 
 const texto = { type: "string" };
 const textoONulo = { anyOf: [{ type: "string" }, { type: "null" }] };
@@ -92,6 +92,7 @@ orden: cada renglón del orden, en el mismo orden del documento.
 - hora: la hora del renglón en 24 h (HH:MM); null si no tiene. Si un a.m./p.m. es un error evidente por la secuencia (por ejemplo "11:50 p.m." entre 11:45 a.m. y 12:35 p.m.), corrígelo y avisa en advertencias.
 - titulo: el texto del renglón sin la hora.
 - tipo: cancion (una canción), predica (prédica o mensaje), oracion, anuncio, encabezado (bloques o secciones como "Alabanza y adoración (Bloque 1)") u otro (logística, montaje, llegadas, etc.).
+  Si el documento tiene varias reuniones seguidas el mismo día (p. ej. una "Segunda reunión" o "Jornada 2"), usa tipo jornada para el renglón que marca dónde empieza cada una, y pon también un renglón jornada "Primera reunión" justo antes del primer punto de la primera reunión (después de llegadas y montaje). Con una sola reunión no uses jornada.
 - duracion_seg: si el renglón da duración ("6:24", "5 min"); 0:00 cuenta como null.
 - cancion: solo para canciones: titulo de la canción sin el tono, tono (la nota del acorde, p. ej. "A", "Bb", "F#m") y dirige (quien la dirige); null en los demás renglones.
 Las canciones van justo después del encabezado del bloque al que pertenecen. Si el documento repite el mismo renglón por un salto de página, ponlo una sola vez.

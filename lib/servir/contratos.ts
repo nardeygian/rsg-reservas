@@ -42,7 +42,8 @@ export type ClaseReunion = "ministerio" | "servolucion" | "evento";
 export type Conteo = "min" | "serv";
 export type EstadoAsignacion = "pendiente" | "aceptada" | "rechazada" | "cancelada";
 export type MomentoChecklist = "antes" | "durante" | "despues";
-export type TipoItemOrden = "cancion" | "predica" | "oracion" | "anuncio" | "encabezado" | "otro";
+// jornada: "Inicio de reunión", marca dónde empieza cada reunión del día.
+export type TipoItemOrden = "cancion" | "predica" | "oracion" | "anuncio" | "encabezado" | "jornada" | "otro";
 export type EstadoAsistencia = "asistio" | "tarde" | "ausente";
 export type Audiencia = "todos" | "departamento" | "area" | "reunion";
 export type Plataforma = "web" | "android" | "ios";

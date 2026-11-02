@@ -166,3 +166,16 @@ export async function enviarAviso(meetingId: string, ministerios: string[] | nul
   refrescar(meetingId);
   return { ok: true, data: { destinatarios: data ?? 0 } };
 }
+
+// Asistentes de una reunión del día (jornadaId nulo si el orden no tiene
+// "Inicio de reunión"). Registra el líder de Protocolo o quien conduce.
+export async function registrarAsistentes(meetingId: string, jornadaId: string | null, cantidad: number): Promise<Resultado> {
+  if (!UUID.test(meetingId) || (jornadaId !== null && !UUID.test(jornadaId))) return { ok: false, error: MENSAJES.item_invalido };
+  if (!Number.isInteger(cantidad) || cantidad < 0 || cantidad > 100000) return { ok: false, error: "Escribe un número válido de asistentes." };
+  const db = await createClient();
+  const { error } = await db.rpc("registrar_asistentes", { p_meeting_id: meetingId, p_jornada_item_id: jornadaId as string, p_count: cantidad });
+  if (error) return fallo(error);
+  refrescar(meetingId);
+  revalidatePath("/servir/estadisticas");
+  return { ok: true, data: undefined };
+}
