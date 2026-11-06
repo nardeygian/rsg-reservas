@@ -2,7 +2,7 @@ import { Icon } from "@/app/_components/ui/Icon";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionProfile } from "@/lib/auth";
+import { getSessionProfile, soloRevisoria } from "@/lib/auth";
 import {
   formatDateLong,
   formatTime,
@@ -68,6 +68,7 @@ export default async function ApprovalsPage({
 }: {
   searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
+  await soloRevisoria();
   const { error, ok } = await searchParams;
 
   const session = await getSessionProfile();

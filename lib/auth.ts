@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import type { Database } from "@/types/supabase";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,6 +16,7 @@ export type NavCaps = {
   donaciones:      DonacionesAccess;
   discipulos:      boolean;
   admin:           boolean;
+  revisoria:       boolean;        // reporte fiscal de donaciones (/revisoria)
   disciGrupoId:    string | null; // grupo_id del líder de discipulado
   ministerioNombre: string | null; // nombre del ministerio del pastor (para filtrar servicio)
 };
@@ -41,6 +43,16 @@ export function computeNavCaps(
       (r.ministries as { name: string } | null)?.name === "Planeación");
   const isStudio = role === "studio_admin";
 
+  // Revisora fiscal: solo el reporte de donaciones. Ningún otro módulo, aunque
+  // tenga roles adicionales (lo más restrictivo gana).
+  if (role === "revisor_fiscal") {
+    return {
+      inicio: false, calendario: false, reservas: false,
+      servicio: "none", donaciones: "none", discipulos: false, admin: false,
+      revisoria: true, disciGrupoId: null, ministerioNombre: null,
+    };
+  }
+
   return {
     inicio:          true,
     calendario:      !isStudio,
@@ -53,6 +65,7 @@ export function computeNavCaps(
                    : "none",
     discipulos:      isSuper || isPSede || isLD,
     admin:           isSuper,
+    revisoria:       isSuper || isPSede,
     disciGrupoId,
     ministerioNombre,
   };
@@ -95,6 +108,17 @@ export const getUserCaps = cache(async (): Promise<NavCaps | null> => {
 
   return computeNavCaps(role, extraRows, disciGrupoId, ministerioNombre);
 });
+
+/**
+ * La revisora fiscal solo puede estar en /revisoria y su perfil. Las páginas
+ * de los demás módulos lo llaman al inicio; la base igual le niega los datos.
+ */
+export async function soloRevisoria(): Promise<void> {
+  const caps = await getUserCaps();
+  if (caps && caps.revisoria && !caps.inicio) {
+    redirect("/revisoria");
+  }
+}
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 

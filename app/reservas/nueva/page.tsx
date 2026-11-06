@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { soloRevisoria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   nextHourBogota,
@@ -31,6 +32,7 @@ export default async function NewBookingPage({
 }: {
   searchParams: Promise<{ error?: string; space?: string; date?: string }>;
 }) {
+  await soloRevisoria();
   const { error, space: prefilledSpace, date: datePrefill } = await searchParams;
 
   const supabase = await createClient();

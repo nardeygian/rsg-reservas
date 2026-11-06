@@ -13,6 +13,7 @@ const VALID_ROLES = [
   "admin_casa",
   "studio_admin",
   "planeacion",
+  "revisor_fiscal",
   "super_admin",
 ] as const;
 

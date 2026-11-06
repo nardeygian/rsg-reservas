@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { svReadData } from "@/app/servicio/_lib/data";
 import { donReadData, donacionesParaLider } from "@/app/donaciones/_lib/data";
-import { getUserCaps } from "@/lib/auth";
+import { getUserCaps, soloRevisoria } from "@/lib/auth";
 import { CommunitySwitch } from "@/app/_components/ui/CommunitySwitch";
 import { DiscipulosShell } from "./_components/DiscipulosShell";
 import { DiscipulosAdminShell } from "./_components/DiscipulosAdminShell";
@@ -12,6 +12,7 @@ export default async function DiscipulosPage({
 }: {
   searchParams: Promise<{ preview?: string; grupo?: string }>;
 }) {
+  await soloRevisoria();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");

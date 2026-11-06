@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUserCaps } from "@/lib/auth";
+import { getUserCaps, soloRevisoria } from "@/lib/auth";
 import { svReadData } from "./_lib/data";
 import { ServicioShell } from "./_components/ServicioShell";
 import type { SvData } from "./_lib/types";
@@ -9,6 +9,7 @@ export default async function ServicioPage({
 }: {
   searchParams: Promise<{ preview?: string }>;
 }) {
+  await soloRevisoria();
   const caps = await getUserCaps();
   if (!caps) redirect("/login");
   if (caps.servicio === "none") redirect("/?error=Sin+acceso+al+módulo+de+Servicio");

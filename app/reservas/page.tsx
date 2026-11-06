@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { soloRevisoria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   dayKey,
@@ -43,6 +44,7 @@ export default async function ReservasPage({
 }: {
   searchParams: Promise<{ date?: string; view?: string }>;
 }) {
+  await soloRevisoria();
   const params = await searchParams;
   const view = params.view === "mes" ? "mes" : "dia";
   const anchor = parseDateParam(params.date);

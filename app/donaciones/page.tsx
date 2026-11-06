@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUserCaps } from "@/lib/auth";
+import { getUserCaps, soloRevisoria } from "@/lib/auth";
 import { donVincularAction } from "./actions";
 import { donReadData } from "./_lib/data";
 import { svReadData } from "@/app/servicio/_lib/data";
@@ -9,6 +9,7 @@ import type { Donacion } from "./_lib/types";
 import type { SvGrupo, SvMiembro } from "@/app/servicio/_lib/types";
 
 export default async function DonacionesPage() {
+  await soloRevisoria();
   const caps = await getUserCaps();
   if (!caps) redirect("/login");
   if (caps.donaciones === "none") redirect("/?error=Sin+acceso+al+módulo+de+Donaciones");
