@@ -43,7 +43,7 @@ export function computeNavCaps(
       (r.ministries as { name: string } | null)?.name === "Planeación");
   const isStudio = role === "studio_admin";
 
-  // Revisora fiscal: solo el reporte de donaciones. Ningún otro módulo, aunque
+  // Revisor fiscal: solo el reporte de donaciones. Ningún otro módulo, aunque
   // tenga roles adicionales (lo más restrictivo gana).
   if (role === "revisor_fiscal") {
     return {
@@ -110,7 +110,7 @@ export const getUserCaps = cache(async (): Promise<NavCaps | null> => {
 });
 
 /**
- * La revisora fiscal solo puede estar en /revisoria y su perfil. Las páginas
+ * El revisor fiscal solo puede estar en /revisoria y su perfil. Las páginas
  * de los demás módulos lo llaman al inicio; la base igual le niega los datos.
  */
 export async function soloRevisoria(): Promise<void> {

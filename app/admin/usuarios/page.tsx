@@ -22,7 +22,7 @@ const ROLES = [
   { value: "admin_casa", label: "Admin de casa" },
   { value: "studio_admin", label: "Admin del Estudio" },
   { value: "planeacion", label: "Planeación" },
-  { value: "revisor_fiscal", label: "Revisora fiscal" },
+  { value: "revisor_fiscal", label: "Revisor fiscal" },
   { value: "super_admin", label: "Super admin" },
 ] as const;
 
