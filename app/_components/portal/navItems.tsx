@@ -47,7 +47,7 @@ export function destinations(caps: NavCaps): Destination[] {
   if (caps.donaciones !== "none") {
     out.push({ id: "dar", href: "/donaciones", label: "Dar", match: (p) => p.startsWith("/donaciones"), icon: svg(<path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z" />) });
   }
-  // Revisora fiscal: su único destino es el reporte de donaciones.
+  // Revisor fiscal: su único destino es el reporte de donaciones.
   // (Super admin y pastor de sede también pueden abrir /revisoria, pero sin
   // ocupar un lugar más en su barra.)
   if (caps.revisoria && !caps.inicio) {

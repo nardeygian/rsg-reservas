@@ -18,6 +18,7 @@ const ROLE_LABELS: Record<string, string> = {
   pastor_sede: "Pastor de sede",
   admin_casa: "Admin de casa",
   studio_admin: "Admin del Estudio",
+  revisor_fiscal: "Revisor fiscal",
   super_admin: "Super admin",
 };
 
