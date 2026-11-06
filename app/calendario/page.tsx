@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { soloRevisoria } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCalendarEvents } from "@/lib/asana";
@@ -26,6 +27,7 @@ export default async function CalendarioPage({
 }: {
   searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
+  await soloRevisoria();
   const { error, ok } = await searchParams;
 
   const supabase = await createClient();

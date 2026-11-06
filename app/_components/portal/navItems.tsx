@@ -7,7 +7,7 @@ import type { NavCaps } from "@/lib/auth";
 type SvgIcon = ReactElement<SVGProps<SVGSVGElement>>;
 
 export type Destination = {
-  id: "inicio" | "calendario" | "reservas" | "comunidad" | "dar" | "tu";
+  id: "inicio" | "calendario" | "reservas" | "comunidad" | "dar" | "revisoria" | "tu";
   href: string;
   label: string;
   /** Rutas que marcan este destino como activo. */
@@ -46,6 +46,12 @@ export function destinations(caps: NavCaps): Destination[] {
   }
   if (caps.donaciones !== "none") {
     out.push({ id: "dar", href: "/donaciones", label: "Dar", match: (p) => p.startsWith("/donaciones"), icon: svg(<path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z" />) });
+  }
+  // Revisora fiscal: su único destino es el reporte de donaciones.
+  // (Super admin y pastor de sede también pueden abrir /revisoria, pero sin
+  // ocupar un lugar más en su barra.)
+  if (caps.revisoria && !caps.inicio) {
+    out.push({ id: "revisoria", href: "/revisoria", label: "Revisoría", match: (p) => p.startsWith("/revisoria"), icon: svg(<><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5" /><path d="M9 17v-3M12 17v-6M15 17v-4" /></>) });
   }
   return out;
 }

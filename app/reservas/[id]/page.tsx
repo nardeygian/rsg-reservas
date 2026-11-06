@@ -1,4 +1,5 @@
 import { Icon } from "@/app/_components/ui/Icon";
+import { soloRevisoria } from "@/lib/auth";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -100,6 +101,7 @@ export default async function BookingDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
+  await soloRevisoria();
   const { id } = await params;
   const { error, ok } = await searchParams;
 

@@ -2,7 +2,7 @@ import { Icon } from "@/app/_components/ui/Icon";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getSessionProfile, getUserCaps } from "@/lib/auth";
+import { getSessionProfile, getUserCaps, soloRevisoria } from "@/lib/auth";
 import { dayKey, startOfDayBogota, endOfDayBogota } from "@/lib/datetime";
 import { getCalendarEvents } from "@/lib/asana";
 import { svReadData } from "@/app/servicio/_lib/data";
@@ -79,6 +79,7 @@ function formatShortTime(iso: string): string {
 }
 
 export default async function HomePage() {
+  await soloRevisoria();
   const [session, caps] = await Promise.all([getSessionProfile(), getUserCaps()]);
   if (!session) redirect("/login");
   const { userId, email, profile } = session;
